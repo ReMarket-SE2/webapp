@@ -1,4 +1,4 @@
-# ReMarket - Frontend Application
+# ReMarket - Web Application
 
 A modern e-commerce marketplace web application built with Next.js, React, and TypeScript.
 
@@ -95,7 +95,7 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 ## 📁 Project Structure
 
 ```
-remarket-frontend/
+webapp/
 ├── app/                # Next.js App Router pages
 ├── components/         # Reusable UI components
 ├── docker/             # Docker configuration files
@@ -147,6 +147,24 @@ This project follows specific coding standards:
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more details on how to get started.
+
+## 🔄 CI/CD Pipeline
+
+This project uses GitHub Actions for Continuous Integration and Deployment:
+
+### Pull Request Validation
+
+All pull requests to the `main` or `master` branches trigger an automated validation workflow that:
+
+1. Sets up the environment with Node.js and pnpm
+2. Installs dependencies with optimized caching
+3. Runs linting (`pnpm lint`)
+4. Builds the application (`pnpm build`)
+5. Blocks merging if any of these steps fail
+
+This ensures that only high-quality code that passes all checks can be merged into the main branches.
+
+To see the workflow configuration, check the `.github/workflows/pull-request.yml` file.
 
 ## 🧪 Testing
 
