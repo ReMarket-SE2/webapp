@@ -29,7 +29,7 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 - **Component Library**: Shadcn UI with Radix UI primitives
 - **Language**: TypeScript 5
 - **Package Manager**: pnpm
-- **Development Tools**: ESLint, Turbopack
+- **Development Tools**: ESLint, Prettier, Husky, lint-staged, Turbopack
 - **Containerization**: Docker and Docker Compose
 
 ## 🚀 Getting Started
@@ -45,17 +45,20 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 #### Option 1: Local Development
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/remarket-frontend.git
    cd remarket-frontend
    ```
 
 2. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 3. Start the development server:
+
    ```bash
    pnpm dev
    ```
@@ -65,12 +68,14 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 #### Option 2: Docker Development
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/remarket-frontend.git
    cd remarket-frontend
    ```
 
 2. Start the development container:
+
    ```bash
    docker-compose -f docker/docker-compose.dev.yml up --build
    ```
@@ -80,12 +85,14 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 #### Option 3: Docker Production
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/remarket-frontend.git
    cd remarket-frontend
    ```
 
 2. Start the production container:
+
    ```bash
    docker-compose -f docker/docker-compose.yml up --build
    ```
@@ -117,14 +124,25 @@ webapp/
 - `pnpm start`: Start the production server
 - `pnpm lint`: Run ESLint to check code quality
 
+### Git Hooks
+
+This project uses Husky and lint-staged for precommit hooks:
+
+- **Pre-commit**: Automatically runs ESLint and Prettier on staged files
+- **Commit Message**: Enforces [Conventional Commits](https://www.conventionalcommits.org/) format
+
+For more details on commit message format, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Docker Commands
 
 - Development:
+
   ```bash
   docker-compose -f docker/docker-compose.dev.yml up --build
   ```
 
 - Production:
+
   ```bash
   docker-compose -f docker/docker-compose.yml up --build
   ```
@@ -168,7 +186,7 @@ To see the workflow configuration, check the `.github/workflows/pull-request.yml
 
 ## 🧪 Testing
 
-*Testing documentation to be added*
+_Testing documentation to be added_
 
 ## 📄 License
 
