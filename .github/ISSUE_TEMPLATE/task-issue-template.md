@@ -26,26 +26,12 @@ _The issue is considered complete when all the following criteria are met:_
 - [ ] Code follows the project's style guidelines and best practices.  
 - [ ] Deployed and verified in the staging environment (if applicable).  
 
-### 📌 Out of Scope  
-_Clarify what is explicitly NOT included in this issue to avoid scope creep._  
-
 ### 🔗 Dependencies  
 - _List any dependencies that need to be resolved before this issue can be completed._  
 - _Include links to related issues or pull requests._  
 
 ### ⚙️ Technical Notes  
 _Any technical considerations, such as architectural decisions, third-party tools, or libraries to be used._  
-
-### 💡 Additional Context  
-_Include any additional information that could help in the implementation, such as:_  
-- _Links to designs, specifications, or relevant discussions._  
-- _Performance, security, or usability considerations._  
-
-### 👥 Assignees  
-- _Who is responsible for this issue?_  
-
-### 📅 Estimated Time  
-_Optional: Estimated time required to complete the task._  
 
 ### 📝 Comments  
 _Any other notes, questions, or comments related to the issue._
