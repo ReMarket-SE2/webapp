@@ -25,7 +25,7 @@ jobs:
 
       - name: Semantic version
         id: version
-        uses: paulhatch/semantic-version@5.4.0
+        uses: PaulHatch/semantic-version@v5.4.0
 
       - name: Docker Setup Buildx
         uses: docker/setup-buildx-action@v3
