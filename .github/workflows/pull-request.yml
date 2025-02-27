@@ -78,4 +78,4 @@ jobs:
         run: |
           echo "## ✅ Pull Request Validation Succeeded" >> $GITHUB_STEP_SUMMARY
           echo "- Linting passed" >> $GITHUB_STEP_SUMMARY
-          echo "- Build passed" >> $GITHUB_STEP_SUMMARY 
+          echo "- Build passed" >> $GITHUB_STEP_SUMMARY
