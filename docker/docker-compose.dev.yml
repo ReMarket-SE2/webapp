@@ -1,0 +1,23 @@
+services:
+  # Next.js frontend application in development mode
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: remarket-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      # Add any other environment variables your app needs for development
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    command: pnpm dev
+    restart: unless-stopped
+
+networks:
+  default:
+    name: remarket-dev-network
+    driver: bridge 
