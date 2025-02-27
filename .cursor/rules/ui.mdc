@@ -1,0 +1,14 @@
+---
+description: UI Best Practices. Use when designing components.
+globs: 
+alwaysApply: false
+---
+- Use Shaden UI components with proper composition and customization
+- Leverage Radix UI primitives for accessible interactive components
+- Follow Tailwind CSS class naming conventions and utility patterns
+- Maintain consistent spacing and layout using Tailwind's spacing scale
+- Use Tailwind's color system for consistent theming
+- Implement dark mode support using Tailwind's dark variant
+- Ensure components are accessible following WAG guidelines
+- Keep component styles modular and reusable
+- Optimize component bundle size through proper code splitting

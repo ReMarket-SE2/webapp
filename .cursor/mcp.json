@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "docker": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/matined/Documents/MCPs/mcp-server-docker",
+        "run",
+        "mcp-server-docker"
+      ]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-e11594f94eaa47d78af197fd66742050"
+      }
+    }
+  }
+}
