@@ -39,22 +39,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       
-      - name: Check for lockfile
-        id: check-lockfile
-        run: |
-          if [ -f "pnpm-lock.yaml" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Install dependencies (with lockfile)
-        if: steps.check-lockfile.outputs.exists == 'true'
-        run: pnpm install --frozen-lockfile
-      
-      - name: Install dependencies (without lockfile)
-        if: steps.check-lockfile.outputs.exists != 'true'
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
       
       - name: Lint
         id: lint
