@@ -70,7 +70,7 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/remarket-frontend.git
+   git clone https://github.com/ReMarket-SE2/webapp.git
    cd remarket-frontend
    ```
 
@@ -87,7 +87,7 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/remarket-frontend.git
+   git clone https://github.com/ReMarket-SE2/webapp.git
    cd remarket-frontend
    ```
 
