@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import Link from "next/link"
 
 export function SignUpForm({
   className,
@@ -52,9 +53,9 @@ export function SignUpForm({
       </div>
       <div className="text-center text-sm">
         Already have an account?{" "}
-        <a href="/auth/sign-in" className="underline underline-offset-4">
+        <Link href="/auth/sign-in" className="underline underline-offset-4">
           Sign in
-        </a>
+        </Link>
       </div>
     </form>
   )
