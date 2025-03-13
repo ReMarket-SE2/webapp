@@ -40,6 +40,24 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files from builder stage
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/lib/db/migrations ./lib/db/migrations
+COPY --from=builder /app/lib/db/migrate.ts ./lib/db/migrate.ts
+COPY --from=builder /app/package.json ./package.json
+
+# Install pnpm and ts-node for migrations
+RUN npm install -g pnpm
+RUN pnpm install --prod
+RUN pnpm add -D ts-node
+
+# Create a script to run migrations and start the server
+RUN echo '#!/bin/sh\n\
+if [ "$RUN_MIGRATIONS" = "true" ]; then\n\
+  echo "Running database migrations..."\n\
+  node -r ts-node/register lib/db/migrate.ts || echo "Migration failed, but continuing..."\n\
+fi\n\
+echo "Starting server..."\n\
+exec node server.js\n\
+' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -54,6 +72,7 @@ USER nextjs
 EXPOSE 3000
 
 ENV PORT=3000
+ENV RUN_MIGRATIONS=true
 
-# Start the Next.js application
-CMD ["node", "server.js"] 
+# Start the Next.js application with migrations
+CMD ["/app/docker-entrypoint.sh"] 
