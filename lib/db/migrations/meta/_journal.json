@@ -15,6 +15,13 @@
       "when": 1741896793101,
       "tag": "0001_optimal_sheva_callister",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1741897161852,
+      "tag": "0002_same_hellcat",
+      "breakpoints": true
     }
   ]
 }
