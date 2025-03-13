@@ -140,7 +140,6 @@ webapp/
 │   ├── db/             # Database configuration and models
 │   │   ├── migrations/ # Generated database migrations
 │   │   ├── schema/     # Database schema definitions
-│   │   └── repositories/ # Database operation functions
 ├── public/             # Static assets
 └── ...
 ```
@@ -151,8 +150,21 @@ The application uses PostgreSQL with Drizzle ORM for database operations. The da
 
 - **Schema Definition**: Type-safe schema definitions using Drizzle ORM
 - **Migrations**: Automatic migration generation and application
-- **Repositories**: Abstracted database operations for each model
 - **Docker Integration**: PostgreSQL is included in both development and production Docker setups
+
+### Database Models
+
+The application includes the following database models:
+
+- **Users**: User accounts with authentication information
+- **Categories**: Product categories
+- **Listings**: Product listings with details and pricing
+- **Photos**: Image storage for listings and user profiles
+- **Wishlists**: User-created collections of desired listings
+- **Reviews**: User reviews for listings with ratings
+- **Orders**: Purchase orders with shipping and payment information
+
+For detailed information about the database schema, relationships, and usage examples, see [lib/db/README.md](lib/db/README.md).
 
 ### Database Commands
 
@@ -174,8 +186,6 @@ The application uses PostgreSQL with Drizzle ORM for database operations. The da
   ```bash
   pnpm db:studio
   ```
-
-For more details about the database setup, see [lib/db/README.md](lib/db/README.md).
 
 ## 💻 Development
 

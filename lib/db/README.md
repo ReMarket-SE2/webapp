@@ -8,11 +8,16 @@ This directory contains the database setup for the ReMarket online store using D
 - `migrate.ts`: Script to run migrations programmatically
 - `schema/`: Contains database schema definitions
   - `users.ts`: User model schema
+  - `categories.ts`: Categories model schema
+  - `photos.ts`: Photos model schema
+  - `listings.ts`: Listings model schema
+  - `listing_photos.ts`: Junction table for listings and photos
+  - `wishlists.ts`: Wishlists model schema
+  - `wishlist_listings.ts`: Junction table for wishlists and listings
+  - `reviews.ts`: Reviews model schema
+  - `orders.ts`: Orders model schema
   - `index.ts`: Exports all schemas
 - `migrations/`: Contains generated migration files
-- `repositories/`: Contains database operation functions
-  - `users.ts`: User repository with CRUD operations
-  - `index.ts`: Exports all repositories
 
 ## Getting Started
 
@@ -39,38 +44,84 @@ This directory contains the database setup for the ReMarket online store using D
    npm run db:studio
    ```
 
-## Usage Examples
+## Database Schema
 
-```typescript
-// Import the repository
-import { usersRepository } from 'lib/db/repositories';
+### Users
 
-// Create a new user
-const newUser = await usersRepository.create({
-  username: 'johndoe',
-  passwordHash: 'hashed_password_here',
-  email: 'john@example.com',
-});
+- `id`: Primary key
+- `username`: Unique username
+- `passwordHash`: Hashed password
+- `email`: Unique email address
+- `profileImageId`: Foreign key to photos
+- `createdAt`: Timestamp of creation
+- `updatedAt`: Timestamp of last update
 
-// Get user by ID
-const user = await usersRepository.getById(1);
+### Categories
 
-// Get user by username
-const userByUsername = await usersRepository.getByUsername('johndoe');
+- `id`: Primary key
+- `name`: Category name
 
-// Update user
-const updatedUser = await usersRepository.update(1, {
-  email: 'newemail@example.com',
-});
+### Photos
 
-// Delete user
-await usersRepository.delete(1);
-```
+- `id`: Primary key
+- `url`: URL to the photo
+
+### Listings
+
+- `id`: Primary key
+- `title`: Listing title
+- `price`: Listing price
+- `status`: Enum ('Active', 'Archived', 'Draft')
+- `description`: Short description
+- `longDescription`: Detailed description
+- `categoryId`: Foreign key to categories
+
+### Wishlists
+
+- `id`: Primary key
+- `name`: Wishlist name
+- `userId`: Foreign key to users
+
+### Reviews
+
+- `id`: Primary key
+- `title`: Review title
+- `score`: Rating score (1-5)
+- `description`: Review text
+- `userId`: Foreign key to users
+- `listingId`: Foreign key to listings
+
+### Orders
+
+- `id`: Primary key
+- `userId`: Foreign key to users
+- `listingId`: Foreign key to listings
+- `shippingAddress`: Shipping address text
+- `status`: Enum ('Shipping', 'Shipped')
+- `shippedDate`: Date when the order was shipped (nullable)
+- `paymentId`: External payment service ID
+- `paymentStatus`: Payment status from external service
+- `createdAt`: Timestamp of creation
+- `updatedAt`: Timestamp of last update
+
+## Junction Tables
+
+### Listing Photos
+
+Links listings to their photos:
+
+- `listingId`: Foreign key to listings
+- `photoId`: Foreign key to photos
+
+### Wishlist Listings
+
+Links wishlists to listings (many-to-many):
+
+- `wishlistId`: Foreign key to wishlists
+- `listingId`: Foreign key to listings
 
 ## Adding New Models
 
 1. Create a new schema file in the `schema/` directory
 2. Export the schema in `schema/index.ts`
-3. Create a repository file in the `repositories/` directory
-4. Export the repository in `repositories/index.ts`
-5. Generate and apply migrations
+3. Generate and apply migrations
