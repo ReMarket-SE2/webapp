@@ -36,6 +36,13 @@
       "when": 1741898246384,
       "tag": "0004_create-listings-and-photos",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1741898704879,
+      "tag": "0005_add-picture-to-users",
+      "breakpoints": true
     }
   ]
 }
