@@ -4,4 +4,5 @@ export * from './photos';
 export * from './listings';
 export * from './listing_photos';
 export * from './wishlists';
-export * from './wishlist_listings'; 
+export * from './wishlist_listings';
+export * from './reviews'; 

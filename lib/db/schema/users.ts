@@ -2,6 +2,7 @@ import { pgTable, serial, varchar, timestamp, text, integer } from 'drizzle-orm/
 import { relations } from 'drizzle-orm';
 import { photos } from './photos';
 import { wishlists } from './wishlists';
+import { reviews } from './reviews';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -20,6 +21,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [photos.id],
   }),
   wishlists: many(wishlists),
+  reviews: many(reviews),
 }));
 
 // Types for TypeScript

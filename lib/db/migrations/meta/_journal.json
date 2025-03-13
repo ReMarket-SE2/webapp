@@ -50,6 +50,13 @@
       "when": 1741899417898,
       "tag": "0006_create-wishlists",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1741900581464,
+      "tag": "0007_create_reviews",
+      "breakpoints": true
     }
   ]
 }
