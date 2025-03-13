@@ -2,6 +2,7 @@ import { pgTable, serial, varchar, decimal, text, pgEnum, integer } from 'drizzl
 import { relations } from 'drizzle-orm';
 import { categories } from './categories';
 import { listingPhotos } from './listing_photos';
+import { wishlistListings } from './wishlist_listings';
 
 // Create an enum for listing status
 export const listingStatusEnum = pgEnum('listing_status', ['Active', 'Archived', 'Draft']);
@@ -23,6 +24,7 @@ export const listingsRelations = relations(listings, ({ one, many }) => ({
     references: [categories.id],
   }),
   listingPhotos: many(listingPhotos),
+  wishlistListings: many(wishlistListings),
 }));
 
 // Types for TypeScript

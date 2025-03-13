@@ -1,6 +1,7 @@
 import { pgTable, serial, varchar, timestamp, text, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { photos } from './photos';
+import { wishlists } from './wishlists';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -12,12 +13,13 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Define the relation to the profile image
-export const usersRelations = relations(users, ({ one }) => ({
+// Define the relations
+export const usersRelations = relations(users, ({ one, many }) => ({
   profileImage: one(photos, {
     fields: [users.profileImageId],
     references: [photos.id],
   }),
+  wishlists: many(wishlists),
 }));
 
 // Types for TypeScript

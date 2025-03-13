@@ -43,6 +43,13 @@
       "when": 1741898704879,
       "tag": "0005_add-picture-to-users",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1741899417898,
+      "tag": "0006_create-wishlists",
+      "breakpoints": true
     }
   ]
 }
