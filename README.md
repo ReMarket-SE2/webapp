@@ -190,7 +190,7 @@ _Testing documentation to be added_
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License
 
 ## 📚 Learn More
 
