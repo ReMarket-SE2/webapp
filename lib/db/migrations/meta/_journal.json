@@ -22,6 +22,20 @@
       "when": 1741897161852,
       "tag": "0002_same_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1741897680702,
+      "tag": "0003_soft_thunderbolts",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1741898246384,
+      "tag": "0004_create-listings-and-photos",
+      "breakpoints": true
     }
   ]
 }
