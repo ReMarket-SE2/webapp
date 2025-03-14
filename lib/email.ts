@@ -6,7 +6,7 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string) 
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password/${resetToken}`
 
   await resend.emails.send({
-    from: 'ReMarket <noreply@remarket.pl>',
+    from: 'onboarding@resend.dev',
     to: email,
     subject: 'Reset your password',
     html: `

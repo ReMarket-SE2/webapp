@@ -37,6 +37,7 @@ export function RequestPasswordResetForm({
       showToast.success("If an account exists with this email, you will receive a password reset link")
       setEmail("")
     } catch (error) {
+      console.error('Password reset request error:', error)
       showToast.error("Failed to send reset email")
     } finally {
       setIsLoading(false)
@@ -52,7 +53,7 @@ export function RequestPasswordResetForm({
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Forgot Password</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Enter your email address and we'll send you a link to reset your password
+          Enter your email address and we will send you a link to reset your password
         </p>
       </div>
       <div className="grid gap-6">

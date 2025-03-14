@@ -5,6 +5,9 @@ type UserResponse = Omit<User, 'password'>
 
 interface UseUserReturn {
   user: UserResponse | null
+  name: string
+  email: string
+  avatar: string
   isLoading: boolean
   error: Error | null
   mutate: () => Promise<void>
@@ -45,5 +48,13 @@ export function useUser(): UseUserReturn {
     await fetchUser()
   }
 
-  return { user, isLoading, error, mutate }
+  return {
+    user,
+    name: user?.name || '',
+    email: user?.email || '',
+    avatar: user?.avatar || '',
+    isLoading,
+    error,
+    mutate
+  }
 } 

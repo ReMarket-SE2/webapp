@@ -3,6 +3,7 @@ export interface User {
   email: string
   name: string
   password: string
+  avatar: string
 }
 
 const users: User[] = [];
@@ -33,9 +34,12 @@ export class UserService {
   }
 
   static sanitizeUser(user: User): Omit<User, 'password'> {
-    const { password, ...sanitizedUser } = user
-    return sanitizedUser
-  }
+    const { password, ...sanitizedUser } = user;
+    void password; // Explicitly mark it as intentionally unused
+    return sanitizedUser;
+}
+
+
 
   static async updatePassword(userId: string, hashedPassword: string) {
     const user = users.find(u => u.id === userId)

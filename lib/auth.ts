@@ -11,6 +11,7 @@ export async function verifyAuth(token: string) {
     )
     return verified.payload
   } catch (err) {
+    console.error('Token verification error:', err)
     throw new Error('Your token has expired.')
   }
 }

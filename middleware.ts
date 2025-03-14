@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 import { UserService } from '@/lib/services/user-service'
 
-export async function authMiddleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  console.log('authMiddleware', request.nextUrl.pathname)
   if (
     request.nextUrl.pathname.startsWith('/api') ||
     request.nextUrl.pathname.startsWith('/_next') ||

@@ -56,6 +56,7 @@ export function PasswordResetForm({
       showToast.success("Password reset successfully!")
       router.push('/auth/sign-in')
     } catch (error) {
+      console.error('Password reset error:', error)
       showToast.error("Failed to reset password")
     } finally {
       setIsLoading(false)
