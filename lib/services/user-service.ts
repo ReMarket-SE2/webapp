@@ -36,4 +36,12 @@ export class UserService {
     const { password, ...sanitizedUser } = user
     return sanitizedUser
   }
+
+  static async updatePassword(userId: string, hashedPassword: string) {
+    const user = users.find(u => u.id === userId)
+    if (!user) {
+      throw new Error('User not found')
+    }
+    user.password = hashedPassword
+  }
 } 

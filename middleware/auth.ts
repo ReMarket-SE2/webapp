@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 import { UserService } from '@/lib/services/user-service'
 
-export async function middleware(request: NextRequest) {
+export async function authMiddleware(request: NextRequest) {
   if (
     request.nextUrl.pathname.startsWith('/api') ||
     request.nextUrl.pathname.startsWith('/_next') ||
@@ -44,10 +44,4 @@ export async function middleware(request: NextRequest) {
       new URL(`/auth/sign-in?returnTo=${returnTo}&message=Session expired, please log in again`, request.url)
     )
   }
-}
-
-export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|auth).*)',
-  ],
 } 

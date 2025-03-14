@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { showToast } from "@/lib/toast"
+import { validatePassword } from "@/lib/validators/password-validator"
 
 export function SignUpForm({
   className,
@@ -15,6 +16,7 @@ export function SignUpForm({
 }: React.ComponentProps<"form">) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [name, setName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   
@@ -26,6 +28,17 @@ export function SignUpForm({
     e.preventDefault()
     if (isLoading) return
     
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.isValid) {
+      showToast.error(passwordValidation.error!)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      showToast.error("Passwords do not match")
+      return
+    }
+    
     setIsLoading(true)
 
     try {
@@ -34,7 +47,7 @@ export function SignUpForm({
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, confirmPassword, name }),
         credentials: 'include'
       })
 
@@ -48,7 +61,6 @@ export function SignUpForm({
       router.push(decodeURIComponent(returnTo))
       
     } catch (error) {
-      console.error('Registration error:', error)
       showToast.error("Failed to create account")
     } finally {
       setIsLoading(false)
@@ -92,15 +104,34 @@ export function SignUpForm({
             disabled={isLoading}
           />
         </div>
-        <div className="grid gap-3">
+        <div className="flex flex-col gap-2">
           <Label htmlFor="password">Password</Label>
-          <Input 
-            id="password" 
-            type="password" 
-            required
+          <Input
+            id="password"
+            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
+            required
+            minLength={6}
+          />
+          {!validatePassword(password).isValid && password.length > 0 && (
+            <p className="text-xs text-red-500">
+              Password must be at least 6 characters long, contain one uppercase letter,
+              one lowercase letter, and one special character.
+            </p>
+          )}
+        </div>
+        <div className="grid gap-3">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input 
+            id="confirmPassword" 
+            type="password" 
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={isLoading}
+            minLength={6}
           />
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
