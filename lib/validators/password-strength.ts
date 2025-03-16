@@ -1,6 +1,5 @@
-
 // Password must be at least 6 characters long, contain one uppercase letter, one lowercase letter, and one special character
-export function validatePassword(password: string): { isValid: boolean; error?: string } {
+export function checkPasswordStrength(password: string): { isValid: boolean; error?: string } {
     if (password.length < 6) {
     return { isValid: false, error: "Password must be at least 6 characters long" }
   }

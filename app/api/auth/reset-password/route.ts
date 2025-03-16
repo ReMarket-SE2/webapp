@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
-import { UserService } from '@/lib/services/user-service'
-import { validatePassword } from '@/lib/validators/password-validator'
+import { UserService } from '@/services/user-service'
+import { checkPasswordStrength } from '@/lib/validators/password-strength'
 
 // POST /api/auth/reset-password
 export async function POST(request: Request) {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     // Validate password
-    const passwordValidation = validatePassword(password)
+    const passwordValidation = checkPasswordStrength(password)
     if (!passwordValidation.isValid) {
       return NextResponse.json(
         { error: passwordValidation.error },

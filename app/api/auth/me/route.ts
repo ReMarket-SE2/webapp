@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
-import { UserService } from '@/lib/services/user-service'
+import { UserService } from '@/services/user-service'
 
 // GET /api/auth/me
 export async function GET(request: Request) {
   try {
-    const token = request.headers.get('cookie')?.split('token=')[1]?.split(';')[0]
+    const token = request.headers.get('cookie')?.split('accessToken=')[1]?.split(';')[0]
 
     if (!token) {
       return NextResponse.json(

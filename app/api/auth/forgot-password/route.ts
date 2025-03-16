@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { SignJWT } from 'jose'
-import { UserService } from '@/lib/services/user-service'
-import { sendPasswordResetEmail } from '@/lib/email'
+import { UserService } from '@/services/user-service'
+import { sendPasswordResetEmail } from '@/services/email-service'
 
 // POST /api/auth/forgot-password
 export async function POST(request: Request) {

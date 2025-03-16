@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { User } from '@/lib/services/user-service'
+import { User } from '@/services/user-service'
 
 type UserResponse = Omit<User, 'password'>
 
@@ -7,7 +7,6 @@ interface UseUserReturn {
   user: UserResponse | null
   name: string
   email: string
-  avatar: string
   isLoading: boolean
   error: Error | null
   mutate: () => Promise<void>
@@ -52,7 +51,6 @@ export function useUser(): UseUserReturn {
     user,
     name: user?.name || '',
     email: user?.email || '',
-    avatar: user?.avatar || '',
     isLoading,
     error,
     mutate

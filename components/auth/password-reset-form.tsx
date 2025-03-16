@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { showToast } from "@/lib/toast"
-import { validatePassword } from "@/lib/validators/password-validator"
+import { checkPasswordStrength } from "@/lib/validators/password-strength"
 
 export function PasswordResetForm({
   className,
@@ -24,7 +24,7 @@ export function PasswordResetForm({
     e.preventDefault()
     if (isLoading) return
 
-    const passwordValidation = validatePassword(password)
+    const passwordValidation = checkPasswordStrength(password)
     if (!passwordValidation.isValid) {
       showToast.error(passwordValidation.error!)
       return
@@ -87,7 +87,7 @@ export function PasswordResetForm({
             required
             minLength={6}
           />
-          {!validatePassword(password).isValid && password.length > 0 && (
+          {!checkPasswordStrength(password).isValid && password.length > 0 && (
             <p className="text-xs text-red-500">
               Password must be at least 6 characters long, contain one uppercase letter,
               one lowercase letter, and one special character.

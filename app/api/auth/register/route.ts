@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { SignJWT } from 'jose'
-import { UserService } from '@/lib/services/user-service'
-import { validatePassword } from "@/lib/validators/password-validator"
+import { UserService } from '@/services/user-service'
+import { checkPasswordStrength } from "@/lib/validators/password-strength"
+import { createRefreshToken, createAccessToken, setRefreshTokenCookie, setAccessTokenCookie } from '@/services/auth-service'
 
 // POST /api/auth/register
 export async function POST(request: Request) {
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const { email, password, confirmPassword, name } = await request.json()
 
     // Validate password
-    const passwordValidation = validatePassword(password)
+    const passwordValidation = checkPasswordStrength(password)
     if (!passwordValidation.isValid) {
       return NextResponse.json(
         { error: passwordValidation.error },
@@ -45,28 +45,21 @@ export async function POST(request: Request) {
       name
     })
 
-    // Generate JWT
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret')
-    const token = await new SignJWT({ userId: user.id })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
-      .sign(secret)
+    // Create access and refresh tokens
+    const accessToken = await createAccessToken(user.id)
+    const refreshToken = await createRefreshToken(user.id)
 
     const response = NextResponse.json({ 
       success: true,
-      user: UserService.sanitizeUser(user)
+      user: UserService.sanitizeUser(user),
     })
+
+    // Set the access token header
+    setAccessTokenCookie(response, accessToken)
+
+    // Set the refresh token cookie
+    setRefreshTokenCookie(response, refreshToken)
     
-    // Set cookie
-    response.cookies.set({
-      name: 'token',
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    })
 
     return response
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { SignJWT } from 'jose'
-import { UserService } from '@/lib/services/user-service'
+import { UserService } from '@/services/user-service'
+import { createAccessToken, createRefreshToken, setRefreshTokenCookie, setAccessTokenCookie } from '@/services/auth-service'
 
 // POST /api/auth/login
 export async function POST(request: Request) {
@@ -26,29 +26,21 @@ export async function POST(request: Request) {
       )
     }
 
-    // Generate JWT
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret')
-    const token = await new SignJWT({ userId: user.id })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
-      .sign(secret)
+    // Create access token
+    const accessToken = await createAccessToken(user.id)
+    const refreshToken = await createRefreshToken(user.id)
 
     // Create response
     const response = NextResponse.json({ 
       success: true,
-      user: UserService.sanitizeUser(user)
+      user: UserService.sanitizeUser(user),
     })
 
+    // Set access token header
+    setAccessTokenCookie(response, accessToken)
+
     // Set cookie
-    response.cookies.set({
-      name: 'token',
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    })
+    setRefreshTokenCookie(response, refreshToken)
 
     return response
   } catch (error) {
