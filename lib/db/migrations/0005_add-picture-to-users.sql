@@ -1,2 +1,0 @@
-ALTER TABLE "users" ADD COLUMN "profile_image_id" integer;--> statement-breakpoint
-ALTER TABLE "users" ADD CONSTRAINT "users_profile_image_id_photos_id_fk" FOREIGN KEY ("profile_image_id") REFERENCES "public"."photos"("id") ON DELETE no action ON UPDATE no action;

@@ -5,71 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1741890543015,
-      "tag": "0000_users",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1741896793101,
-      "tag": "0001_categories",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1741897161852,
-      "tag": "0002_photos",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1741897680702,
-      "tag": "0003_listings",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1741898246384,
-      "tag": "0004_listing-photos",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1741898704879,
-      "tag": "0005_add-picture-to-users",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1741899417898,
-      "tag": "0006_wishlists",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1741900581464,
-      "tag": "0007_reviews",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1741901092609,
-      "tag": "0008_orders",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1742558648590,
-      "tag": "0009_user-role",
+      "when": 1742576442256,
+      "tag": "0000_database-setup",
       "breakpoints": true
     }
   ]
