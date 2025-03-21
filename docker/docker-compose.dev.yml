@@ -21,8 +21,8 @@ services:
   # Next.js frontend application in development mode
   frontend:
     build: 
-      context: .
-      dockerfile: Dockerfile.dev
+      context: ..
+      dockerfile: docker/Dockerfile.dev
     container_name: remarket-frontend-dev
     ports:
       - "3000:3000"
@@ -31,10 +31,10 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/remarket
       # Add any other environment variables your app needs for development
     volumes:
-      - .:/app
+      - ..:/app
       - /app/node_modules
       - /app/.next
-    command: /app/docker-entrypoint.sh
+    command: sh -c "pnpm db:migrate && pnpm dev"
     restart: unless-stopped
     depends_on:
       postgres:

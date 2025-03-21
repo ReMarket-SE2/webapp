@@ -30,18 +30,18 @@ This directory contains the database setup for the ReMarket online store using D
 2. Generate migrations when you change the schema:
 
    ```bash
-   npm run db:generate
+   pnpm db:generate
    ```
 
 3. Apply migrations to the database:
 
    ```bash
-   npm run db:migrate
+   pnpm db:migrate
    ```
 
 4. View your database with Drizzle Studio:
    ```bash
-   npm run db:studio
+   pnpm db:studio
    ```
 
 ## Database Schema

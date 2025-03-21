@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -21,8 +21,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Install pnpm in the builder stage
-RUN npm install -g pnpm
+# Enable pnpm in the builder stage
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Build the application
 RUN pnpm build
@@ -44,8 +44,8 @@ COPY --from=builder /app/lib/db/migrations ./lib/db/migrations
 COPY --from=builder /app/lib/db/migrate.ts ./lib/db/migrate.ts
 COPY --from=builder /app/package.json ./package.json
 
-# Install pnpm and ts-node for migrations
-RUN npm install -g pnpm
+# Enable pnpm and install dependencies
+RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN pnpm install --prod
 RUN pnpm add -D ts-node
 
