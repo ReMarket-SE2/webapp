@@ -64,6 +64,13 @@
       "when": 1741901092609,
       "tag": "0008_create_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1742558648590,
+      "tag": "0009_rare_zaladane",
+      "breakpoints": true
     }
   ]
 }

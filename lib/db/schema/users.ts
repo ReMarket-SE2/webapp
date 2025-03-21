@@ -1,9 +1,12 @@
-import { pgTable, serial, varchar, timestamp, text, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, timestamp, text, integer, pgEnum } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { photos } from './photos';
 import { wishlists } from './wishlists';
 import { reviews } from './reviews';
 import { orders } from './orders';
+
+// Create an enum for user roles
+export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -11,6 +14,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   profileImageId: integer('profile_image_id').references(() => photos.id),
+  role: userRoleEnum('role').notNull().default('user'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -28,4 +32,5 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 
 // Types for TypeScript
 export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert; 
+export type NewUser = typeof users.$inferInsert;
+export type UserRole = 'user' | 'admin'; 
