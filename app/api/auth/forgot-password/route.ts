@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const user = await UserService.findByEmail(email)
     
     if (!user) {
-      // Return success even if user doesn't exist (security best practice)
+      // Return success even if user doesn't exist for security reasons
       return NextResponse.json({ success: true })
     }
 

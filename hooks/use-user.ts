@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { User } from '@/services/user-service'
+import { User } from '@/lib/db/schema'
 
-type UserResponse = Omit<User, 'password'>
+type UserResponse = Omit<User, 'passwordHash'>
 
 interface UseUserReturn {
   user: UserResponse | null
-  name: string
+  username: string
   email: string
   isLoading: boolean
   error: Error | null
@@ -49,7 +49,7 @@ export function useUser(): UseUserReturn {
 
   return {
     user,
-    name: user?.name || '',
+    username: user?.username || '',
     email: user?.email || '',
     isLoading,
     error,

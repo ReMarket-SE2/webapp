@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     }
 
     // Get user
-    const user = await UserService.findById(payload.userId as string)
+    const user = await UserService.findById(payload.userId as number)
     
     if (!user) {
       return NextResponse.json(

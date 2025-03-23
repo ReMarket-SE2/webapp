@@ -1,50 +1,38 @@
-export interface User {
-  id: string
-  email: string
-  name: string
-  password: string
-}
-
-const users: User[] = [];
+import { User } from "@/lib/db/schema"
+import { userRepository } from "@/repositories/user-repository"
 
 
 export class UserService {
-  static async findById(id: string): Promise<User | null> {
-    const user = users.find(u => u.id === id)
+  static async findById(id: number): Promise<User | null> {
+    const user = await userRepository.findById(id)
     return user || null
   }
 
   static async findByEmail(email: string): Promise<User | null> {
-    const user = users.find(u => u.email === email)
+    const user = await userRepository.findByEmail(email)
     return user || null
   }
 
   static async create(user: Omit<User, 'id'>): Promise<User> {
-    const newUser = {
-      ...user,
-      id: crypto.randomUUID()
-    }
-    users.push(newUser)
-    return newUser
+    return await userRepository.create(user)
   }
 
-  static async exists(id: string): Promise<boolean> {
-    return users.some(user => user.id === id)
+  static async exists(id: number): Promise<boolean> {
+    return await userRepository.exists(id)
   }
 
-  static sanitizeUser(user: User): Omit<User, 'password'> {
-    const { password, ...sanitizedUser } = user;
-    void password; // Explicitly mark it as intentionally unused
+  static sanitizeUser(user: User): Omit<User, 'passwordHash'> {
+    const { passwordHash, ...sanitizedUser } = user;
+    void passwordHash; // Explicitly mark it as intentionally unused
     return sanitizedUser;
 }
 
-
-
-  static async updatePassword(userId: string, hashedPassword: string) {
-    const user = users.find(u => u.id === userId)
+  static async updatePassword(userId: number, hashedPassword: string) {
+    const user = await userRepository.findById(userId)
     if (!user) {
       throw new Error('User not found')
     }
-    user.password = hashedPassword
+    user.passwordHash = hashedPassword
+    return await userRepository.update(user)
   }
 } 

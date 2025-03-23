@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Update user password
-    await UserService.updatePassword(payload.userId as string, hashedPassword)
+    await UserService.updatePassword(payload.userId as number, hashedPassword)
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -41,8 +41,12 @@ export async function POST(request: Request) {
     // Create new user
     const user = await UserService.create({
       email,
-      password: hashedPassword,
-      name
+      passwordHash: hashedPassword,
+      username: name,
+      profileImageId: null,
+      role: 'user',
+      createdAt: new Date(),
+      updatedAt: new Date()
     })
 
     // Create access and refresh tokens

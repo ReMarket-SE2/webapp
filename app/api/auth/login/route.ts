@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     // Compare password
-    const isValidPassword = await bcrypt.compare(password, user.password)
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash)
     if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Invalid credentials' },

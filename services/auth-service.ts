@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 const JWT_SECRET = process.env.JWT_SECRET!
 
 
-export async function createRefreshToken(userId: string) {
+export async function createRefreshToken(userId: number) {
 
     const token = await new SignJWT({ userId })
     .setProtectedHeader({ alg: 'HS256' })
@@ -14,7 +14,7 @@ export async function createRefreshToken(userId: string) {
     return token
 }
 
-export async function createAccessToken(userId: string) {
+export async function createAccessToken(userId: number) {
   const token = await new SignJWT({ userId })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('15m')

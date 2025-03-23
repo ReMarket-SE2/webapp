@@ -28,9 +28,9 @@
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "jose": "^6.0.10",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.40.0",
+    "jose": "^6.0.10",
     "lucide-react": "^0.476.0",
     "next": "15.2.1-canary.0",
     "pg": "^8.14.0",
@@ -40,8 +40,7 @@
     "resend": "^4.1.2",
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.2",
-    "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.1.0"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.7.1",
