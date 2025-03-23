@@ -8,7 +8,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install pnpm globally
-RUN npm install -g pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy package.json and pnpm-lock.yaml
 COPY package.json pnpm-lock.yaml ./
@@ -19,8 +19,16 @@ RUN pnpm install
 # Copy the rest of the application
 COPY . .
 
+# Create a script to run migrations and start the dev server
+RUN echo '#!/bin/sh\n\
+echo "Running database migrations..."\n\
+pnpm db:migrate || echo "Migration failed, but continuing..."\n\
+echo "Starting development server..."\n\
+exec pnpm dev\n\
+' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
+
 # Expose port
 EXPOSE 3000
 
-# Start development server with turbopack
-CMD ["pnpm", "dev"] 
+# Start development server with migrations
+CMD ["/app/docker-entrypoint.sh"] 

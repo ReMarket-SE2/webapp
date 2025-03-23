@@ -7,6 +7,8 @@ A modern e-commerce marketplace web application built with Next.js, React, and T
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-blue?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-blue?style=for-the-badge)](https://orm.drizzle.team/)
 
 ## 📋 Overview
 
@@ -28,6 +30,7 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 - **Styling**: Tailwind CSS 4.0
 - **Component Library**: Shadcn UI with Radix UI primitives
 - **Language**: TypeScript 5
+- **Database**: PostgreSQL with Drizzle ORM
 - **Package Manager**: pnpm
 - **Development Tools**: ESLint, Prettier, Husky, lint-staged, Turbopack
 - **Containerization**: Docker and Docker Compose
@@ -63,7 +66,26 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
    pnpm dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
+4. Start the PostgreSQL database:
+
+   ```bash
+   # Run only the PostgreSQL container for local development
+   docker-compose -f docker/docker-compose.yml up -d postgres
+   ```
+
+5. Generate database migrations (if schema has changed or for initial setup):
+
+   ```bash
+   pnpm db:generate
+   ```
+
+6. Apply database migrations:
+
+   ```bash
+   pnpm db:migrate
+   ```
+
+7. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
 #### Option 2: Docker Development
 
@@ -79,6 +101,8 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
    ```bash
    docker-compose -f docker/docker-compose.dev.yml up --build
    ```
+
+   This will start both the PostgreSQL database and the Next.js application. Database migrations will run automatically.
 
 3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
@@ -97,23 +121,27 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
    docker-compose -f docker/docker-compose.yml up --build
    ```
 
+   This will start both the PostgreSQL database and the Next.js application. Database migrations will run automatically.
+
 3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
 ## 🔧 Environment Setup
 
 1. Create a `.env` file in the root directory:
+
    ```bash
    touch .env
    ```
 
 2. Create the following environment variables in `.env`:
+
    ```env
    # Authentication
    JWT_SECRET=           # Generate a secure random string
-   
+
    # Email Service (Resend)
    RESEND_API_KEY=       # Get from Resend dashboard
-   
+
    # App URL
    NEXT_PUBLIC_APP_URL=  # e.g., http://localhost:3000
    ```
@@ -129,13 +157,65 @@ webapp/
 ├── components/         # Reusable UI components
 │   ├── auth/          # Authentication components
 │   └── ui/            # UI components
-├── docker/            # Docker configuration files
 ├── lib/               # Utility functions and shared code
+│   ├── db/             # Database configuration and models
+│   │   ├── migrations/ # Generated database migrations
+│   │   ├── schema/     # Database schema definitions
 │   ├── hooks/         # Custom React hooks
 │   └── services/      # Service layer
 ├── middleware/        # Next.js middleware
 └── public/            # Static assets
+├── docker/             # Docker configuration files
+│   ├── Dockerfile      # Production Docker configuration
+│   ├── Dockerfile.dev  # Development Docker configuration
+│   ├── docker-compose.yml       # Production Docker Compose config
+│   └── docker-compose.dev.yml   # Development Docker Compose config
+├── public/             # Static assets
+└── ...
 ```
+
+## 💾 Database
+
+The application uses PostgreSQL with Drizzle ORM for database operations. The database setup includes:
+
+- **Schema Definition**: Type-safe schema definitions using Drizzle ORM
+- **Migrations**: Automatic migration generation and application
+- **Docker Integration**: PostgreSQL is included in both development and production Docker setups
+
+### Database Models
+
+The application includes the following database models:
+
+- **Users**: User accounts with authentication information
+- **Categories**: Product categories
+- **Listings**: Product listings with details and pricing
+- **Photos**: Image storage for listings and user profiles
+- **Wishlists**: User-created collections of desired listings
+- **Reviews**: User reviews for listings with ratings
+- **Orders**: Purchase orders with shipping and payment information
+
+For detailed information about the database schema, relationships, and usage examples, see [lib/db/README.md](lib/db/README.md).
+
+### Database Commands
+
+- Generate migrations:
+
+  ```bash
+  pnpm db:generate
+  ```
+
+  This uses the latest `drizzle-kit generate` command to create migration files based on your schema.
+
+- Apply migrations:
+
+  ```bash
+  pnpm db:migrate
+  ```
+
+- View database with Drizzle Studio:
+  ```bash
+  pnpm db:studio
+  ```
 
 ## 💻 Development
 
@@ -145,6 +225,9 @@ webapp/
 - `pnpm build`: Build the application for production
 - `pnpm start`: Start the production server
 - `pnpm lint`: Run ESLint to check code quality
+- `pnpm db:generate`: Generate database migrations
+- `pnpm db:migrate`: Apply database migrations
+- `pnpm db:studio`: View database with Drizzle Studio
 
 ### Git Hooks
 
@@ -157,13 +240,13 @@ For more details on commit message format, see [CONTRIBUTING.md](CONTRIBUTING.md
 
 ### Docker Commands
 
-- Development:
+- Development (with database):
 
   ```bash
   docker-compose -f docker/docker-compose.dev.yml up --build
   ```
 
-- Production:
+- Production (with database):
 
   ```bash
   docker-compose -f docker/docker-compose.yml up --build
@@ -225,3 +308,5 @@ To learn more about the technologies used in this project:
 - [Shadcn UI Documentation](https://ui.shadcn.com/)
 - [Radix UI Documentation](https://www.radix-ui.com/)
 - [Docker Documentation](https://docs.docker.com/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview)
