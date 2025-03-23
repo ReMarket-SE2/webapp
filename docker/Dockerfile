@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -21,8 +21,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Install pnpm in the builder stage
-RUN npm install -g pnpm
+# Enable pnpm in the builder stage
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Build the application
 RUN pnpm build
@@ -40,6 +40,24 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files from builder stage
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/lib/db/migrations ./lib/db/migrations
+COPY --from=builder /app/lib/db/migrate.ts ./lib/db/migrate.ts
+COPY --from=builder /app/package.json ./package.json
+
+# Enable pnpm and install dependencies
+RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN pnpm install --prod
+RUN pnpm add -D ts-node
+
+# Create a script to run migrations and start the server
+RUN echo '#!/bin/sh\n\
+if [ "$RUN_MIGRATIONS" = "true" ]; then\n\
+  echo "Running database migrations..."\n\
+  node -r ts-node/register lib/db/migrate.ts || echo "Migration failed, but continuing..."\n\
+fi\n\
+echo "Starting server..."\n\
+exec node server.js\n\
+' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -54,6 +72,7 @@ USER nextjs
 EXPOSE 3000
 
 ENV PORT=3000
+ENV RUN_MIGRATIONS=true
 
-# Start the Next.js application
-CMD ["node", "server.js"] 
+# Start the Next.js application with migrations
+CMD ["/app/docker-entrypoint.sh"] 
