@@ -1,3 +1,16 @@
-import { authMiddleware } from "./middleware/auth-middleware";
+import { withAuth } from "next-auth/middleware"
 
-export default authMiddleware;
+export default withAuth(
+  {
+    pages: {
+      signIn: "/auth/sign-in",
+    },
+  }
+)
+
+export const config = {
+  matcher: [
+    "/protected/:path*",
+    "/api/protected/:path*",
+  ]
+} 

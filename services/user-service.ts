@@ -36,3 +36,5 @@ export class UserService {
     return await userRepository.update(user)
   }
 } 
+
+export const userService = new UserService()

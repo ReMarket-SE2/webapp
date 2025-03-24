@@ -1,12 +1,13 @@
-import { SignUpForm } from "@/components/auth/sign-up-form"
-import { Suspense } from "react"
+"use client"
 
+import { SignUpForm } from "@/components/auth/sign-up-form"
+import { SessionProvider } from "next-auth/react"
 export default function SignUpPage() {
   return (
     <div className="w-full max-w-xs">
-      <Suspense>
+      <SessionProvider>
         <SignUpForm />
-      </Suspense>
+      </SessionProvider>
     </div>
   )
 }

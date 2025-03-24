@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,8 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { showToast } from "@/lib/toast"
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
-
+import { signIn } from "next-auth/react"
+import { useSession } from "next-auth/react"
 export function SignUpForm({
   className,
   ...props
@@ -21,26 +22,33 @@ export function SignUpForm({
   const [isLoading, setIsLoading] = useState(false)
   
   const router = useRouter()
+  const { status } = useSession()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/'
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/")
+    }
+  }, [status, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isLoading) return
-    
+  
     const passwordValidation = checkPasswordStrength(password)
     if (!passwordValidation.isValid) {
       showToast.error(passwordValidation.error!)
       return
     }
-
+  
     if (password !== confirmPassword) {
       showToast.error("Passwords do not match")
       return
     }
-    
+  
     setIsLoading(true)
-
+  
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -48,25 +56,37 @@ export function SignUpForm({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email, password, confirmPassword, name }),
-        credentials: 'include'
       })
-
+  
       const data = await response.json()
-
+  
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed')
       }
-
-      showToast.success("Account created successfully!")
-      router.push(decodeURIComponent(returnTo))
-      
+  
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: returnTo,
+      })
+  
+      if (result?.error) {
+        showToast.error("Account created but login failed.")
+      } else {
+        showToast.success("Account created and logged in!")
+        router.push(result?.url || "/")
+      }
+  
     } catch (error) {
-      console.error('Registration error:', error)
+      console.error("Registration error:", error)
       showToast.error("Failed to create account")
     } finally {
       setIsLoading(false)
     }
   }
+  
+  
 
   return (
     <form 

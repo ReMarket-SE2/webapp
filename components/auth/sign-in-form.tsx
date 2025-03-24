@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { showToast } from "@/lib/toast"
+import { signIn } from "next-auth/react"
+import { useSession } from "next-auth/react"
 
 export function SignInForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const { status } = useSession()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -20,50 +23,56 @@ export function SignInForm({
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/'
-  const message = searchParams.get('message')
+  const callbackUrl = searchParams.get('callbackUrl')
 
   useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/")
+    }
+  }, [status, router])
+
+  useEffect(() => {
+    console.log(callbackUrl)
     const showMessage = () => {
-      if (message) {
-        showToast.info(decodeURIComponent(message))
+      if (callbackUrl) {
+        showToast.info("You must be signed in to access this page")
       }
     }
     
     const timer = setTimeout(showMessage, 100)
     return () => clearTimeout(timer)
   }, []) 
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isLoading) return
-    
+  
     setIsLoading(true)
-
+  
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include'
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: returnTo,
       })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed')
+  
+      if (result?.error) {
+        showToast.error("Invalid email or password")
+      } else {
+        showToast.success("Successfully logged in!")
+        router.push(result?.url || "/")
       }
-
-      showToast.success("Successfully logged in!")
-      router.push(decodeURIComponent(returnTo))
-      
     } catch (error) {
-      console.error('Login error:', error)
-      showToast.error("Invalid email or password")
+      console.error("Login error:", error)
+      showToast.error("Something went wrong. Please try again.")
     } finally {
       setIsLoading(false)
     }
+  }
+  
+  if (status === "loading" || status === "authenticated") {
+    return null
   }
 
   return (

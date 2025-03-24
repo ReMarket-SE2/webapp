@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { UserService } from '@/services/user-service'
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
-import { createRefreshToken, createAccessToken, setRefreshTokenCookie, setAccessTokenCookie } from '@/services/auth-service'
 
 // POST /api/auth/register
 export async function POST(request: Request) {
@@ -39,7 +38,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Create new user
-    const user = await UserService.create({
+    await UserService.create({
       email,
       passwordHash: hashedPassword,
       username: name,
@@ -49,23 +48,7 @@ export async function POST(request: Request) {
       updatedAt: new Date()
     })
 
-    // Create access and refresh tokens
-    const accessToken = await createAccessToken(user.id)
-    const refreshToken = await createRefreshToken(user.id)
-
-    const response = NextResponse.json({ 
-      success: true,
-      user: UserService.sanitizeUser(user),
-    })
-
-    // Set the access token header
-    setAccessTokenCookie(response, accessToken)
-
-    // Set the refresh token cookie
-    setRefreshTokenCookie(response, refreshToken)
-    
-
-    return response
+    return NextResponse.json({ success: true })
 
   } catch (error) {
     console.error('Registration error:', error)
