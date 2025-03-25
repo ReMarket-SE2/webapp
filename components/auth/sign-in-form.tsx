@@ -41,7 +41,7 @@ export function SignInForm({
     
     const timer = setTimeout(showMessage, 100)
     return () => clearTimeout(timer)
-  }, []) 
+  }, [callbackUrl]) 
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
