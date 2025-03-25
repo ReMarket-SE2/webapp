@@ -144,6 +144,14 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 
    # App URL
    NEXT_PUBLIC_APP_URL=  # e.g., http://localhost:3000
+
+   SECRET=               # Generate a secure random string
+
+   NEXTAUTH_SECRET=      # Generate a secure random string
+
+   GOOGLE_CLIENT_ID=     # Get from Google Developer Console
+
+   GOOGLE_CLIENT_SECRET= # Get from Google Developer Console
    ```
 
 3. Never commit the `.env` file to version control

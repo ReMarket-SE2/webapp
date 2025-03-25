@@ -1,4 +1,5 @@
 import CredentialsProvider from "next-auth/providers/credentials"
+import GoogleProvider from "next-auth/providers/google"
 import { NextAuthOptions } from "next-auth"
 import { UserService } from "@/services/user-service"
 import bcrypt from "bcryptjs"
@@ -27,10 +28,15 @@ export const authOptions: NextAuthOptions = {
           name: user.username,
         }
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || (() => { throw new Error("GOOGLE_CLIENT_ID is not defined") })(),
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || (() => { throw new Error("GOOGLE_CLIENT_SECRET is not defined") })(),
     })
   ],
   pages: {
-    signIn: '/login',
+    signIn: '/auth/sign-in',
+    signOut: '/auth/sign-out',
   },
   cookies: {
     sessionToken: {
