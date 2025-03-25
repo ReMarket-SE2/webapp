@@ -6,7 +6,7 @@ import { checkPasswordStrength } from "@/lib/validators/password-strength"
 // POST /api/auth/register
 export async function POST(request: Request) {
   try {
-    const { email, password, confirmPassword, name } = await request.json()
+    const { email, password, confirmPassword, username } = await request.json()
 
     // Validate password
     const passwordValidation = checkPasswordStrength(password)
@@ -25,11 +25,20 @@ export async function POST(request: Request) {
       )
     }
 
+    // Check if username is taken
+    const existingUsername = await UserService.findByUsername(username)
+    if (existingUsername) {
+      return NextResponse.json(
+        { error: 'Username already taken' },
+        { status: 400 }
+      )
+    }
+
     // Check if user exists 
     const existingUser = await UserService.findByEmail(email)
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'User with this email already exists' },
         { status: 400 }
       )
     }
@@ -41,7 +50,7 @@ export async function POST(request: Request) {
     await UserService.create({
       email,
       passwordHash: hashedPassword,
-      username: name,
+      username: username,
       profileImageId: null,
       role: 'user',
       createdAt: new Date(),

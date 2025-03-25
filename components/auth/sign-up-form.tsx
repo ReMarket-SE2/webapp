@@ -18,7 +18,7 @@ export function SignUpForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   
   const router = useRouter()
@@ -52,16 +52,15 @@ export function SignUpForm({
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password, confirmPassword, name }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, confirmPassword, username }),
       })
   
       const data = await response.json()
   
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed')
+        showToast.error(data.error || "Registration failed")
+        return
       }
   
       const result = await signIn("credentials", {
@@ -80,11 +79,12 @@ export function SignUpForm({
   
     } catch (error) {
       console.error("Registration error:", error)
-      showToast.error("Failed to create account")
+      showToast.error("Unexpected error occurred. Please try again later.")
     } finally {
       setIsLoading(false)
     }
   }
+  
   
   const handleGoogleLogin = () => {
     if (isLoading) return
@@ -114,14 +114,14 @@ export function SignUpForm({
       </div>
       <div className="grid gap-6">
         <div className="grid gap-3">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="username">Username</Label>
           <Input 
-            id="name" 
+            id="username" 
             type="text" 
-            placeholder="John Doe" 
+            placeholder="John123" 
             required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             disabled={isLoading}
           />
         </div>

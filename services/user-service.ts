@@ -13,6 +13,11 @@ export class UserService {
     return user || null
   }
 
+  static async findByUsername(username: string): Promise<User | null> {
+    const user = await userRepository.findByUsername(username)
+    return user || null
+  }
+
   static async create(user: Omit<User, 'id'>): Promise<User> {
     return await userRepository.create(user)
   }
