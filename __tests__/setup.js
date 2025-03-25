@@ -25,8 +25,8 @@ jest.mock('bcryptjs', () => ({
 }));
 
 jest.mock('@/lib/validators/password-strength', () => ({
-  checkPasswordStrength: jest.fn().mockReturnValue({ isValid: true }),
-}));
+  checkPasswordStrength: jest.fn(() => ({ isValid: true })),
+}))
 
 // Create a proper jose mock to handle JWT operations
 const signMock = jest.fn().mockResolvedValue('test-token');

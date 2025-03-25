@@ -1,3 +1,8 @@
+/**
+ * @jest-environment node
+ */
+
+
 import { authOptions } from '@/lib/auth';
 
 // Mock the needed services and dependencies
@@ -47,7 +52,7 @@ describe('NextAuth Configuration', () => {
 
   describe('Session Callback', () => {
     it('should add user ID to session user object', async () => {
-      const { session } = authOptions.callbacks as { session: (params: SessionCallback) => Promise<Record<string, unknown>> };
+      const { session } = authOptions.callbacks as unknown as { session: (params: SessionCallback) => Promise<Record<string, unknown>> };
       
       const sessionObj = { user: {} };
       const token = { id: '123' };
@@ -58,7 +63,7 @@ describe('NextAuth Configuration', () => {
     });
 
     it('should return unmodified session when no user object exists', async () => {
-      const { session } = authOptions.callbacks as { session: (params: SessionCallback) => Promise<Record<string, unknown>> };
+      const { session } = authOptions.callbacks as unknown as { session: (params: SessionCallback) => Promise<Record<string, unknown>> };
       
       const sessionObj = { someData: 'value' };
       const token = { id: '123' };

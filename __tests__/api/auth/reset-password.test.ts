@@ -1,3 +1,8 @@
+/**
+ * @jest-environment node
+ */
+
+
 import { POST } from '@/app/api/auth/reset-password/route';
 import { UserService } from '@/services/user-service';
 import { checkPasswordStrength } from '@/lib/validators/password-strength';

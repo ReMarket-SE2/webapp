@@ -1,3 +1,8 @@
+/**
+ * @jest-environment node
+ */
+
+
 // A simplified test of the forgot-password API route
 // We use a direct test approach for this one, as mocking all dependencies can be tricky
 
