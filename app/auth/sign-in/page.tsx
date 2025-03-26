@@ -5,10 +5,11 @@ import { SessionProvider } from "next-auth/react"
 import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
+import React, { Suspense } from 'react'
 
-export default function SignInPage() {
+function SearchParamsHandler() {
   const searchParams = useSearchParams()
-  
+
   useEffect(() => {
     const error = searchParams.get('error')
     if (error) {
@@ -16,10 +17,17 @@ export default function SignInPage() {
     }
   }, [searchParams])
 
+  return null
+}
+
+export default function SignInPage() {
   return (
     <div className="w-full max-w-xs">
       <SessionProvider>
-        <SignInForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <SearchParamsHandler />
+          <SignInForm />
+        </Suspense>
       </SessionProvider>
     </div>
   )
