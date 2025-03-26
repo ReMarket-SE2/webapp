@@ -1,14 +1,13 @@
-import { Resend } from 'resend'
-
-// Ensure the API key is defined
-if (!process.env.RESEND_API_KEY) {
-  throw new Error('Missing RESEND_API_KEY environment variable');
-}
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export const sendPasswordResetEmail = async (email: string, resetToken: string) => {
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password/${resetToken}`
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!RESEND_API_KEY) {
+    console.warn('Missing RESEND_API_KEY. Skipping password reset email.');
+    return;
+  }
+
+  const { Resend } = await import('resend');
+  const resend = new Resend(RESEND_API_KEY);
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password/${resetToken}`;
 
   await resend.emails.send({
     from: 'onboarding@resend.dev',
