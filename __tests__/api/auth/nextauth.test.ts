@@ -2,11 +2,19 @@
  * @jest-environment node
  */
 
-
 import { authOptions } from '@/lib/auth';
 
 // Mock the needed services and dependencies
-jest.mock('@/services/user-service');
+jest.mock('@/lib/users/actions', () => ({
+  userAction: {
+    findByEmail: jest.fn(),
+    findByUsername: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    findById: jest.fn(),
+    exists: jest.fn(),
+  },
+}));
 jest.mock('bcryptjs');
 
 interface JwtCallback {
@@ -73,4 +81,4 @@ describe('NextAuth Configuration', () => {
       expect(result).toEqual({ someData: 'value' });
     });
   });
-}); 
+});

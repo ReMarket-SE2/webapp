@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 import { SignJWT } from 'jose'
-import { UserService } from '@/services/user-service'
-import { sendPasswordResetEmail } from '@/services/email-service'
+import { userAction } from '@/lib/users/actions'
+import { sendPasswordResetEmail } from '@/lib/actions'
 
 // POST /api/auth/forgot-password
 export async function POST(request: Request) {
   try {
     const { email } = await request.json()
 
-    const user = await UserService.findByEmail(email)
+    const user = await userAction.findByEmail(email)
     
     if (!user) {
       // Return success even if user doesn't exist for security reasons

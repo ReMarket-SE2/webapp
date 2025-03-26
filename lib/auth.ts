@@ -1,7 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { NextAuthOptions } from "next-auth"
-import { UserService } from "@/services/user-service"
+import { userAction } from "@/lib/users/actions"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
         const { email, password } = credentials as { email: string; password: string }
         if (!email || !password) return null
         
-        const user = await UserService.findByEmail(email)
+        const user = await userAction.findByEmail(email)
         if (!user) return null
         
         const passwordsMatch = await bcrypt.compare(password, user.passwordHash)

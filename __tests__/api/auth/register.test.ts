@@ -2,13 +2,12 @@
  * @jest-environment node
  */
 
-
 import { POST } from '@/app/api/auth/register/route';
-import { UserService } from '@/services/user-service';
+import { userAction } from '@/lib/users/actions';
 import { checkPasswordStrength } from '@/lib/validators/password-strength';
 import bcrypt from 'bcryptjs';
 
-const mockUserService = UserService as jest.Mocked<typeof UserService>;
+const mockUserAction = userAction as jest.Mocked<typeof userAction>;
 const mockPasswordValidator = checkPasswordStrength as jest.Mock;
 const mockJsonResponse = jest.fn();
 const mockBcryptHash = bcrypt.hash as jest.Mock;
@@ -30,6 +29,14 @@ jest.mock('next/server', () => ({
       mockJsonResponse(data, init);
       return { data, init };
     },
+  },
+}));
+
+jest.mock('@/lib/users/actions', () => ({
+  userAction: {
+    findByUsername: jest.fn(),
+    findByEmail: jest.fn(),
+    create: jest.fn(),
   },
 }));
 
@@ -56,9 +63,9 @@ describe('POST /api/auth/register', () => {
 
   it('should register a new user successfully', async () => {
     // Mock service responses for a successful registration
-    mockUserService.findByUsername.mockResolvedValue(null);
-    mockUserService.findByEmail.mockResolvedValue(null);
-    mockUserService.create.mockResolvedValue({ id: 1 } as User);
+    mockUserAction.findByUsername.mockResolvedValue(null);
+    mockUserAction.findByEmail.mockResolvedValue(null);
+    mockUserAction.create.mockResolvedValue({ id: 1 } as User);
 
     await POST(mockRequest);
 
@@ -66,15 +73,15 @@ describe('POST /api/auth/register', () => {
     expect(mockPasswordValidator).toHaveBeenCalledWith('ValidP@ss123');
     
     // Check that findByUsername and findByEmail were called
-    expect(mockUserService.findByUsername).toHaveBeenCalledWith('testuser');
-    expect(mockUserService.findByEmail).toHaveBeenCalledWith('test@example.com');
+    expect(mockUserAction.findByUsername).toHaveBeenCalledWith('testuser');
+    expect(mockUserAction.findByEmail).toHaveBeenCalledWith('test@example.com');
     
     // Check that password was hashed
     expect(mockBcryptHash).toHaveBeenCalledWith('ValidP@ss123', 10);
     
     // Verify user was created with correct data
-    expect(mockUserService.create).toHaveBeenCalled();
-    expect(mockUserService.create).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockUserAction.create).toHaveBeenCalled();
+    expect(mockUserAction.create).toHaveBeenCalledWith(expect.objectContaining({
       email: 'test@example.com',
       passwordHash: 'hashed-password',
       username: 'testuser',
@@ -120,7 +127,7 @@ describe('POST /api/auth/register', () => {
 
   it('should return error when username is already taken', async () => {
     // Mock findByUsername to return an existing user
-    mockUserService.findByUsername.mockResolvedValue({ id: 1 } as User);
+    mockUserAction.findByUsername.mockResolvedValue({ id: 1 } as User);
 
     await POST(mockRequest);
 
@@ -133,9 +140,9 @@ describe('POST /api/auth/register', () => {
 
   it('should return error when email is already registered', async () => {
     // Mock findByUsername to return null (username not taken)
-    mockUserService.findByUsername.mockResolvedValue(null);
+    mockUserAction.findByUsername.mockResolvedValue(null);
     // Mock findByEmail to return an existing user
-    mockUserService.findByEmail.mockResolvedValue({ id: 1 } as User);
+    mockUserAction.findByEmail.mockResolvedValue({ id: 1 } as User);
 
     await POST(mockRequest);
 
@@ -148,7 +155,7 @@ describe('POST /api/auth/register', () => {
 
   it('should handle internal server errors', async () => {
     // Mock service to throw an error
-    mockUserService.findByUsername.mockImplementation(() => {
+    mockUserAction.findByUsername.mockImplementation(() => {
       throw new Error('Database error');
     });
 
@@ -160,4 +167,4 @@ describe('POST /api/auth/register', () => {
       { status: 500 }
     );
   });
-}); 
+});

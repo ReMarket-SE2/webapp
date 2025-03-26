@@ -6,16 +6,16 @@ process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
 process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
 
 // Mock services
-jest.mock('@/services/user-service', () => ({
-  UserService: {
+jest.mock('@/lib/users/actions', () => ({
+  userAction: {
     findByEmail: jest.fn(),
     findByUsername: jest.fn(),
     create: jest.fn(),
-    updatePassword: jest.fn(),
+    update: jest.fn(),
   },
 }));
 
-jest.mock('@/services/email-service', () => ({
+jest.mock('@/lib/actions', () => ({
   sendPasswordResetEmail: jest.fn(),
 }));
 
@@ -56,4 +56,4 @@ jest.mock('jose', () => ({
   jwtVerify: jest.fn().mockResolvedValue({
     payload: { userId: 1 },
   }),
-})); 
+}));

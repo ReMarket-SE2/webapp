@@ -2,29 +2,17 @@
  * @jest-environment node
  */
 
-
 import { POST } from '@/app/api/auth/reset-password/route';
-import { UserService } from '@/services/user-service';
+import { userAction } from '@/lib/users/actions';
 import { checkPasswordStrength } from '@/lib/validators/password-strength';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
 
-const mockUserService = UserService as jest.Mocked<typeof UserService>;
+const mockUserAction = userAction as jest.Mocked<typeof userAction>;
 const mockJwtVerify = jwtVerify as jest.Mock;
 const mockPasswordValidator = checkPasswordStrength as jest.Mock;
 const mockBcryptHash = bcrypt.hash as jest.Mock;
 const mockJsonResponse = jest.fn();
-
-interface User {
-  id: number;
-  username: string;
-  passwordHash: string;
-  email: string;
-  profileImageId: number | null;
-  role: "user" | "admin";
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 jest.mock('next/server', () => ({
   NextResponse: {
@@ -32,6 +20,13 @@ jest.mock('next/server', () => ({
       mockJsonResponse(data, init);
       return { data, init };
     },
+  },
+}));
+
+jest.mock('@/lib/users/actions', () => ({
+  userAction: {
+    update: jest.fn(),
+    findById: jest.fn(), // Add this mock
   },
 }));
 
@@ -56,12 +51,33 @@ describe('POST /api/auth/reset-password', () => {
     mockPasswordValidator.mockReturnValue({ isValid: true });
     // Ensure bcrypt hash returns a consistent value
     mockBcryptHash.mockResolvedValue('hashed-password');
+
+    // Mock userAction.findById to return a valid user
+    mockUserAction.findById.mockResolvedValue({
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      passwordHash: 'old-hashed-password',
+      profileImageId: null,
+      role: 'user',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    // Mock userAction.update to accept and return the expected structure
+    mockUserAction.update.mockResolvedValue({
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      passwordHash: 'hashed-password',
+      profileImageId: null,
+      role: 'user',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   });
 
   it('should reset password successfully', async () => {
-    // Mock services for a successful password reset
-    mockUserService.updatePassword.mockResolvedValue({ id: 1 } as User);
-
     await POST(mockRequest);
 
     // Verify the token was verified
@@ -76,8 +92,20 @@ describe('POST /api/auth/reset-password', () => {
     // Check that password was hashed
     expect(mockBcryptHash).toHaveBeenCalledWith('NewP@ssword123', 10);
     
+    // Verify user was fetched
+    expect(mockUserAction.findById).toHaveBeenCalledWith(1);
+
     // Verify user password was updated
-    expect(mockUserService.updatePassword).toHaveBeenCalledWith(1, 'hashed-password');
+    expect(mockUserAction.update).toHaveBeenCalledWith({
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      passwordHash: 'hashed-password',
+      profileImageId: null,
+      role: 'user',
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
+    });
     
     // Check success response
     expect(mockJsonResponse).toHaveBeenCalledWith({ success: true }, undefined);
@@ -99,7 +127,7 @@ describe('POST /api/auth/reset-password', () => {
     );
     
     // Verify user password was NOT updated
-    expect(mockUserService.updatePassword).not.toHaveBeenCalled();
+    expect(mockUserAction.update).not.toHaveBeenCalled();
   });
 
   it('should return error when token is invalid', async () => {
@@ -117,7 +145,7 @@ describe('POST /api/auth/reset-password', () => {
     );
     
     // Verify user password was NOT updated
-    expect(mockUserService.updatePassword).not.toHaveBeenCalled();
+    expect(mockUserAction.update).not.toHaveBeenCalled();
   });
 
   it('should handle JWT verification errors', async () => {
@@ -133,12 +161,12 @@ describe('POST /api/auth/reset-password', () => {
     );
     
     // Verify user password was NOT updated
-    expect(mockUserService.updatePassword).not.toHaveBeenCalled();
+    expect(mockUserAction.update).not.toHaveBeenCalled();
   });
 
   it('should handle internal server errors', async () => {
-    // Mock updatePassword to throw an error
-    mockUserService.updatePassword.mockRejectedValue(new Error('Database error'));
+    // Mock update to throw an error
+    mockUserAction.update.mockRejectedValue(new Error('Database error'));
 
     await POST(mockRequest);
 
@@ -148,4 +176,4 @@ describe('POST /api/auth/reset-password', () => {
       { status: 500 }
     );
   });
-}); 
+});

@@ -3,7 +3,7 @@ import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { User } from '@/lib/db/schema'
 
-export class UserRepository {
+export class UserAction {
   protected table = users
 
   async findByEmail(email: string): Promise<User | null> {
@@ -66,4 +66,4 @@ export class UserRepository {
   }
 }
 
-export const userRepository = new UserRepository()
+export const userAction = new UserAction()
