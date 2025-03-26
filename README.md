@@ -170,7 +170,7 @@ webapp/
 │   │   ├── migrations/ # Generated database migrations
 │   │   ├── schema/     # Database schema definitions
 │   ├── hooks/         # Custom React hooks
-│   └── services/      # Service layer
+│   └── users/         # User actions
 ├── middleware/        # Next.js middleware
 └── public/            # Static assets
 ├── docker/             # Docker configuration files
