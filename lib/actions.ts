@@ -1,6 +1,11 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Ensure the API key is defined
+if (!process.env.RESEND_API_KEY) {
+  throw new Error('Missing RESEND_API_KEY environment variable');
+}
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendPasswordResetEmail = async (email: string, resetToken: string) => {
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password/${resetToken}`
@@ -47,4 +52,4 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string) 
       </html>
     `
   })
-} 
+}
