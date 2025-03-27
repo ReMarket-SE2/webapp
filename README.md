@@ -130,29 +130,10 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 1. Create a `.env` file in the root directory:
 
    ```bash
-   touch .env
+   cp .env.example .env
    ```
 
-2. Create the following environment variables in `.env`:
-
-   ```env
-   # Authentication
-   JWT_SECRET=           # Generate a secure random string
-
-   # Email Service (Resend)
-   RESEND_API_KEY=       # Get from Resend dashboard
-
-   # App URL
-   NEXT_PUBLIC_APP_URL=  # e.g., http://localhost:3000
-
-   SECRET=               # Generate a secure random string
-
-   NEXTAUTH_SECRET=      # Generate a secure random string
-
-   GOOGLE_CLIENT_ID=     # Get from Google Developer Console
-
-   GOOGLE_CLIENT_SECRET= # Get from Google Developer Console
-   ```
+2. Fill missing secrets in `.env`:
 
 3. Never commit the `.env` file to version control
 
@@ -251,18 +232,18 @@ For more details on commit message format, see [CONTRIBUTING.md](CONTRIBUTING.md
 - Development (with database):
 
   ```bash
-  docker-compose -f docker/docker-compose.dev.yml up --build
+  docker compose -f docker/docker-compose.dev.yml up --build
   ```
 
 - Production (with database):
 
   ```bash
-  docker-compose -f docker/docker-compose.yml up --build
+  docker compose -f docker/docker-compose.yml up --build
   ```
 
 - Stop containers:
   ```bash
-  docker-compose -f docker/docker-compose.yml down
+  docker compose -f docker/docker-compose.yml down
   ```
 
 ### Coding Standards
