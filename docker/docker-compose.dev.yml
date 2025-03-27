@@ -1,6 +1,6 @@
 services:
-  # PostgreSQL database for development
-  remarket-postgres:
+
+  postgres:
     image: postgres:16
     container_name: remarket-postgres-dev
     ports:
@@ -18,8 +18,7 @@ services:
       retries: 3
       start_period: 10s
 
-  # Next.js frontend application in development mode
-  remarket-webapp:
+  webapp:
     build: 
       context: ..
       dockerfile: docker/Dockerfile.dev

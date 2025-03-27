@@ -232,18 +232,18 @@ For more details on commit message format, see [CONTRIBUTING.md](CONTRIBUTING.md
 - Development (with database):
 
   ```bash
-  docker-compose -f docker/docker-compose.dev.yml up --build
+  docker compose -f docker/docker-compose.dev.yml up --build
   ```
 
 - Production (with database):
 
   ```bash
-  docker-compose -f docker/docker-compose.yml up --build
+  docker compose -f docker/docker-compose.yml up --build
   ```
 
 - Stop containers:
   ```bash
-  docker-compose -f docker/docker-compose.yml down
+  docker compose -f docker/docker-compose.yml down
   ```
 
 ### Coding Standards
