@@ -65,10 +65,12 @@ jobs:
       - name: Generate coverage
         id: test
         run: pnpm test:coverage
+        env:
+          CI: true
         continue-on-error: true
 
       - name: Check for failures
-        if: steps.lint.outcome == 'failure' || steps.build.outcome == 'failure || steps.test.outcome == 'failure'
+        if: steps.lint.outcome == 'failure' || steps.build.outcome == 'failure' || steps.test.outcome == 'failure'
         run: |
           echo "## ❌ Pull Request Validation Failed" >> $GITHUB_STEP_SUMMARY
 
@@ -87,7 +89,7 @@ jobs:
           exit 1
 
       - name: Validation succeeded
-        if: steps.lint.outcome == 'success' && steps.build.outcome == 'success && steps.test.outcome == 'success'
+        if: steps.lint.outcome == 'success' && steps.build.outcome == 'success' && steps.test.outcome == 'success'
         run: |
           echo "## ✅ Pull Request Validation Succeeded" >> $GITHUB_STEP_SUMMARY
           echo "- Linting passed" >> $GITHUB_STEP_SUMMARY
