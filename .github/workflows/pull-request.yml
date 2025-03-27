@@ -62,8 +62,13 @@ jobs:
           CI: true
         continue-on-error: true
 
+      - name: Generate coverage
+        id: test
+        run: pnpm test:coverage
+        continue-on-error: true
+
       - name: Check for failures
-        if: steps.lint.outcome == 'failure' || steps.build.outcome == 'failure'
+        if: steps.lint.outcome == 'failure' || steps.build.outcome == 'failure || steps.test.outcome == 'failure'
         run: |
           echo "## ❌ Pull Request Validation Failed" >> $GITHUB_STEP_SUMMARY
 
@@ -75,17 +80,19 @@ jobs:
             echo "- Build failed. Please fix build errors before merging." >> $GITHUB_STEP_SUMMARY
           fi
 
+          if [ "${{ steps.test.outcome }}" == "failure" ]; then
+            echo "- Tests failed. Please fix test errors before merging." >> $GITHUB_STEP_SUMMARY
+          fi
+
           exit 1
 
       - name: Validation succeeded
-        if: steps.lint.outcome == 'success' && steps.build.outcome == 'success'
+        if: steps.lint.outcome == 'success' && steps.build.outcome == 'success && steps.test.outcome == 'success'
         run: |
           echo "## ✅ Pull Request Validation Succeeded" >> $GITHUB_STEP_SUMMARY
           echo "- Linting passed" >> $GITHUB_STEP_SUMMARY
           echo "- Build passed" >> $GITHUB_STEP_SUMMARY
-
-      - name: Generate coverage
-        run: pnpm test:coverage
+          echo "- Tests passed" >> $GITHUB_STEP_SUMMARY
 
       - name: Display coverage
         uses: ewjoachim/coverage-comment-action@v1

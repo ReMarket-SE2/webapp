@@ -79,6 +79,7 @@ describe('NextAuth Configuration', () => {
       const result = await session({ session: sessionObj, token, user: null });
       
       expect(result).toEqual({ someData: 'value' });
+      
     });
   });
 });
