@@ -1,6 +1,6 @@
 services:
   # PostgreSQL database for development
-  postgres:
+  remarket-postgres:
     image: postgres:16
     container_name: remarket-postgres-dev
     ports:
@@ -19,17 +19,16 @@ services:
       start_period: 10s
 
   # Next.js frontend application in development mode
-  frontend:
+  remarket-webapp:
     build: 
       context: ..
       dockerfile: docker/Dockerfile.dev
-    container_name: remarket-frontend-dev
+    container_name: remarket-webapp-dev
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/remarket
-      # Add any other environment variables your app needs for development
     volumes:
       - ..:/app
       - /app/node_modules
@@ -46,4 +45,4 @@ volumes:
 networks:
   default:
     name: remarket-dev-network
-    driver: bridge 
+    driver: bridge

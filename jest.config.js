@@ -6,8 +6,8 @@ const createJestConfig = nextJest({ dir: './' })
 
 // Any custom config you want to pass to Jest
 const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
-  testMatch: ['**/__tests__/**/*.test.js', '**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.test.ts', '**/tests/**/*.test.tsx'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1'
   },

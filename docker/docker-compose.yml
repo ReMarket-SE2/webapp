@@ -1,6 +1,6 @@
 services:
   # PostgreSQL database
-  postgres:
+  remarket-postgres:
     image: postgres:16
     container_name: remarket-postgres
     ports:
@@ -18,8 +18,7 @@ services:
       retries: 3
       start_period: 10s
 
-  # Next.js frontend application
-  frontend:
+  remarket-webapp:
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -29,39 +28,16 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/remarket
-      # Add any other environment variables your app needs here
-      # - NEXT_PUBLIC_API_URL=http://api:8080
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    # For development, you can uncomment these lines to enable hot reloading
-    # volumes:
-    #   - ../app:/app/app
-    #   - ../components:/app/components
-    #   - ../lib:/app/lib
-    #   - ../public:/app/public
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 30s
-
-  # If you need additional services like a database or backend API,
-  # add them below as separate services
-  
-  # Example of adding a mock API service:
-  # api:
-  #   image: node:20-alpine
-  #   container_name: remarket-api
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - ./api:/app
-  #   working_dir: /app
-  #   command: pnpm start
-  #   restart: unless-stopped
 
 volumes:
   postgres-data:
