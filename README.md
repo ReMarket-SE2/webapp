@@ -125,21 +125,59 @@ ReMarket is a modern e-commerce marketplace platform that allows users to buy an
 
 3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
+## 🔧 Environment Setup
+
+1. Create a `.env` file in the root directory:
+
+   ```bash
+   touch .env
+   ```
+
+2. Create the following environment variables in `.env`:
+
+   ```env
+   # Authentication
+   JWT_SECRET=           # Generate a secure random string
+
+   # Email Service (Resend)
+   RESEND_API_KEY=       # Get from Resend dashboard
+
+   # App URL
+   NEXT_PUBLIC_APP_URL=  # e.g., http://localhost:3000
+
+   SECRET=               # Generate a secure random string
+
+   NEXTAUTH_SECRET=      # Generate a secure random string
+
+   GOOGLE_CLIENT_ID=     # Get from Google Developer Console
+
+   GOOGLE_CLIENT_SECRET= # Get from Google Developer Console
+   ```
+
+3. Never commit the `.env` file to version control
+
 ## 📁 Project Structure
 
 ```
 webapp/
 ├── app/                # Next.js App Router pages
+│   └── api/           # API endpoints
 ├── components/         # Reusable UI components
+│   ├── auth/          # Authentication components
+│   └── ui/            # UI components
+├── lib/               # Utility functions and shared code
+│   ├── db/             # Database configuration and models
+│   │   ├── migrations/ # Generated database migrations
+│   │   ├── schema/     # Database schema definitions
+│   ├── hooks/         # Custom React hooks
+│   └── users/         # User actions
+├── middleware/        # Next.js middleware
+└── public/            # Static assets
 ├── docker/             # Docker configuration files
 │   ├── Dockerfile      # Production Docker configuration
 │   ├── Dockerfile.dev  # Development Docker configuration
 │   ├── docker-compose.yml       # Production Docker Compose config
 │   └── docker-compose.dev.yml   # Development Docker Compose config
-├── lib/                # Utility functions and shared code
-│   ├── db/             # Database configuration and models
-│   │   ├── migrations/ # Generated database migrations
-│   │   ├── schema/     # Database schema definitions
 ├── public/             # Static assets
 └── ...
 ```
