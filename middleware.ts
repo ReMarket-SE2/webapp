@@ -7,5 +7,5 @@ export default withAuth({
 });
 
 export const config = {
-  matcher: ['/protected/:path*', '/api/protected/:path*'],
+  matcher: ['/create-listing/:path*'],
 };
