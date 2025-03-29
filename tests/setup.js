@@ -64,3 +64,13 @@ jest.mock('jose', () => ({
     payload: { userId: 1 },
   }),
 }));
+
+// Mock console.error to suppress error messages during tests
+const originalConsoleError = console.error;
+beforeAll(() => {
+  console.error = jest.fn();
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+});
