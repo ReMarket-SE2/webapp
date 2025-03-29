@@ -11,6 +11,7 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  testEnvironment: 'jsdom',
   coverageReporters: [['text', { skipFull: true }], 'cobertura'],
 };
 
