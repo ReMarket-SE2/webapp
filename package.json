@@ -13,6 +13,7 @@
     "db:migrate": "ts-node --project tsconfig.migrate.json lib/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:watch": "jest --watch"
   },
   "dependencies": {

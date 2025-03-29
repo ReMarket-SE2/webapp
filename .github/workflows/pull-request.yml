@@ -2,35 +2,39 @@ name: Pull Request Validation
 
 on:
   pull_request:
-    branches: [ main, master ]
-    types: [ opened, synchronize, reopened ]
+    branches: [main, master]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  issues: write
+  pull-requests: write
 
 jobs:
   validate:
     name: Validate PR
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 8
           run_install: false
-      
+
       - name: Get pnpm store directory
         id: pnpm-cache
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-      
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -38,10 +42,10 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
-      
+
       - name: Lint
         id: lint
         run: pnpm lint
@@ -49,7 +53,7 @@ jobs:
         env:
           CI: true
         continue-on-error: true
-      
+
       - name: Build
         id: build
         run: pnpm build
@@ -57,25 +61,47 @@ jobs:
         env:
           CI: true
         continue-on-error: true
-      
+
+      - name: Generate coverage
+        id: test
+        run: pnpm test:coverage
+        env:
+          CI: true
+        continue-on-error: true
+
       - name: Check for failures
-        if: steps.lint.outcome == 'failure' || steps.build.outcome == 'failure'
+        if: steps.lint.outcome == 'failure' || steps.build.outcome == 'failure' || steps.test.outcome == 'failure'
         run: |
           echo "## ❌ Pull Request Validation Failed" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.lint.outcome }}" == "failure" ]; then
             echo "- Linting failed. Please fix linting errors before merging." >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [ "${{ steps.build.outcome }}" == "failure" ]; then
             echo "- Build failed. Please fix build errors before merging." >> $GITHUB_STEP_SUMMARY
           fi
-          
+
+          if [ "${{ steps.test.outcome }}" == "failure" ]; then
+            echo "- Tests failed. Please fix test errors before merging." >> $GITHUB_STEP_SUMMARY
+          fi
+
           exit 1
-      
+
       - name: Validation succeeded
-        if: steps.lint.outcome == 'success' && steps.build.outcome == 'success'
+        if: steps.lint.outcome == 'success' && steps.build.outcome == 'success' && steps.test.outcome == 'success'
         run: |
           echo "## ✅ Pull Request Validation Succeeded" >> $GITHUB_STEP_SUMMARY
           echo "- Linting passed" >> $GITHUB_STEP_SUMMARY
           echo "- Build passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Display coverage
+        uses: ewjoachim/coverage-comment-action@v1
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          COVERAGE_FILE: 'coverage/cobertura-coverage.xml'
+          BADGE_ENABLED: 'true'
+          BADGE_FILENAME: coverage-comment-badge.json
+          MINIMUM_GREEN: 90
+          MINIMUM_ORANGE: 85
