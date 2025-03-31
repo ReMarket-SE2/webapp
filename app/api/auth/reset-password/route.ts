@@ -43,10 +43,27 @@ export async function POST(request: Request) {
       )
     }
 
+    const validToken = await userAction.validateResetToken(user.id, token)
+    if (!validToken) {
+      const updatedUser = {
+        ...user,
+        password_reset_token: null, // Clear reset token
+        password_reset_expires: null,
+      }
+      await userAction.update(updatedUser)
+
+      return NextResponse.json(
+        { error: 'Invalid reset token' },
+        { status: 400 }
+      )
+    }
+
     const updatedUser = {
       ...user,
       passwordHash: hashedPassword,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      password_reset_token: null, // Clear reset token
+      password_reset_expires: null,
     }
 
 

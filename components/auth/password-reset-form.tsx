@@ -50,7 +50,12 @@ export function PasswordResetForm({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Password reset failed')
+        if (data.error) {
+          showToast.error(data.error)
+        } else {
+          showToast.error("Failed to reset password")
+        }
+        return
       }
 
       showToast.success("Password reset successfully!")
