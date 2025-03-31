@@ -4,7 +4,6 @@ import { NextAuthOptions } from "next-auth";
 import { userAction } from "@/lib/users/actions";
 import bcrypt from "bcryptjs";
 
-
 const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProvider>> = [
   CredentialsProvider({
     name: 'Credentials',
@@ -26,6 +25,7 @@ const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProv
         id: String(user.id),
         email: user.email,
         name: user.username,
+        role: user.role
       }
     }
   }),
@@ -65,12 +65,18 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        if ('role' in user) {
+          token.role = user.role;
+        }
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id: string }).id = token.id as string;
+        (session.user as { id: string; role: string }).id = token.id as string;
+        (session.user as { id: string; role: string }).role = token.role as string;
       }
       return session;
     },
