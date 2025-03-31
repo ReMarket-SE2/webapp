@@ -19,7 +19,7 @@ export function SignInForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/'
@@ -32,23 +32,20 @@ export function SignInForm({
   }, [status, router])
 
   useEffect(() => {
-    console.log(callbackUrl)
-    const showMessage = () => {
-      if (callbackUrl) {
+    if (callbackUrl) {
+      const timer = setTimeout(() => {
         toast.info("You must be signed in to access this page")
-      }
+      }, 100)
+      return () => clearTimeout(timer)
     }
-    
-    const timer = setTimeout(showMessage, 100)
-    return () => clearTimeout(timer)
-  }, [callbackUrl]) 
-  
+  }, [callbackUrl])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isLoading) return
-  
+
     setIsLoading(true)
-  
+
     try {
       const result = await signIn("credentials", {
         email,
@@ -56,7 +53,7 @@ export function SignInForm({
         redirect: false,
         callbackUrl: returnTo,
       })
-  
+
       if (result?.error) {
         toast.error("Invalid email or password")
       } else {
@@ -70,12 +67,12 @@ export function SignInForm({
       setIsLoading(false)
     }
   }
-  
+
   const handleGoogleLogin = () => {
     if (isLoading) return
-  
+
     setIsLoading(true)
-  
+
     signIn("google", { callbackUrl: returnTo }).catch((error) => {
       console.error('Google login error:', error)
       toast.error("Failed to login with Google")
@@ -85,8 +82,8 @@ export function SignInForm({
   }
 
   return (
-    <form 
-      className={cn("flex flex-col gap-6", className)} 
+    <form
+      className={cn("flex flex-col gap-6", className)}
       onSubmit={handleSubmit}
       {...props}
     >
@@ -99,10 +96,10 @@ export function SignInForm({
       <div className="grid gap-6">
         <div className="grid gap-3">
           <Label htmlFor="email">Email</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            placeholder="m@example.com" 
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -119,9 +116,9 @@ export function SignInForm({
               Forgot your password?
             </Link>
           </div>
-          <Input 
-            id="password" 
-            type="password" 
+          <Input
+            id="password"
+            type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}

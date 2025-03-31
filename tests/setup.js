@@ -5,6 +5,13 @@ process.env.RESEND_API_KEY = 'test-resend-api-key';
 process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
 process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
 
+// Add TextEncoder/TextDecoder for Node.js environment
+global.TextEncoder = require('util').TextEncoder;
+global.TextDecoder = require('util').TextDecoder;
+
+// Add DOM testing matchers
+require('@testing-library/jest-dom');
+
 // Mock services
 jest.mock('@/lib/users/actions', () => ({
   userAction: {
@@ -37,15 +44,15 @@ class MockSignJWT {
   constructor(payload) {
     this.payload = payload;
   }
-  
+
   setProtectedHeader() {
     return setProtectedHeaderMock();
   }
-  
+
   setExpirationTime() {
     return setExpirationTimeMock();
   }
-  
+
   sign() {
     return signMock();
   }
@@ -57,3 +64,13 @@ jest.mock('jose', () => ({
     payload: { userId: 1 },
   }),
 }));
+
+// Mock console.error to suppress error messages during tests
+const originalConsoleError = console.error;
+beforeAll(() => {
+  console.error = jest.fn();
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+});
