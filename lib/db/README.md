@@ -75,7 +75,7 @@ This directory contains the database setup for the ReMarket online store using D
 ### Photos
 
 - `id`: Primary key (serial)
-- `image`: URL or path to the image (text)
+- `image`: Base64 encoded image data (text)
 
 ### Listings
 
