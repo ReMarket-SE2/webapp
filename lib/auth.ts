@@ -111,6 +111,8 @@ export const authOptions: NextAuthOptions = {
           passwordHash: null,
           role: 'user',
           profileImageId: null,
+          password_reset_token: null,
+          password_reset_expires: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         });

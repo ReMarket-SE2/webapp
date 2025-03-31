@@ -17,10 +17,10 @@
       "breakpoints": true
     },
     {
-      "idx": 1,
+      "idx": 2,
       "version": "7",
-      "when": 1743423517705,
-      "tag": "0001_add_oauth_accounts",
+      "when": 1743438276249,
+      "tag": "0002_add_oauth_accounts",
       "breakpoints": true
     }
   ]
