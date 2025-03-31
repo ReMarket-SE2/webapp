@@ -31,7 +31,13 @@ export function RequestPasswordResetForm({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to send reset email')
+        const data = await response.json()
+        if (data.error) {
+          showToast.error(data.error)
+        } else {
+          showToast.error("Failed to send reset email")
+        }
+        return
       }
 
       showToast.success("If an account exists with this email, you will receive a password reset link")

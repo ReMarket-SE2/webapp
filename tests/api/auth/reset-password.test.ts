@@ -25,8 +25,9 @@ jest.mock('next/server', () => ({
 
 jest.mock('@/lib/users/actions', () => ({
   userAction: {
+    validateResetToken: jest.fn(),
     update: jest.fn(),
-    findById: jest.fn(), // Add this mock
+    findById: jest.fn(),
   },
 }));
 
@@ -49,6 +50,7 @@ describe('POST /api/auth/reset-password', () => {
 
     // Reset the password validator mock
     mockPasswordValidator.mockReturnValue({ isValid: true });
+
     // Ensure bcrypt hash returns a consistent value
     mockBcryptHash.mockResolvedValue('hashed-password');
 
@@ -60,40 +62,45 @@ describe('POST /api/auth/reset-password', () => {
       passwordHash: 'old-hashed-password',
       profileImageId: null,
       role: 'user',
+      password_reset_token: null,
+      password_reset_expires: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
     // Mock userAction.update to accept and return the expected structure
-    mockUserAction.update.mockResolvedValue({
-      id: 1,
-      username: 'testuser',
-      email: 'test@example.com',
-      passwordHash: 'hashed-password',
-      profileImageId: null,
-      role: 'user',
+    mockUserAction.update.mockImplementation(async (user) => ({
+      ...user,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+    }));
+
+    // Mock userAction.validateResetToken
+    mockUserAction.validateResetToken.mockResolvedValue(true);
   });
 
   it('should reset password successfully', async () => {
     await POST(mockRequest);
 
-    // Verify the token was verified
     expect(mockJwtVerify).toHaveBeenCalledWith(
       'valid-token',
       expect.any(Uint8Array)
     );
-    
+
     // Verify the password was validated
     expect(mockPasswordValidator).toHaveBeenCalledWith('NewP@ssword123');
-    
+
     // Check that password was hashed
     expect(mockBcryptHash).toHaveBeenCalledWith('NewP@ssword123', 10);
-    
+
     // Verify user was fetched
     expect(mockUserAction.findById).toHaveBeenCalledWith(1);
+
+    // Verify reset token was validated
+    expect(mockUserAction.validateResetToken).toHaveBeenCalledWith(
+      1,
+      'valid-token'
+    );
 
     // Verify user password was updated
     expect(mockUserAction.update).toHaveBeenCalledWith({
@@ -103,19 +110,21 @@ describe('POST /api/auth/reset-password', () => {
       passwordHash: 'hashed-password',
       profileImageId: null,
       role: 'user',
+      password_reset_token: null,
+      password_reset_expires: null,
       createdAt: expect.any(Date),
       updatedAt: expect.any(Date),
     });
-    
+
     // Check success response
     expect(mockJsonResponse).toHaveBeenCalledWith({ success: true }, undefined);
   });
 
   it('should return error when password is invalid', async () => {
     // Mock the password validator to return invalid
-    mockPasswordValidator.mockReturnValue({ 
-      isValid: false, 
-      error: 'Password must contain at least one uppercase letter' 
+    mockPasswordValidator.mockReturnValue({
+      isValid: false,
+      error: 'Password must contain at least one uppercase letter',
     });
 
     await POST(mockRequest);
@@ -125,7 +134,7 @@ describe('POST /api/auth/reset-password', () => {
       { error: 'Password must contain at least one uppercase letter' },
       { status: 400 }
     );
-    
+
     // Verify user password was NOT updated
     expect(mockUserAction.update).not.toHaveBeenCalled();
   });
@@ -143,7 +152,7 @@ describe('POST /api/auth/reset-password', () => {
       { error: 'Invalid reset token' },
       { status: 400 }
     );
-    
+
     // Verify user password was NOT updated
     expect(mockUserAction.update).not.toHaveBeenCalled();
   });
@@ -159,7 +168,7 @@ describe('POST /api/auth/reset-password', () => {
       { error: 'Failed to reset password' },
       { status: 500 }
     );
-    
+
     // Verify user password was NOT updated
     expect(mockUserAction.update).not.toHaveBeenCalled();
   });
@@ -175,5 +184,72 @@ describe('POST /api/auth/reset-password', () => {
       { error: 'Failed to reset password' },
       { status: 500 }
     );
+  });
+
+  it('should return error when reset token is expired', async () => {
+    // Mock validateResetToken to return false for expired token
+    mockUserAction.validateResetToken.mockResolvedValue(false);
+
+    await POST(mockRequest);
+
+    // Check error response
+    expect(mockJsonResponse).toHaveBeenCalledWith(
+      { error: 'Invalid reset token' },
+      { status: 400 }
+    );
+
+    // Verify user update was called to clear the reset token
+    expect(mockUserAction.update).toHaveBeenCalledWith({
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      passwordHash: 'old-hashed-password',
+      profileImageId: null,
+      role: 'user',
+      password_reset_token: null,
+      password_reset_expires: null,
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
+    });
+  });
+
+  it('should return error when reset token is missing', async () => {
+    // Mock userAction.findById to return a user with no reset token
+    mockRequest = {
+      json: jest.fn().mockResolvedValue({
+        token: null,
+        password: 'NewP@ssword123',
+      }),
+    } as unknown as Request;
+
+    // Mock validateResetToken to return false for missing token
+    mockUserAction.validateResetToken.mockResolvedValue(false);
+
+    await POST(mockRequest);
+
+    expect(mockUserAction.validateResetToken).toHaveBeenCalledWith(
+      1,
+      null
+    );
+
+    // Check error response
+    expect(mockJsonResponse).toHaveBeenCalledWith(
+      { error: 'Invalid reset token' },
+      { status: 400 }
+    );
+
+    //Veryfy user update was called to clear the reset token
+    expect(mockUserAction.update).toHaveBeenCalledWith({
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      passwordHash: 'old-hashed-password',
+      profileImageId: null,
+      role: 'user',
+      password_reset_token: null,
+      password_reset_expires: null,
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
+    });
   });
 });

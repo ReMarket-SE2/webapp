@@ -30,7 +30,15 @@ This directory contains the database setup for the ReMarket online store using D
 2. Generate migrations when you change the schema:
 
    ```bash
-   pnpm db:generate
+   pnpm db:generate --name descriptive_name
+   ```
+
+   Always use a descriptive name that explains what the migration does, for example:
+
+   ```bash
+   pnpm db:generate --name add_oauth_accounts_table
+   pnpm db:generate --name make_password_optional
+   pnpm db:generate --name add_user_role_column
    ```
 
 3. Apply migrations to the database:
@@ -48,78 +56,82 @@ This directory contains the database setup for the ReMarket online store using D
 
 ### Users
 
-- `id`: Primary key
-- `username`: Unique username
-- `passwordHash`: Hashed password
-- `email`: Unique email address
-- `profileImageId`: Foreign key to photos
+- `id`: Primary key (serial)
+- `username`: Unique username (varchar(50))
+- `passwordHash`: Hashed password (text)
+- `email`: Unique email address (varchar(255))
+- `profileImageId`: Foreign key to photos (integer, nullable)
 - `role`: Enum ('user', 'admin') with default 'user'
-- `createdAt`: Timestamp of creation
-- `updatedAt`: Timestamp of last update
+- `createdAt`: Timestamp of creation (default: now())
+- `updatedAt`: Timestamp of last update (default: now())
+- `passwordResetToken`: Reset token for password recovery (text, nullable)
+- `passwordResetExpires`: Expiration time for reset token (timestamp, nullable)
 
 ### Categories
 
-- `id`: Primary key
-- `name`: Category name
+- `id`: Primary key (serial)
+- `name`: Category name (varchar(100), unique)
 
 ### Photos
 
-- `id`: Primary key
-- `url`: URL to the photo
+- `id`: Primary key (serial)
+- `image`: Base64 encoded image data (text)
 
 ### Listings
 
-- `id`: Primary key
-- `title`: Listing title
-- `price`: Listing price
-- `status`: Enum ('Active', 'Archived', 'Draft')
-- `description`: Short description
-- `longDescription`: Detailed description
-- `categoryId`: Foreign key to categories
+- `id`: Primary key (serial)
+- `title`: Listing title (varchar(255))
+- `price`: Listing price (numeric(10,2))
+- `status`: Enum ('Active', 'Archived', 'Draft') with default 'Draft'
+- `description`: Short description (varchar(500), nullable)
+- `longDescription`: Detailed description (text, nullable)
+- `categoryId`: Foreign key to categories (integer, nullable)
 
 ### Wishlists
 
-- `id`: Primary key
-- `name`: Wishlist name
-- `userId`: Foreign key to users
+- `id`: Primary key (serial)
+- `name`: Wishlist name (varchar(100))
+- `userId`: Foreign key to users (integer)
 
 ### Reviews
 
-- `id`: Primary key
-- `title`: Review title
-- `score`: Rating score (1-5)
-- `description`: Review text
-- `userId`: Foreign key to users
-- `listingId`: Foreign key to listings
+- `id`: Primary key (serial)
+- `title`: Review title (varchar(255))
+- `score`: Rating score (integer, 1-5)
+- `description`: Review text (text, nullable)
+- `userId`: Foreign key to users (integer)
+- `listingId`: Foreign key to listings (integer)
 
 ### Orders
 
-- `id`: Primary key
-- `userId`: Foreign key to users
-- `listingId`: Foreign key to listings
-- `shippingAddress`: Shipping address text
-- `status`: Enum ('Shipping', 'Shipped')
-- `shippedDate`: Date when the order was shipped (nullable)
-- `paymentId`: External payment service ID
-- `paymentStatus`: Payment status from external service
-- `createdAt`: Timestamp of creation
-- `updatedAt`: Timestamp of last update
+- `id`: Primary key (serial)
+- `userId`: Foreign key to users (integer)
+- `listingId`: Foreign key to listings (integer)
+- `shippingAddress`: Shipping address text (text)
+- `status`: Enum ('Shipping', 'Shipped') with default 'Shipping'
+- `shippedDate`: Date when shipped (timestamp, nullable)
+- `paymentId`: External payment service ID (varchar(255), nullable)
+- `paymentStatus`: Payment status (varchar(50), nullable)
+- `createdAt`: Timestamp of creation (default: now())
+- `updatedAt`: Timestamp of last update (default: now())
 
 ## Junction Tables
 
 ### Listing Photos
 
-Links listings to their photos:
+Links listings to their photos (with cascade delete):
 
-- `listingId`: Foreign key to listings
-- `photoId`: Foreign key to photos
+- `listingId`: Foreign key to listings (integer)
+- `photoId`: Foreign key to photos (integer)
+- Primary key: (listingId, photoId)
 
 ### Wishlist Listings
 
-Links wishlists to listings (many-to-many):
+Links wishlists to listings (many-to-many, with cascade delete):
 
-- `wishlistId`: Foreign key to wishlists
-- `listingId`: Foreign key to listings
+- `wishlistId`: Foreign key to wishlists (integer)
+- `listingId`: Foreign key to listings (integer)
+- Primary key: (wishlistId, listingId)
 
 ## Adding New Models
 
