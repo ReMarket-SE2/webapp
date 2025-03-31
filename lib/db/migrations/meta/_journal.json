@@ -15,6 +15,13 @@
       "when": 1743410091542,
       "tag": "0001_password_reset_token",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1743438276249,
+      "tag": "0002_add_oauth_accounts",
+      "breakpoints": true
     }
   ]
 }

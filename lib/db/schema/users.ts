@@ -4,6 +4,7 @@ import { photos } from './photos';
 import { wishlists } from './wishlists';
 import { reviews } from './reviews';
 import { orders } from './orders';
+import { oauthAccounts } from './oauth_accounts';
 
 // Create an enum for user roles
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
@@ -11,7 +12,7 @@ export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   username: varchar('username', { length: 50 }).notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  passwordHash: text('password_hash'),  // Make password optional for OAuth users
   email: varchar('email', { length: 255 }).notNull().unique(),
   profileImageId: integer('profile_image_id').references(() => photos.id),
   role: userRoleEnum('role').notNull().default('user'),
@@ -30,6 +31,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   wishlists: many(wishlists),
   reviews: many(reviews),
   orders: many(orders),
+  oauthAccounts: many(oauthAccounts),
 }));
 
 // Types for TypeScript
