@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useState } from "react"
 import Image from "next/image"
 import { X } from "lucide-react"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
 export function CreateListingForm() {
@@ -44,7 +44,7 @@ export function CreateListingForm() {
   const handlePublish = async () => {
     const listingId = await publishListing()
     if (listingId) {
-      showToast.success("Listing published successfully!")
+      toast.success("Listing published successfully!")
       reset()
       router.push(`/listings/${listingId}`)
     }
@@ -53,7 +53,7 @@ export function CreateListingForm() {
   const handleSaveDraft = async () => {
     const listingId = await saveListingAsDraft()
     if (listingId) {
-      showToast.success("Draft saved successfully!")
+      toast.success("Draft saved successfully!")
       reset()
       router.push(`/listings/${listingId}`)
     }
