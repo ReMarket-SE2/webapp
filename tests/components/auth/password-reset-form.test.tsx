@@ -113,7 +113,7 @@ describe("PasswordResetForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Failed to reset password")
+      expect(showToast.error).toHaveBeenCalledWith("API error")
     })
   })
 })

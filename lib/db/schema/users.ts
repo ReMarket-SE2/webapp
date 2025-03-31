@@ -15,6 +15,8 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   profileImageId: integer('profile_image_id').references(() => photos.id),
   role: userRoleEnum('role').notNull().default('user'),
+  password_reset_token: text('password_reset_token'),
+  password_reset_expires: timestamp('password_reset_expires'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

@@ -8,6 +8,13 @@
       "when": 1742576442256,
       "tag": "0000_database-setup",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1743410091542,
+      "tag": "0001_huge_chimera",
+      "breakpoints": true
     }
   ]
 }
