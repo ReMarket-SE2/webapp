@@ -43,6 +43,15 @@ const DEFAULT_FORM: CreateListingForm = {
   status: 'Draft',
 };
 
+// Helper function to generate unique IDs
+const generateId = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
 export function useCreateListing(): UseCreateListingReturn {
   const [form, setForm] = useState<CreateListingForm>(DEFAULT_FORM);
   const [photoFiles, setPhotoFiles] = useState<PhotoFile[]>([]);
@@ -60,7 +69,7 @@ export function useCreateListing(): UseCreateListingReturn {
     }
 
     const previewUrl = URL.createObjectURL(file);
-    setPhotoFiles(prev => [...prev, { id: crypto.randomUUID(), file, previewUrl }]);
+    setPhotoFiles(prev => [...prev, { id: generateId(), file, previewUrl }]);
   };
 
   const removePhoto = (id: string) => {

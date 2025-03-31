@@ -22,111 +22,17 @@ jest.mock('@/lib/toast', () => ({
   },
 }));
 
-// Mock the actual crypto.randomUUID implementation
+// Mock URL.createObjectURL and URL.revokeObjectURL
+const mockObjectUrl = 'mock-object-url';
+global.URL.createObjectURL = jest.fn(() => mockObjectUrl);
+global.URL.revokeObjectURL = jest.fn();
+
+// Mock crypto.randomUUID
 const mockUUID = '123e4567-e89b-12d3-a456-426614174000';
 global.crypto = {
   ...global.crypto,
-  randomUUID: jest.fn().mockImplementation(() => mockUUID),
-};
-
-// Mock the hook implementation to avoid the actual crypto.randomUUID call
-jest.mock('@/lib/hooks/use-create-listing', () => {
-  // Original module
-  const originalModule = jest.requireActual('@/lib/hooks/use-create-listing');
-
-  return {
-    ...originalModule,
-    useCreateListing: jest.fn().mockImplementation(() => {
-      // Store state within the mock to simulate React state
-      let formState = {
-        title: '',
-        price: 0,
-        description: '',
-        longDescription: '',
-        categoryId: null,
-        status: 'Draft',
-      };
-      let photoFilesState = [];
-      let isSubmittingState = false;
-
-      // Define the saveListing function that will be used by other methods
-      const saveListingFn = async (status = formState.status) => {
-        if (!formState.title.trim()) {
-          showToast.error('Title is required');
-          return null;
-        }
-
-        if (formState.price <= 0) {
-          showToast.error('Price must be greater than 0');
-          return null;
-        }
-
-        isSubmittingState = true;
-
-        try {
-          const result = await createListing(formState, []);
-
-          if (!result.success) {
-            throw new Error(result.error || 'Failed to save listing');
-          }
-
-          showToast.success('Listing saved successfully');
-          return result.listingId || null;
-        } catch (error) {
-          console.error('Failed to save listing:', error);
-          showToast.error(error instanceof Error ? error.message : 'Failed to save listing');
-          return null;
-        } finally {
-          isSubmittingState = false;
-        }
-      };
-
-      return {
-        form: formState,
-        isSubmitting: isSubmittingState,
-        photoFiles: photoFilesState,
-        updateForm: jest.fn(updates => {
-          formState = { ...formState, ...updates };
-        }),
-        addPhoto: jest.fn(file => {
-          if (!file.type.startsWith('image/')) {
-            showToast.error('Only image files are allowed');
-            return;
-          }
-          photoFilesState = [
-            ...photoFilesState,
-            {
-              id: mockUUID,
-              file,
-              previewUrl: 'mock-url',
-            },
-          ];
-        }),
-        removePhoto: jest.fn(id => {
-          photoFilesState = photoFilesState.filter(photo => photo.id !== id);
-        }),
-        saveListing: jest.fn(saveListingFn),
-        saveListingAsDraft: jest.fn(async () => {
-          return await saveListingFn('Draft');
-        }),
-        publishListing: jest.fn(async () => {
-          return await saveListingFn('Active');
-        }),
-        reset: jest.fn(() => {
-          formState = {
-            title: '',
-            price: 0,
-            description: '',
-            longDescription: '',
-            categoryId: null,
-            status: 'Draft',
-          };
-          photoFilesState = [];
-        }),
-      };
-    }),
-  };
-});
+  randomUUID: jest.fn(() => mockUUID),
+} as any;
 
 describe('useCreateListing', () => {
   beforeEach(() => {
@@ -155,74 +61,111 @@ describe('useCreateListing', () => {
       result.current.updateForm({ title: 'Test Title', price: 100 });
     });
 
-    expect(result.current.updateForm).toHaveBeenCalledWith({ title: 'Test Title', price: 100 });
+    expect(result.current.form).toEqual({
+      ...result.current.form,
+      title: 'Test Title',
+      price: 100,
+    });
   });
 
   test('should add a photo', () => {
     const { result } = renderHook(() => useCreateListing());
-
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
 
     act(() => {
       result.current.addPhoto(file);
     });
 
-    expect(result.current.addPhoto).toHaveBeenCalledWith(file);
+    expect(result.current.photoFiles).toHaveLength(1);
+    expect(result.current.photoFiles[0]).toEqual({
+      id: expect.any(String),
+      file,
+      previewUrl: mockObjectUrl,
+    });
+    expect(URL.createObjectURL).toHaveBeenCalledWith(file);
   });
 
   test('should not add a non-image file', () => {
     const { result } = renderHook(() => useCreateListing());
-
     const file = new File(['test'], 'test.txt', { type: 'text/plain' });
 
     act(() => {
       result.current.addPhoto(file);
     });
 
-    expect(result.current.addPhoto).toHaveBeenCalledWith(file);
+    expect(result.current.photoFiles).toHaveLength(0);
     expect(showToast.error).toHaveBeenCalledWith('Only image files are allowed');
   });
 
   test('should remove a photo', () => {
     const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
 
     act(() => {
-      result.current.removePhoto(mockUUID);
+      result.current.addPhoto(file);
     });
 
-    expect(result.current.removePhoto).toHaveBeenCalledWith(mockUUID);
+    const photoId = result.current.photoFiles[0].id;
+
+    act(() => {
+      result.current.removePhoto(photoId);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(0);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl);
   });
 
   test('should reset form and photos', () => {
     const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+
+    act(() => {
+      result.current.updateForm({ title: 'Test', price: 100 });
+      result.current.addPhoto(file);
+    });
 
     act(() => {
       result.current.reset();
     });
 
-    expect(result.current.reset).toHaveBeenCalled();
+    expect(result.current.form).toEqual({
+      title: '',
+      price: 0,
+      description: '',
+      longDescription: '',
+      categoryId: null,
+      status: 'Draft',
+    });
+    expect(result.current.photoFiles).toHaveLength(0);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl);
   });
 
   test('should show error when saving without title', async () => {
     const { result } = renderHook(() => useCreateListing());
 
-    await act(async () => {
-      await result.current.saveListing();
+    const listingId = await act(async () => {
+      return await result.current.saveListing();
     });
 
+    expect(listingId).toBeNull();
     expect(showToast.error).toHaveBeenCalledWith('Title is required');
+    expect(createListing).not.toHaveBeenCalled();
   });
 
   test('should show error when saving with price <= 0', async () => {
     const { result } = renderHook(() => useCreateListing());
 
-    result.current.form.title = 'Test Title';
-
-    await act(async () => {
-      await result.current.saveListing();
+    act(() => {
+      result.current.updateForm({ title: 'Test Title', price: 0 });
     });
 
+    const listingId = await act(async () => {
+      return await result.current.saveListing();
+    });
+
+    expect(listingId).toBeNull();
     expect(showToast.error).toHaveBeenCalledWith('Price must be greater than 0');
+    expect(createListing).not.toHaveBeenCalled();
   });
 
   test('should save listing successfully', async () => {
@@ -233,21 +176,50 @@ describe('useCreateListing', () => {
     });
 
     const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
 
-    // Setup the form with valid data
-    result.current.form.title = 'Test Title';
-    result.current.form.price = 100;
-
-    await act(async () => {
-      await result.current.saveListing();
+    act(() => {
+      result.current.updateForm({
+        title: 'Test Title',
+        price: 100,
+        description: 'Test description',
+        longDescription: 'Test long description',
+        categoryId: 1,
+      });
+      result.current.addPhoto(file);
     });
 
-    expect(createListing).toHaveBeenCalled();
+    // Mock FileReader for base64 conversion
+    const mockFileReader = {
+      readAsDataURL: jest.fn(),
+      onload: null as any,
+      result: 'data:image/jpeg;base64,test',
+    };
+    global.FileReader = jest.fn(() => mockFileReader) as any;
+
+    const listingId = await act(async () => {
+      const promise = result.current.saveListing();
+      mockFileReader.onload?.();
+      return await promise;
+    });
+
+    expect(listingId).toBe(mockListingId);
+    expect(createListing).toHaveBeenCalledWith(
+      {
+        title: 'Test Title',
+        price: 100,
+        description: 'Test description',
+        longDescription: 'Test long description',
+        categoryId: 1,
+        status: 'Draft',
+      },
+      ['data:image/jpeg;base64,test']
+    );
     expect(showToast.success).toHaveBeenCalledWith('Listing saved successfully');
   });
 
-  test('should handle errors from createListing', async () => {
-    const errorMessage = 'Server error';
+  test('should handle createListing error', async () => {
+    const errorMessage = 'Failed to create listing';
     (createListing as jest.Mock).mockResolvedValue({
       success: false,
       error: errorMessage,
@@ -255,34 +227,111 @@ describe('useCreateListing', () => {
 
     const { result } = renderHook(() => useCreateListing());
 
-    // Setup the form with valid data
-    result.current.form.title = 'Test Title';
-    result.current.form.price = 100;
-
-    await act(async () => {
-      await result.current.saveListing();
+    act(() => {
+      result.current.updateForm({
+        title: 'Test Title',
+        price: 100,
+      });
     });
 
+    const listingId = await act(async () => {
+      return await result.current.saveListing();
+    });
+
+    expect(listingId).toBeNull();
     expect(showToast.error).toHaveBeenCalledWith(errorMessage);
   });
 
-  test('should save listing as draft', async () => {
-    const { result } = renderHook(() => useCreateListing());
-
-    await act(async () => {
-      await result.current.saveListingAsDraft();
+  test('should save as draft', async () => {
+    const mockListingId = 123;
+    (createListing as jest.Mock).mockResolvedValue({
+      success: true,
+      listingId: mockListingId,
     });
 
-    expect(result.current.saveListingAsDraft).toHaveBeenCalled();
+    const { result } = renderHook(() => useCreateListing());
+
+    act(() => {
+      result.current.updateForm({
+        title: 'Test Title',
+        price: 100,
+      });
+    });
+
+    const listingId = await act(async () => {
+      return await result.current.saveListingAsDraft();
+    });
+
+    expect(listingId).toBe(mockListingId);
+    expect(createListing).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'Draft',
+      }),
+      []
+    );
   });
 
   test('should publish listing', async () => {
-    const { result } = renderHook(() => useCreateListing());
-
-    await act(async () => {
-      await result.current.publishListing();
+    const mockListingId = 123;
+    (createListing as jest.Mock).mockResolvedValue({
+      success: true,
+      listingId: mockListingId,
     });
 
-    expect(result.current.publishListing).toHaveBeenCalled();
+    const { result } = renderHook(() => useCreateListing());
+
+    act(() => {
+      result.current.updateForm({
+        title: 'Test Title',
+        price: 100,
+      });
+    });
+
+    const listingId = await act(async () => {
+      return await result.current.publishListing();
+    });
+
+    expect(listingId).toBe(mockListingId);
+    expect(createListing).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'Active',
+      }),
+      []
+    );
+  });
+
+  test('should handle file to base64 conversion error', async () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+
+    act(() => {
+      result.current.updateForm({
+        title: 'Test Title',
+        price: 100,
+      });
+      result.current.addPhoto(file);
+    });
+
+    // Mock FileReader to simulate error
+    const mockFileReader = {
+      readAsDataURL: jest.fn(),
+      onerror: null as any,
+    };
+    global.FileReader = jest.fn(() => mockFileReader) as any;
+
+    // Mock createListing to return error
+    (createListing as jest.Mock).mockResolvedValue({
+      success: false,
+      error: 'Failed to save listing',
+    });
+
+    const listingId = await act(async () => {
+      const promise = result.current.saveListing();
+      mockFileReader.onerror?.('Test error');
+      return await promise;
+    });
+
+    expect(listingId).toBe(null);
+    expect(showToast.error).toHaveBeenCalledWith('Failed to save listing');
   });
 });
