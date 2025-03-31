@@ -170,11 +170,6 @@ export const authOptions: NextAuthOptions = {
         user.id = String(newUser.id);
         return true;
       } catch (error) {
-        if (error instanceof Error && error.message.includes('Network error')) {
-          // If it's just a network error from image fetch, continue with null photoId
-          console.error('Network error during profile image fetch:', error);
-          return true;
-        }
         console.error('Error in signIn callback:', error);
         return false;
       }
