@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useCreateListing } from '@/lib/hooks/use-create-listing';
 import { createListing } from '@/lib/listings/actions';
-import { showToast } from '@/lib/toast';
+import { toast } from 'sonner';
 
 // Mocks
 jest.mock('next/navigation', () => ({
@@ -15,8 +15,8 @@ jest.mock('@/lib/listings/actions', () => ({
   createListing: jest.fn(),
 }));
 
-jest.mock('@/lib/toast', () => ({
-  showToast: {
+jest.mock('sonner', () => ({
+  toast: {
     success: jest.fn(),
     error: jest.fn(),
   },
@@ -94,7 +94,7 @@ describe('useCreateListing', () => {
     });
 
     expect(result.current.photoFiles).toHaveLength(0);
-    expect(showToast.error).toHaveBeenCalledWith('Only image files are allowed');
+    expect(toast.error).toHaveBeenCalledWith('Only image files are allowed');
   });
 
   test('should remove a photo', () => {
@@ -148,7 +148,7 @@ describe('useCreateListing', () => {
     });
 
     expect(listingId).toBeNull();
-    expect(showToast.error).toHaveBeenCalledWith('Title is required');
+    expect(toast.error).toHaveBeenCalledWith('Title is required');
     expect(createListing).not.toHaveBeenCalled();
   });
 
@@ -164,7 +164,7 @@ describe('useCreateListing', () => {
     });
 
     expect(listingId).toBeNull();
-    expect(showToast.error).toHaveBeenCalledWith('Price must be greater than 0');
+    expect(toast.error).toHaveBeenCalledWith('Price must be greater than 0');
     expect(createListing).not.toHaveBeenCalled();
   });
 
@@ -215,7 +215,7 @@ describe('useCreateListing', () => {
       },
       ['data:image/jpeg;base64,test']
     );
-    expect(showToast.success).toHaveBeenCalledWith('Listing saved successfully');
+    expect(toast.success).toHaveBeenCalledWith('Listing saved successfully');
   });
 
   test('should handle createListing error', async () => {
@@ -239,7 +239,7 @@ describe('useCreateListing', () => {
     });
 
     expect(listingId).toBeNull();
-    expect(showToast.error).toHaveBeenCalledWith(errorMessage);
+    expect(toast.error).toHaveBeenCalledWith(errorMessage);
   });
 
   test('should save as draft', async () => {
@@ -332,6 +332,6 @@ describe('useCreateListing', () => {
     });
 
     expect(listingId).toBe(null);
-    expect(showToast.error).toHaveBeenCalledWith('Failed to save listing');
+    expect(toast.error).toHaveBeenCalledWith('Failed to save listing');
   });
 });

@@ -5,9 +5,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { PasswordResetForm } from "@/components/auth/password-reset-form"
-import { showToast } from "@/lib/toast"
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 const mockRouterPush = jest.fn()
 
@@ -16,8 +16,8 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(() => new URLSearchParams()),
 }))
 
-jest.mock("@/lib/toast", () => ({
-  showToast: {
+jest.mock("sonner", () => ({
+  toast: {
     error: jest.fn(),
     success: jest.fn(),
   },
@@ -27,14 +27,12 @@ jest.mock("@/lib/validators/password-strength", () => ({
   checkPasswordStrength: jest.fn(),
 }))
 
-
 describe("PasswordResetForm", () => {
   const mockToken = "test-token"
   beforeEach(() => {
     jest.clearAllMocks()
     ;(checkPasswordStrength as jest.Mock).mockReturnValue({ isValid: true })
   })
-  
 
   it("renders the form correctly", () => {
     render(<PasswordResetForm token={mockToken} />)
@@ -52,7 +50,7 @@ describe("PasswordResetForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Passwords do not match")
+      expect(toast.error).toHaveBeenCalledWith("Passwords do not match")
     })
   })
 
@@ -68,11 +66,9 @@ describe("PasswordResetForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }))
   
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Weak password")
+      expect(toast.error).toHaveBeenCalledWith("Weak password")
     })
   })
-  
-  
 
   it("submits the form successfully", async () => {
     const mockRouterPush = jest.fn()
@@ -93,7 +89,7 @@ describe("PasswordResetForm", () => {
   
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith("/api/auth/reset-password", expect.any(Object))
-      expect(showToast.success).toHaveBeenCalledWith("Password reset successfully!")
+      expect(toast.success).toHaveBeenCalledWith("Password reset successfully!")
       expect(mockRouterPush).toHaveBeenCalledWith("/auth/sign-in")
     })
   })
@@ -113,7 +109,7 @@ describe("PasswordResetForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("API error")
+      expect(toast.error).toHaveBeenCalledWith("API error")
     })
   })
 })

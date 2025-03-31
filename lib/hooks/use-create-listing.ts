@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ListingStatus } from '@/lib/db/schema/listings';
-import { showToast } from '@/lib/toast';
+import { toast } from 'sonner';
 import { createListing, ListingFormData } from '@/lib/listings/actions';
 
 export interface CreateListingForm {
@@ -64,7 +64,7 @@ export function useCreateListing(): UseCreateListingReturn {
 
   const addPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      showToast.error('Only image files are allowed');
+      toast.error('Only image files are allowed');
       return;
     }
 
@@ -95,12 +95,12 @@ export function useCreateListing(): UseCreateListingReturn {
 
   const saveListing = async (status: ListingStatus = form.status): Promise<number | null> => {
     if (!form.title.trim()) {
-      showToast.error('Title is required');
+      toast.error('Title is required');
       return null;
     }
 
     if (form.price <= 0) {
-      showToast.error('Price must be greater than 0');
+      toast.error('Price must be greater than 0');
       return null;
     }
 
@@ -135,12 +135,12 @@ export function useCreateListing(): UseCreateListingReturn {
         throw new Error(result.error || 'Failed to save listing');
       }
 
-      showToast.success('Listing saved successfully');
+      toast.success('Listing saved successfully');
       router.refresh(); // Refresh the page to show updates
       return result.listingId || null;
     } catch (error) {
       console.error('Failed to save listing:', error);
-      showToast.error(error instanceof Error ? error.message : 'Failed to save listing');
+      toast.error(error instanceof Error ? error.message : 'Failed to save listing');
       return null;
     } finally {
       setIsSubmitting(false);
