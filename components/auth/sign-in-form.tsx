@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 import { signIn } from "next-auth/react"
 import { useSession } from "next-auth/react"
 
@@ -35,7 +35,7 @@ export function SignInForm({
     console.log(callbackUrl)
     const showMessage = () => {
       if (callbackUrl) {
-        showToast.info("You must be signed in to access this page")
+        toast.info("You must be signed in to access this page")
       }
     }
     
@@ -58,14 +58,14 @@ export function SignInForm({
       })
   
       if (result?.error) {
-        showToast.error("Invalid email or password")
+        toast.error("Invalid email or password")
       } else {
-        showToast.success("Successfully logged in!")
+        toast.success("Successfully logged in!")
         router.push(result?.url || "/")
       }
     } catch (error) {
       console.error("Login error:", error)
-      showToast.error("Something went wrong. Please try again.")
+      toast.error("Something went wrong. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -78,7 +78,7 @@ export function SignInForm({
   
     signIn("google", { callbackUrl: returnTo }).catch((error) => {
       console.error('Google login error:', error)
-      showToast.error("Failed to login with Google")
+      toast.error("Failed to login with Google")
     }).finally(() => {
       setIsLoading(false)
     })

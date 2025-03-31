@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
 import { signIn } from "next-auth/react"
 import { useSession } from "next-auth/react"
@@ -38,12 +38,12 @@ export function SignUpForm({
   
     const passwordValidation = checkPasswordStrength(password)
     if (!passwordValidation.isValid) {
-      showToast.error(passwordValidation.error!)
+      toast.error(passwordValidation.error!)
       return
     }
   
     if (password !== confirmPassword) {
-      showToast.error("Passwords do not match")
+      toast.error("Passwords do not match")
       return
     }
   
@@ -59,7 +59,7 @@ export function SignUpForm({
       const data = await response.json()
   
       if (!response.ok) {
-        showToast.error(data.error || "Registration failed")
+        toast.error(data.error || "Registration failed")
         return
       }
   
@@ -71,15 +71,15 @@ export function SignUpForm({
       })
   
       if (result?.error) {
-        showToast.error("Account created but login failed.")
+        toast.error("Account created but login failed.")
       } else {
-        showToast.success("Account created and logged in!")
+        toast.success("Account created and logged in!")
         router.push(result?.url || "/")
       }
   
     } catch (error) {
       console.error("Registration error:", error)
-      showToast.error("Unexpected error occurred. Please try again later.")
+      toast.error("Unexpected error occurred. Please try again later.")
     } finally {
       setIsLoading(false)
     }
@@ -93,7 +93,7 @@ export function SignUpForm({
 
     signIn("google", { callbackUrl: returnTo }).catch((error) => {
       console.error('Google login error:', error)
-      showToast.error("Failed to login with Google")
+      toast.error("Failed to login with Google")
     }).finally(() => {
       setIsLoading(false)
     })
