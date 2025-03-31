@@ -9,14 +9,18 @@ import { eq } from "drizzle-orm";
 import { users } from "./db/schema/users";
 import { photos } from "./db/schema/photos";
 
-interface GoogleProfile extends Profile {
+export interface GoogleProfile extends Profile {
   picture?: string;
 }
 
 // Helper function to fetch and convert image to base64
-async function fetchImageAsBase64(imageUrl: string): Promise<string | null> {
+export async function fetchImageAsBase64(imageUrl: string): Promise<string | null> {
   try {
     const response = await fetch(imageUrl);
+    if (!response.ok) {
+      console.error('Failed to fetch image:', response.status, response.statusText);
+      return null;
+    }
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     return `data:${response.headers.get('content-type')};base64,${buffer.toString('base64')}`;
