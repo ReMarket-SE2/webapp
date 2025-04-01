@@ -1,9 +1,11 @@
 "use client"
 
-import { Label } from "@/components/ui/label"
-import Image from "next/image"
 import { X } from "lucide-react"
 import { useState } from "react"
+import { toast } from "sonner"
+import Image from "next/image"
+
+import { Label } from "@/components/ui/label"
 
 interface PhotoFile {
   id: string
@@ -31,7 +33,7 @@ export function PhotoUpload({
 
     // Check if adding these files would exceed the 10 photo limit
     if (photoFiles.length + files.length > 10) {
-      alert('You can only upload up to 10 photos')
+      toast.error('You can only upload up to 10 photos')
       setImageUploadKey(Date.now()) // Reset the input
       return
     }
@@ -93,4 +95,4 @@ export function PhotoUpload({
       </div>
     </div>
   )
-} 
+}
