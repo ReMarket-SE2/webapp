@@ -74,8 +74,9 @@ export function useCreateListing(): UseCreateListingReturn {
       return;
     }
 
+    // This check is no longer needed since we handle it in the PhotoUpload component
+    // but we'll keep it as a safeguard
     if (photoFiles.length >= 10) {
-      toast.error('You can only upload up to 10 photos');
       return;
     }
 

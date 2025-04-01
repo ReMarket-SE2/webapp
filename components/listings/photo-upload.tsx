@@ -31,14 +31,18 @@ export function PhotoUpload({
     const files = event.target.files
     if (!files || files.length === 0) return
 
-    // Check if adding these files would exceed the 10 photo limit
-    if (photoFiles.length + files.length > 10) {
-      toast.error('You can only upload up to 10 photos')
-      setImageUploadKey(Date.now()) // Reset the input
-      return
-    }
+    // If more than 10 photos are selected, take only the first 10 and show a toast
+    if (files.length + photoFiles.length > 10) {
+      const remainingSlots = 10 - photoFiles.length
+      const filesArray = Array.from(files).slice(0, remainingSlots)
+      const newFileList = new DataTransfer()
+      filesArray.forEach(file => newFileList.items.add(file))
 
-    onAddPhotos(files)
+      toast.warning(`Only the first ${remainingSlots} photo(s) will be uploaded due to the 10 photo limit`)
+      onAddPhotos(newFileList.files)
+    } else {
+      onAddPhotos(files)
+    }
     setImageUploadKey(Date.now())
   }
 
