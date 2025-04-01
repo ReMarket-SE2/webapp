@@ -59,12 +59,24 @@ export function useCreateListing(): UseCreateListingReturn {
   const router = useRouter();
 
   const updateForm = (updates: Partial<CreateListingForm>) => {
+    // Validate longDescription length
+    if (updates.longDescription !== undefined && updates.longDescription.length > 2000) {
+      toast.error('Detailed description cannot exceed 2000 characters');
+      return;
+    }
+
     setForm(prev => ({ ...prev, ...updates }));
   };
 
   const addPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Only image files are allowed');
+      return;
+    }
+
+    // This check is no longer needed since we handle it in the PhotoUpload component
+    // but we'll keep it as a safeguard
+    if (photoFiles.length >= 10) {
       return;
     }
 

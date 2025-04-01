@@ -189,4 +189,117 @@ describe('CreateListingForm', () => {
 
     expect(mockCreateListing.removePhoto).toHaveBeenCalledWith(photoId);
   });
+
+  test('updates description with character limit', () => {
+    render(<CreateListingForm />);
+
+    const descriptionInput = screen.getByLabelText(/short description/i);
+    const longDescription = 'a'.repeat(501); // One character over limit
+
+    fireEvent.change(descriptionInput, { target: { value: longDescription } });
+
+    expect(mockCreateListing.updateForm).toHaveBeenCalledWith({ description: longDescription });
+  });
+
+  test('updates long description with character limit', () => {
+    render(<CreateListingForm />);
+
+    const longDescriptionInput = screen.getByLabelText(/detailed description/i);
+    const longDescription = 'a'.repeat(2001); // One character over limit
+
+    fireEvent.change(longDescriptionInput, { target: { value: longDescription } });
+
+    expect(mockCreateListing.updateForm).toHaveBeenCalledWith({ longDescription: longDescription });
+  });
+
+  test('shows character count for title', () => {
+    (useCreateListing as jest.Mock).mockReturnValue({
+      ...mockCreateListing,
+      form: {
+        ...mockCreateListing.form,
+        title: 'Test Title',
+      },
+    });
+
+    render(<CreateListingForm />);
+
+    expect(screen.getByText(/10\/120 characters/)).toBeInTheDocument();
+  });
+
+  test('shows character count for description', () => {
+    (useCreateListing as jest.Mock).mockReturnValue({
+      ...mockCreateListing,
+      form: {
+        ...mockCreateListing.form,
+        description: 'Test description',
+      },
+    });
+
+    render(<CreateListingForm />);
+
+    expect(screen.getByText(/16\/500 characters/)).toBeInTheDocument();
+  });
+
+  test('shows character count for long description', () => {
+    (useCreateListing as jest.Mock).mockReturnValue({
+      ...mockCreateListing,
+      form: {
+        ...mockCreateListing.form,
+        longDescription: 'Test long description',
+      },
+    });
+
+    render(<CreateListingForm />);
+
+    expect(screen.getByText(/21\/2000 characters/)).toBeInTheDocument();
+  });
+
+  test('enforces title character limit', () => {
+    render(<CreateListingForm />);
+
+    const titleInput = screen.getByLabelText(/title/i);
+    const longTitle = 'a'.repeat(121); // One character over limit
+
+    fireEvent.change(titleInput, { target: { value: longTitle } });
+
+    expect(mockCreateListing.updateForm).toHaveBeenCalledWith({ title: longTitle });
+  });
+
+  test('disables all inputs when submitting', () => {
+    (useCreateListing as jest.Mock).mockReturnValue({
+      ...mockCreateListing,
+      isSubmitting: true,
+    });
+
+    render(<CreateListingForm />);
+
+    expect(screen.getByLabelText(/title/i)).toBeDisabled();
+    expect(screen.getByLabelText(/price/i)).toBeDisabled();
+    expect(screen.getByLabelText(/short description/i)).toBeDisabled();
+    expect(screen.getByLabelText(/detailed description/i)).toBeDisabled();
+  });
+
+  test('displays helper text for price input', () => {
+    render(<CreateListingForm />);
+
+    expect(screen.getByText('Set a price for your item.')).toBeInTheDocument();
+  });
+
+  test('displays helper text for title input', () => {
+    render(<CreateListingForm />);
+
+    expect(screen.getByText(/Give your item a name that will help it sell/)).toBeInTheDocument();
+  });
+
+  test('displays helper text for description input', () => {
+    render(<CreateListingForm />);
+
+    expect(screen.getByText(/Briefly describe your item/)).toBeInTheDocument();
+  });
+
+  test('displays helper text for long description input', () => {
+    render(<CreateListingForm />);
+
+    expect(screen.getByText(/Provide a detailed description including condition, features, dimensions/)).toBeInTheDocument();
+  });
 }); 

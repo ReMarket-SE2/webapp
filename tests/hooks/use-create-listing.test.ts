@@ -334,4 +334,176 @@ describe('useCreateListing', () => {
     expect(listingId).toBe(null);
     expect(toast.error).toHaveBeenCalledWith('Failed to save listing');
   });
+
+  test('should enforce long description character limit', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const longDescription = 'a'.repeat(2001); // One character over limit
+
+    act(() => {
+      result.current.updateForm({ longDescription });
+    });
+
+    expect(result.current.form.longDescription).toBe('');
+    expect(toast.error).toHaveBeenCalledWith('Detailed description cannot exceed 2000 characters');
+  });
+
+  test('should enforce photo limit', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+
+    // Add 10 photos
+    for (let i = 0; i < 10; i++) {
+      act(() => {
+        result.current.addPhoto(file);
+      });
+    }
+
+    // Try to add one more
+    act(() => {
+      result.current.addPhoto(file);
+    });
+
+    // Should silently prevent adding more than 10 photos
+    expect(result.current.photoFiles).toHaveLength(10);
+    // No error toast since the limit is now handled in the PhotoUpload component
+  });
+
+  test('should handle non-image file upload attempt', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.txt', { type: 'text/plain' });
+
+    act(() => {
+      result.current.addPhoto(file);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(0);
+    expect(toast.error).toHaveBeenCalledWith('Only image files are allowed');
+  });
+
+  test('should handle file upload with invalid file type', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test', { type: '' });
+
+    act(() => {
+      result.current.addPhoto(file);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(0);
+    expect(toast.error).toHaveBeenCalledWith('Only image files are allowed');
+  });
+
+  test('should handle file upload with unsupported image type', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.tiff', { type: 'image/tiff' });
+
+    act(() => {
+      result.current.addPhoto(file);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(1);
+    expect(URL.createObjectURL).toHaveBeenCalledWith(file);
+  });
+
+  test('should update form with valid long description', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const validDescription = 'a'.repeat(2000); // At limit
+
+    act(() => {
+      result.current.updateForm({ longDescription: validDescription });
+    });
+
+    expect(result.current.form.longDescription).toBe(validDescription);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  test('should handle empty file list in addPhoto', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const emptyFile = new File([], 'empty.jpg', { type: 'image/jpeg' });
+
+    act(() => {
+      result.current.addPhoto(emptyFile);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(1);
+    expect(URL.createObjectURL).toHaveBeenCalledWith(emptyFile);
+  });
+
+  test('should handle removing non-existent photo', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+
+    act(() => {
+      result.current.addPhoto(file);
+      result.current.removePhoto('non-existent-id');
+    });
+
+    expect(result.current.photoFiles).toHaveLength(1);
+  });
+
+  test('should handle file upload with unsupported file type', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.txt', { type: 'text/plain' });
+
+    // Mock URL.createObjectURL to prevent it from being called
+    const originalCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = jest.fn();
+
+    act(() => {
+      result.current.addPhoto(file);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(0);
+    expect(toast.error).toHaveBeenCalledWith('Only image files are allowed');
+
+    // Restore the original function
+    URL.createObjectURL = originalCreateObjectURL;
+  });
+
+  test('should handle file upload with empty file type', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test', { type: '' });
+
+    act(() => {
+      result.current.addPhoto(file);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(0);
+    expect(toast.error).toHaveBeenCalledWith('Only image files are allowed');
+  });
+
+  test('should accept file upload with supported image type', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+
+    act(() => {
+      result.current.addPhoto(file);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(1);
+    expect(URL.createObjectURL).toHaveBeenCalledWith(file);
+  });
+
+  test('should handle empty file list in addPhoto', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const emptyFile = new File([], 'empty.jpg', { type: 'image/jpeg' });
+
+    act(() => {
+      result.current.addPhoto(emptyFile);
+    });
+
+    expect(result.current.photoFiles).toHaveLength(1);
+    expect(URL.createObjectURL).toHaveBeenCalledWith(emptyFile);
+  });
+
+  test('should handle removing non-existent photo', () => {
+    const { result } = renderHook(() => useCreateListing());
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+
+    act(() => {
+      result.current.addPhoto(file);
+      result.current.removePhoto('non-existent-id');
+    });
+
+    expect(result.current.photoFiles).toHaveLength(1);
+  });
 });

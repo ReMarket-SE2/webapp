@@ -5,12 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
-import Image from "next/image"
-import { X } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { PhotoUpload } from "./photo-upload"
 
 export function CreateListingForm() {
   const {
@@ -26,19 +23,12 @@ export function CreateListingForm() {
   } = useCreateListing()
 
   const router = useRouter()
-  const [imageUploadKey, setImageUploadKey] = useState(Date.now())
 
-  const handleAddPhotos = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files || files.length === 0) return
-
+  const handleAddPhotos = (files: FileList) => {
     // Add each file to the hook
     for (let i = 0; i < files.length; i++) {
       addPhoto(files[i])
     }
-
-    // Reset the input field to allow uploading the same file multiple times
-    setImageUploadKey(Date.now())
   }
 
   const handlePublish = async () => {
@@ -60,16 +50,20 @@ export function CreateListingForm() {
   }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>Create New Listing</CardTitle>
-        <CardDescription>Fill in the details to create your listing</CardDescription>
-      </CardHeader>
+    <div className="w-full h-full mx-auto flex flex-col">
 
-      <CardContent className="space-y-6">
+      <h1 className="text-2xl font-bold mb-4">Show off your stuff on the market</h1>
+
+      <div className="mb-4 gap-6 flex flex-col flex-1">
+
         {/* Title */}
         <div className="space-y-2">
           <Label htmlFor="title">Title</Label>
+
+          <p className="text-xs text-muted-foreground">
+            {form.title.length}/120 characters. Give your item a name that will help it sell.
+          </p>
+
           <Input
             id="title"
             placeholder="What are you selling?"
@@ -77,124 +71,91 @@ export function CreateListingForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ title: e.target.value })}
             disabled={isSubmitting}
             required
-          />
-        </div>
-
-        {/* Price */}
-        <div className="space-y-2">
-          <Label htmlFor="price">Price ($)</Label>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0.00"
-            value={form.price === 0 ? "" : form.price}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ price: parseFloat(e.target.value) || 0 })}
-            disabled={isSubmitting}
-            required
-          />
-        </div>
-
-        {/* Short Description */}
-        <div className="space-y-2">
-          <Label htmlFor="description">Short Description</Label>
-          <Input
-            id="description"
-            placeholder="Brief description of your item"
-            value={form.description}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ description: e.target.value })}
-            disabled={isSubmitting}
-            maxLength={500}
-          />
-          <p className="text-xs text-muted-foreground">
-            {form.description.length}/500 characters
-          </p>
-        </div>
-
-        {/* Long Description */}
-        <div className="space-y-2">
-          <Label htmlFor="longDescription">Detailed Description</Label>
-          <Textarea
-            id="longDescription"
-            placeholder="Provide more details about your item..."
-            value={form.longDescription}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateForm({ longDescription: e.target.value })}
-            disabled={isSubmitting}
-            rows={5}
+            maxLength={120}
           />
         </div>
 
         {/* Photo Upload */}
-        <div className="space-y-4">
-          <Label>Photos</Label>
+        <PhotoUpload
+          photoFiles={photoFiles}
+          onAddPhotos={handleAddPhotos}
+          onRemovePhoto={removePhoto}
+          isSubmitting={isSubmitting}
+        />
 
-          <div className="flex flex-wrap gap-4">
-            {photoFiles.map((photo) => (
-              <div
-                key={photo.id}
-                className="relative w-24 h-24 rounded-md overflow-hidden border border-muted"
-              >
-                <Image
-                  src={photo.previewUrl}
-                  alt="Product preview"
-                  fill
-                  className="object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(photo.id)}
-                  className="absolute top-1 right-1 bg-black/70 rounded-full p-1 text-white"
-                  disabled={isSubmitting}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-
-            <label
-              className={`
-                w-24 h-24 flex items-center justify-center rounded-md border-2 
-                border-dashed border-muted-foreground/25 cursor-pointer
-                hover:border-muted-foreground/50 transition-colors
-                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
-            >
-              <span className="text-2xl text-muted-foreground">+</span>
-              <input
-                type="file"
-                key={imageUploadKey}
-                accept="image/*"
-                className="hidden"
-                multiple
-                onChange={handleAddPhotos}
-                disabled={isSubmitting}
-              />
-            </label>
+        <div className="flex gap-4">
+          {/* Price */}
+          <div className="space-y-2">
+            <Label htmlFor="price">Price ($)</Label>
+            <p className="text-xs text-muted-foreground">
+              Set a price for your item.
+            </p>
+            <Input
+              id="price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={form.price === 0 ? "" : form.price}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ price: parseFloat(e.target.value) || 0 })}
+              disabled={isSubmitting}
+              required
+            />
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            Upload up to 10 photos of your item. First photo will be the cover image.
-          </p>
+          {/* Short Description */}
+          <div className="space-y-2 flex-1">
+            <Label htmlFor="description">Short Description</Label>
+            <p className="text-xs text-muted-foreground">
+              {form.description.length}/500 characters. Briefly describe your item.
+            </p>
+            <Input
+              id="description"
+              placeholder="Brief description of your item"
+              value={form.description}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ description: e.target.value })}
+              disabled={isSubmitting}
+              maxLength={500}
+            />
+          </div>
         </div>
-      </CardContent>
 
-      <CardFooter className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handleSaveDraft}
-          disabled={isSubmitting}
-        >
-          Save as Draft
-        </Button>
+        {/* Long Description */}
+        <div className="space-y-2 flex-1">
+          <Label htmlFor="longDescription">Detailed Description</Label>
+          <p className="text-xs text-muted-foreground">
+            {form.longDescription.length}/2000 characters. Provide a detailed description including condition, features, dimensions, or any other relevant details that will help buyers understand your item better.
+          </p>
+          <Textarea
+            id="longDescription"
+            placeholder="Describe your item in detail, including condition, features, dimensions, and any other relevant information that will help buyers make an informed decision"
+            value={form.longDescription}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateForm({ longDescription: e.target.value })}
+            disabled={isSubmitting}
+            rows={5}
+            maxLength={2000}
+            className="resize-none h-full"
+          />
+        </div>
 
-        <Button
-          onClick={handlePublish}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Publishing..." : "Publish Listing"}
-        </Button>
-      </CardFooter>
-    </Card>
+        <div className="flex justify-start gap-4 mt-12">
+          <Button
+            onClick={handlePublish}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Publishing..." : "Publish Listing"}
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={isSubmitting}
+          >
+            Save as Draft
+          </Button>
+        </div>
+
+      </div>
+    </div>
   )
 } 
