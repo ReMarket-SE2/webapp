@@ -13,7 +13,10 @@ const listingSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   price: z.number().positive('Price must be greater than 0'),
   description: z.string().max(500).optional(),
-  longDescription: z.string().optional(),
+  longDescription: z
+    .string()
+    .max(2000, 'Detailed description cannot exceed 2000 characters')
+    .optional(),
   categoryId: z.number().optional().nullable(),
   status: z.enum(['Active', 'Archived', 'Draft']),
 });
