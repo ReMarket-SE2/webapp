@@ -363,8 +363,9 @@ describe('useCreateListing', () => {
       result.current.addPhoto(file);
     });
 
+    // Should silently prevent adding more than 10 photos
     expect(result.current.photoFiles).toHaveLength(10);
-    expect(toast.error).toHaveBeenCalledWith('You can only upload up to 10 photos');
+    // No error toast since the limit is now handled in the PhotoUpload component
   });
 
   test('should handle non-image file upload attempt', () => {

@@ -145,4 +145,4 @@ describe('PhotoUpload', () => {
 
     expect(mockProps.onAddPhotos).not.toHaveBeenCalled();
   });
-}); 
+});
