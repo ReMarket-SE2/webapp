@@ -4,10 +4,10 @@ import { useCreateListing } from "@/lib/hooks/use-create-listing"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { PhotoUpload } from "./photo-upload"
+import { MarkdownEditor } from "./markdown-editor"
 
 export function CreateListingForm() {
   const {
@@ -122,23 +122,18 @@ export function CreateListingForm() {
 
         {/* Long Description */}
         <div className="space-y-2 flex-1">
-          <Label htmlFor="longDescription">Detailed Description</Label>
-          <p className="text-xs text-muted-foreground">
-            {form.longDescription.length}/2000 characters. Provide a detailed description including condition, features, dimensions, or any other relevant details that will help buyers understand your item better.
-          </p>
-          <Textarea
+          <MarkdownEditor
             id="longDescription"
-            placeholder="Describe your item in detail, including condition, features, dimensions, and any other relevant information that will help buyers make an informed decision"
+            label="Detailed Description"
             value={form.longDescription}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateForm({ longDescription: e.target.value })}
+            onChange={(value) => updateForm({ longDescription: value })}
+            placeholder="Describe your item in detail, including condition, features, dimensions, and any other relevant information that will help buyers make an informed decision"
             disabled={isSubmitting}
-            rows={5}
             maxLength={2000}
-            className="resize-none h-full"
           />
         </div>
 
-        <div className="flex justify-start gap-4 mt-12">
+        <div className="flex justify-start gap-4 mt-2">
           <Button
             onClick={handlePublish}
             disabled={isSubmitting}
