@@ -93,7 +93,7 @@ export function PhotoUpload({
             className="hidden"
             multiple
             onChange={handleAddPhotos}
-            disabled={isSubmitting}
+            disabled={isSubmitting || photoFiles.length >= 10}
           />
         </label>
       </div>
