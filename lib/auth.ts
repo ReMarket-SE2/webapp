@@ -1,12 +1,35 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { NextAuthOptions } from "next-auth";
+import { NextAuthOptions, Profile } from "next-auth";
 import { userAction } from "@/lib/users/actions";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { oauthAccounts } from "./db/schema/oauth_accounts";
 import { eq } from "drizzle-orm";
 import { users } from "./db/schema/users";
+import { photos } from "./db/schema/photos";
+
+export interface GoogleProfile extends Profile {
+  picture?: string;
+}
+
+// Helper function to fetch and convert image to base64
+export async function fetchImageAsBase64(imageUrl: string): Promise<string | null> {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      console.error('Failed to fetch image:', response.status, response.statusText);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return `data:${response.headers.get('content-type')};base64,${buffer.toString('base64')}`;
+  } catch (error) {
+    console.error('Error fetching profile image:', error);
+    return null;
+  }
+}
+
 
 const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProvider>> = [
   CredentialsProvider({
@@ -71,6 +94,8 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       if (account?.provider !== 'google') return true;
 
+      let photoId: number | null = null;
+
       try {
         // Check if we already have this Google account
         const existingOAuth = await db.select().from(oauthAccounts)
@@ -87,10 +112,33 @@ export const authOptions: NextAuthOptions = {
           return true;
         }
 
+        // Only fetch and store profile image for new accounts or account linking
+        if ((profile as GoogleProfile)?.picture) {
+          try {
+            const imageBase64 = await fetchImageAsBase64((profile as GoogleProfile).picture as string);
+            if (imageBase64) {
+              const [photo] = await db.insert(photos)
+                .values({ image: imageBase64 })
+                .returning();
+              photoId = photo.id;
+            }
+          } catch (error) {
+            console.error('Error handling profile image:', error);
+            // Continue with null photoId
+          }
+        }
+
         // Check if user exists with this email
         const existingUser = await userAction.findByEmail(profile?.email as string);
         
         if (existingUser) {
+          // Update existing user's profile image if provided
+          if (photoId) {
+            await db.update(users)
+              .set({ profileImageId: photoId })
+              .where(eq(users.id, existingUser.id));
+          }
+
           // Link the Google account to existing user
           await db.insert(oauthAccounts).values({
             userId: existingUser.id,
@@ -110,7 +158,7 @@ export const authOptions: NextAuthOptions = {
           username: profile?.name?.replace(/\s+/g, '') as string,
           passwordHash: null,
           role: 'user',
-          profileImageId: null,
+          profileImageId: photoId,
           password_reset_token: null,
           password_reset_expires: null,
           createdAt: new Date(),
