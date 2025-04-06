@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       passwordHash: hashedPassword,
       username: username,
       profileImageId: null,
+      bio: null,
       role: 'user',
       password_reset_token: null,
       password_reset_expires: null,

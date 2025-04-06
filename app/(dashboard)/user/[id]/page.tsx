@@ -11,21 +11,17 @@ import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-interface UserProfilePageProps {
-  params: {
-    id: string;
-  };
-}
 
-export default async function UserProfilePage({ params }: UserProfilePageProps) {
-  const userId = parseInt(params.id);
+export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const userId = parseInt(id);
   
   if (isNaN(userId)) {
     return notFound();
   }
   
   const session = await getServerSession(authOptions);
-  const isOwnProfile = session?.user?.id === params.id;
+  const isOwnProfile = session?.user?.id === id;
   
   // Get user profile with blocked status
   const profileResult = await getUserProfile(userId);
