@@ -1,10 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';
+import { userAction } from '@/lib/users/actions';
 import { authOptions } from '@/lib/auth';
 import EditProfileForm from '@/components/user/edit-profile-form';
-import { db } from '@/lib/db';
-import { photos, users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 export default async function EditProfilePage() {
   const session = await getServerSession(authOptions);
@@ -13,30 +11,18 @@ export default async function EditProfilePage() {
     redirect('/auth/sign-in');
   }
 
-  // Get user data with profile image
-  const userData = await db
-    .select({
-      user: users,
-      profileImage: photos,
-    })
-    .from(users)
-    .leftJoin(photos, eq(users.profileImageId, photos.id))
-    .where(eq(users.id, parseInt(session.user.id)))
-    .limit(1);
+  const userId = parseInt(session.user.id);
 
-  if (!userData.length) {
-    redirect('/user');
-  }
-
-  const { user, profileImage } = userData[0];
+  const user = await userAction.findById(userId);
+  const profileImage = await userAction.getProfileImage(userId);
 
   return (
     <div className="container mx-auto py-10">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold mb-8">Edit Profile</h1>
         <EditProfileForm 
-          user={user} 
-          profileImageData={profileImage?.image} 
+          user={user!} 
+          profileImageData={profileImage} 
         />
       </div>
     </div>
