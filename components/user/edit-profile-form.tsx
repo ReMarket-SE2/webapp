@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 interface EditProfileFormProps {
   user: User;
-  profileImageData?: string;
+  profileImageData: string | null;
 }
 
 export default function EditProfileForm({ user, profileImageData }: EditProfileFormProps) {
@@ -151,7 +151,7 @@ export default function EditProfileForm({ user, profileImageData }: EditProfileF
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex justify-between mt-4">
           <Button
             type="button"
             variant="outline"

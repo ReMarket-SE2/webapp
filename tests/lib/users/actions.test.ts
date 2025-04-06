@@ -41,7 +41,6 @@ jest.mock('@/lib/users/actions', () => ({
   }),
   getUserProfile: jest.fn(async () => ({
     user: mockUserData,
-    blocked: false,
   })),
 }));
 
@@ -77,7 +76,6 @@ describe('User Profile Actions', () => {
       
       expect(result).toEqual({
         user: mockUserData,
-        blocked: false,
       });
     });
   });

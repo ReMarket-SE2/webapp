@@ -4,6 +4,7 @@ import { eq, and, gt, isNotNull } from 'drizzle-orm'
 import { User } from '@/lib/db/schema'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { photosActions } from '@/lib/photos/actions'
 
 export class UserAction {
   protected table = users
@@ -100,79 +101,50 @@ export class UserAction {
 
     return result.length > 0
   }
+
+  async getProfileImage(id: number | null): Promise<string | null> {
+    if (!id) {
+      return null
+    }
+    const result = await db
+      .select({ image: photos.image })
+      .from(photos)
+      .where(eq(photos.id, id))
+      .limit(1)
+    return result[0]?.image || null
+  }
+
+  async updateUserProfile(bio?: string, profileImage?: string | null): Promise<User> {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      throw new Error('Unauthorized: You must be signed in to update your profile')
+    }
+
+    const userId = parseInt(session.user.id)
+    const userData = await this.findById(userId)
+
+    if (!userData) {
+      throw new Error('User not found')
+    }
+
+    if (profileImage) {
+      const photoData = await photosActions.insertPhoto(profileImage)
+
+      if (!photoData) {
+        throw new Error('Photo not found')
+      }
+
+      userData.profileImageId = photoData.id
+    }
+
+    return this.update({
+      ...userData,
+      bio: bio !== undefined ? bio : userData.bio,
+      profileImageId: userData.profileImageId,
+      updatedAt: new Date(),
+    })
+  }
 }
 
 export const userAction = new UserAction()
-
-// Profile update types
-interface ProfileUpdateData {
-  bio?: string;
-  profileImage?: string | null;
-}
-
-// Server action to update user profile
-export async function updateUserProfile(data: ProfileUpdateData): Promise<User> {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized: You must be signed in to update your profile');
-  }
-  
-  const userId = parseInt(session.user.id);
-  const userData = await userAction.findById(userId);
-  
-  if (!userData) {
-    throw new Error('User not found');
-  }
-  
-  // First handle the profile image if provided
-  let profileImageId = userData.profileImageId;
-  
-  if (data.profileImage !== undefined) {
-    if (data.profileImage) {
-      // Create or update profile image
-      const photoResult = await db
-        .insert(photos)
-        .values({
-          image: data.profileImage,
-        })
-        .returning();
-      
-      profileImageId = photoResult[0].id;
-    } else {
-      // If null was passed, remove profile image reference
-      profileImageId = null;
-    }
-  }
-  
-  // Update user profile
-  return userAction.update({
-    ...userData,
-    bio: data.bio !== undefined ? data.bio : userData.bio,
-    profileImageId,
-    updatedAt: new Date(),
-  });
-}
-
-// Server action to get a user profile (own or others)
-export async function getUserProfile(userId: number): Promise<{user: User, blocked: boolean} | null> {
-  const session = await getServerSession(authOptions);
-  const currentUserId = session?.user?.id ? parseInt(session.user.id) : null;
-  
-  const userData = await userAction.findById(userId);
-  
-  if (!userData) {
-    return null;
-  }
-  
-  // In a real app, check if the user is blocked
-  // This is just a placeholder - you would implement actual blocking logic
-  const isBlocked = false;
-  
-  // Only allow viewing if not blocked or it's the user's own profile
-  if (isBlocked && currentUserId !== userId) {
-    return { user: userData, blocked: true };
-  }
-  
-  return { user: userData, blocked: false };
-}

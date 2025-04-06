@@ -14,7 +14,7 @@ export default async function EditProfilePage() {
   const userId = parseInt(session.user.id);
 
   const user = await userAction.findById(userId);
-  const profileImage = await userAction.getProfileImage(userId);
+  const profileImage = await userAction.getProfileImage(user!.profileImageId);
 
   return (
     <div className="container mx-auto py-10">

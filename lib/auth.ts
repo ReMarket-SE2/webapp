@@ -20,22 +20,8 @@ declare module "next-auth" {
       role?: string | null;
     }
   }
-  
-  interface User {
-    id: string;
-    role?: string;
-    name?: string;
-    email?: string;
-  }
 }
 
-// Extend JWT type to include our custom fields
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string;
-    role?: string;
-  }
-}
 
 export interface GoogleProfile extends Profile {
   picture?: string;

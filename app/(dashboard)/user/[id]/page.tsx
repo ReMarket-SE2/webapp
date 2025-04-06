@@ -26,7 +26,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
     return notFound();
   }
   
-  const profileImage = await userAction.getProfileImage(user.profileImageId);
+  const profileImage = await userAction.getProfileImage(user!.profileImageId);
 
   return (
     <div className="container mx-auto py-10">

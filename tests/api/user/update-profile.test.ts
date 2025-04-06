@@ -12,10 +12,12 @@ jest.mock('next-auth/next', () => ({
 }));
 
 jest.mock('@/lib/users/actions', () => ({
-  updateUserProfile: jest.fn(() => ({
-    ...mockUserData,
-    bio: 'Updated bio from API',
-  })),
+  userAction: {
+    updateUserProfile: jest.fn(() => ({
+      ...mockUserData,
+      bio: 'Updated bio from API',
+    })),
+  }
 }));
 
 describe('Update Profile API', () => {
@@ -24,7 +26,7 @@ describe('Update Profile API', () => {
   });
 
   it('should update profile and return success response', async () => {
-    const { updateUserProfile } = require('@/lib/users/actions');
+    const { userAction } = require('@/lib/users/actions');
 
     // Create mock request with JSON body
     const request = new NextRequest('http://localhost/api/user/update-profile', {
@@ -40,10 +42,10 @@ describe('Update Profile API', () => {
     const data = await response.json();
 
     // Verify the update was called with correct data
-    expect(updateUserProfile).toHaveBeenCalledWith({
-      bio: 'Updated bio from API',
-      profileImage: null,
-    });
+    expect(userAction.updateUserProfile).toHaveBeenCalledWith(
+      'Updated bio from API', 
+      null
+    );
 
     // Check response
     expect(response.status).toBe(200);
