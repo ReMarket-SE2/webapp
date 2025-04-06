@@ -186,7 +186,7 @@ export const authOptions: NextAuthOptions = {
           passwordHash: null,
           role: 'user',
           profileImageId: photoId,
-          bio: null, // Added bio field with default value of null
+          bio: null,
           password_reset_token: null,
           password_reset_expires: null,
           createdAt: new Date(),
