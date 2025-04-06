@@ -48,11 +48,22 @@ const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProv
       const passwordsMatch = await bcrypt.compare(password, user.passwordHash)
       if (!passwordsMatch) return null
 
+      // Check if user has a profile image
+      let profileImage = null;
+      if (user.profileImageId) {
+        const photo = await db.select().from(photos)
+          .where(eq(photos.id, user.profileImageId))
+          .limit(1)
+          .then(rows => rows[0]);
+        profileImage = photo?.image || null;
+      }
+
       return {
         id: String(user.id),
         email: user.email,
         name: user.username,
-        role: user.role
+        role: user.role,
+        image: profileImage ?? undefined,
       }
     }
   }),
@@ -109,6 +120,7 @@ export const authOptions: NextAuthOptions = {
           user.id = String(existingOAuth.users.id);
           user.email = existingOAuth.users.email;
           user.name = existingOAuth.users.username;
+          user.role = existingOAuth.users.role;
           return true;
         }
 
@@ -149,6 +161,7 @@ export const authOptions: NextAuthOptions = {
           user.id = String(existingUser.id);
           user.email = existingUser.email;
           user.name = existingUser.username;
+          user.role = existingUser.role;
           return true;
         }
 
@@ -172,6 +185,9 @@ export const authOptions: NextAuthOptions = {
         });
 
         user.id = String(newUser.id);
+        user.email = newUser.email;
+        user.name = newUser.username;
+        user.role = newUser.role;
         return true;
       } catch (error) {
         console.error('Error in signIn callback:', error);
@@ -181,16 +197,16 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        if ('role' in user) {
-          token.role = user.role;
-        }
+        token.role = user.role;
+        token.image = user.image;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id: string; role: string }).id = token.id as string;
-        (session.user as { id: string; role: string }).role = token.role as string;
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.image = token.image as string;
       }
       return session;
     },
