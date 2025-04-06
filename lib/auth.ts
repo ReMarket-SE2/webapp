@@ -9,6 +9,34 @@ import { eq } from "drizzle-orm";
 import { users } from "./db/schema/users";
 import { photos } from "./db/schema/photos";
 
+// Extend the built-in session types
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role?: string | null;
+    }
+  }
+  
+  interface User {
+    id: string;
+    role?: string;
+    name?: string;
+    email?: string;
+  }
+}
+
+// Extend JWT type to include our custom fields
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role?: string;
+  }
+}
+
 export interface GoogleProfile extends Profile {
   picture?: string;
 }
@@ -29,7 +57,6 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<string | nul
     return null;
   }
 }
-
 
 const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProvider>> = [
   CredentialsProvider({
@@ -159,6 +186,7 @@ export const authOptions: NextAuthOptions = {
           passwordHash: null,
           role: 'user',
           profileImageId: photoId,
+          bio: null, // Added bio field with default value of null
           password_reset_token: null,
           password_reset_expires: null,
           createdAt: new Date(),
@@ -189,8 +217,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id: string; role: string }).id = token.id as string;
-        (session.user as { id: string; role: string }).role = token.role as string;
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
