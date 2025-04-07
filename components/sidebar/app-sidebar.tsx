@@ -50,7 +50,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Admin",
         url: "/admin",
         icon: ShieldCheck,
-        isActive: session?.user?.role === "admin" ? true : false,
+        isActive: session?.user?.role === "admin",
       }
     ],
     wishlist: [

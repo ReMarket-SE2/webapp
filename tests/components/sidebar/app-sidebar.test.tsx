@@ -66,4 +66,46 @@ describe("AppSidebar", () => {
 
     expect(screen.queryByText("Admin")).not.toBeInTheDocument();
   });
+
+  it("renders all navigation items correctly", () => {
+    const session = {
+      user: {
+        name: "Test User",
+        email: "test@example.com",
+        image: "/test-avatar.png",
+        role: "user",
+      },
+    };
+
+    renderWithSession(session);
+
+    expect(screen.getByText("View Listings")).toBeInTheDocument();
+    expect(screen.getByText("Sell your items")).toBeInTheDocument();
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
+  });
+
+  it("renders wishlist items correctly", () => {
+    const session = {
+      user: {
+        name: "Test User",
+        email: "test@example.com",
+        image: "/test-avatar.png",
+        role: "user",
+      },
+    };
+
+    renderWithSession(session);
+
+    expect(screen.getByText("Vintage Record Player")).toBeInTheDocument();
+    expect(screen.getByText("Second-hand Mountain Bike")).toBeInTheDocument();
+    expect(screen.getByText("Used Gaming Console")).toBeInTheDocument();
+    expect(screen.getByText("Refurbished Laptop")).toBeInTheDocument();
+  });
+
+  it("renders the default user name when session is null", () => {
+    renderWithSession(null);
+
+    expect(screen.getByText("shadcn")).toBeInTheDocument();
+    expect(screen.getByText("m@example.com")).toBeInTheDocument();
+  });
 });
