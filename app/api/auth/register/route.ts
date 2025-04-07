@@ -53,6 +53,8 @@ export async function POST(request: Request) {
       username: username,
       profileImageId: null,
       role: 'user',
+      password_reset_token: null,
+      password_reset_expires: null,
       createdAt: new Date(),
       updatedAt: new Date()
     })

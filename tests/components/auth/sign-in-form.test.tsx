@@ -6,16 +6,17 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { SignInForm } from "@/components/auth/sign-in-form"
 import { signIn, useSession } from "next-auth/react"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 
 jest.mock("next-auth/react")
-jest.mock("@/lib/toast", () => ({
-  showToast: {
-    success: jest.fn(),
+
+jest.mock("sonner", () => ({
+  toast: {
     error: jest.fn(),
-    info: jest.fn(),
+    success: jest.fn(),    
   },
 }))
+
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
   useSearchParams: () => new URLSearchParams(),
@@ -53,7 +54,7 @@ describe("SignInForm", () => {
         redirect: false,
         callbackUrl: "/",
       })
-      expect(showToast.success).toHaveBeenCalledWith("Successfully logged in!")
+      expect(toast.success).toHaveBeenCalledWith("Successfully logged in!")
     })
   })
 
@@ -67,7 +68,7 @@ describe("SignInForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Login" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Invalid email or password")
+      expect(toast.error).toHaveBeenCalledWith("Invalid email or password")
     })
   })
 
@@ -81,7 +82,7 @@ describe("SignInForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Login" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Something went wrong. Please try again.")
+      expect(toast.error).toHaveBeenCalledWith("Something went wrong. Please try again.")
     })
   })
 
@@ -105,7 +106,7 @@ describe("SignInForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Login with Google" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Failed to login with Google")
+      expect(toast.error).toHaveBeenCalledWith("Failed to login with Google")
     })
   })
 })

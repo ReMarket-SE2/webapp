@@ -11,7 +11,11 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  testEnvironment: 'jsdom',
   coverageReporters: [['text', { skipFull: true }], 'cobertura'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(.pnpm/)?(react-markdown|remark-gfm|micromark|decode-named-character-reference|character-entities|markdown|mdast|unist|unified|rehype|hast|property-information|space-separated-tokens|comma-separated-tokens|vfile))',
+  ],
 };
 
 // createJestConfig is exported in this way to ensure that next/jest can load the Next.js configuration

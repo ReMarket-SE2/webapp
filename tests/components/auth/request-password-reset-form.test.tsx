@@ -5,10 +5,10 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { RequestPasswordResetForm } from "@/components/auth/request-password-reset-form"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 
-jest.mock("@/lib/toast", () => ({
-  showToast: {
+jest.mock("sonner", () => ({
+  toast: {
     error: jest.fn(),
     success: jest.fn(),
   },
@@ -54,7 +54,7 @@ describe("RequestPasswordResetForm", () => {
           method: "POST",
         })
       )
-      expect(showToast.success).toHaveBeenCalledWith(
+      expect(toast.success).toHaveBeenCalledWith(
         "If an account exists with this email, you will receive a password reset link"
       )
     })
@@ -75,7 +75,7 @@ describe("RequestPasswordResetForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith(
+      expect(toast.error).toHaveBeenCalledWith(
         "Failed to send reset email"
       )
     })

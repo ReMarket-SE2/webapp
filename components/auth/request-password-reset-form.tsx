@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 
 export function RequestPasswordResetForm({
   className,
@@ -31,14 +31,20 @@ export function RequestPasswordResetForm({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to send reset email')
+        const data = await response.json()
+        if (data.error) {
+          toast.error(data.error)
+        } else {
+          toast.error("Failed to send reset email")
+        }
+        return
       }
 
-      showToast.success("If an account exists with this email, you will receive a password reset link")
+      toast.success("If an account exists with this email, you will receive a password reset link")
       setEmail("")
     } catch (error) {
       console.error('Password reset request error:', error)
-      showToast.error("Failed to send reset email")
+      toast.error("Failed to send reset email")
     } finally {
       setIsLoading(false)
     }

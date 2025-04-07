@@ -20,9 +20,12 @@ export async function POST(request: Request) {
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('1h')
       .sign(new TextEncoder().encode(process.env.JWT_SECRET))
-
+    
     // Send reset email
     await sendPasswordResetEmail(email, resetToken)
+
+    // Update user with reset token and expiration
+    await userAction.updateResetToken(user.id, resetToken, new Date(Date.now() + 3600000)) // 1 hour expiration
 
     return NextResponse.json({ success: true })
   } catch (error) {

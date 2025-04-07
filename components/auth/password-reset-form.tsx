@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
 
 export function PasswordResetForm({
@@ -26,12 +26,12 @@ export function PasswordResetForm({
 
     const passwordValidation = checkPasswordStrength(password)
     if (!passwordValidation.isValid) {
-      showToast.error(passwordValidation.error!)
+      toast.error(passwordValidation.error!)
       return
     }
 
     if (password !== confirmPassword) {
-      showToast.error("Passwords do not match")
+      toast.error("Passwords do not match")
       return
     }
 
@@ -50,14 +50,19 @@ export function PasswordResetForm({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Password reset failed')
+        if (data.error) {
+          toast.error(data.error)
+        } else {
+          toast.error("Failed to reset password")
+        }
+        return
       }
 
-      showToast.success("Password reset successfully!")
+      toast.success("Password reset successfully!")
       router.push('/auth/sign-in')
     } catch (error) {
       console.error('Password reset error:', error)
-      showToast.error("Failed to reset password")
+      toast.error("Failed to reset password")
     } finally {
       setIsLoading(false)
     }

@@ -5,13 +5,13 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { SignUpForm } from "@/components/auth/sign-up-form"
-import { showToast } from "@/lib/toast"
+import { toast } from "sonner"
 import { signIn, useSession } from "next-auth/react"
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
 
 jest.mock("next-auth/react")
-jest.mock("@/lib/toast", () => ({
-  showToast: {
+jest.mock("sonner", () => ({
+  toast: {
     error: jest.fn(),
     success: jest.fn(),
   },
@@ -58,7 +58,7 @@ describe("SignUpForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create account" }))
   
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Weak password")
+      expect(toast.error).toHaveBeenCalledWith("Weak password")
     })
   })
   
@@ -76,7 +76,7 @@ describe("SignUpForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create account" }))
   
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Passwords do not match")
+      expect(toast.error).toHaveBeenCalledWith("Passwords do not match")
     })
   })
   
@@ -102,7 +102,7 @@ describe("SignUpForm", () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith("/api/auth/register", expect.anything())
       expect(signIn).toHaveBeenCalledWith("credentials", expect.objectContaining({ email: "new@example.com" }))
-      expect(showToast.success).toHaveBeenCalledWith("Account created and logged in!")
+      expect(toast.success).toHaveBeenCalledWith("Account created and logged in!")
     })
   })
 
@@ -123,7 +123,7 @@ describe("SignUpForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create account" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Email already in use")
+      expect(toast.error).toHaveBeenCalledWith("Email already in use")
     })
   })
 
@@ -146,7 +146,7 @@ describe("SignUpForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create account" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Account created but login failed.")
+      expect(toast.error).toHaveBeenCalledWith("Account created but login failed.")
     })
   })
 
@@ -170,7 +170,7 @@ describe("SignUpForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Login with Google" }))
 
     await waitFor(() => {
-      expect(showToast.error).toHaveBeenCalledWith("Failed to login with Google")
+      expect(toast.error).toHaveBeenCalledWith("Failed to login with Google")
     })
   })
 })
