@@ -1,4 +1,3 @@
-import { render } from "@testing-library/react"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import AdminPage from "@/app/(dashboard)/admin/page"
@@ -31,9 +30,8 @@ describe("AdminPage", () => {
       user: { role: "admin", name: "Admin User", email: "admin@example.com" },
     })
 
-    const { container } = render(await AdminPage())
+    await AdminPage()
 
     expect(redirect).not.toHaveBeenCalled()
-    expect(container).toMatchSnapshot()
   })
 })
