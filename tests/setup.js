@@ -14,12 +14,14 @@ require('@testing-library/jest-dom');
 
 // Mock services
 jest.mock('@/lib/users/actions', () => ({
-  userAction: {
-    findByEmail: jest.fn(),
-    findByUsername: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
+  createUser: jest.fn(),
+  findUserByEmail: jest.fn(),
+  findUserById: jest.fn(),
+  updateUser: jest.fn(),
+  deleteUser: jest.fn(),
+  updatePassword: jest.fn(),
+  verifyEmail: jest.fn(),
+  validateResetToken: jest.fn(),
 }));
 
 jest.mock('@/lib/actions', () => ({

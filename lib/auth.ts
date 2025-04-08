@@ -1,7 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions, Profile } from "next-auth";
-import { userAction } from "@/lib/users/actions";
+import { findUserByEmail, createUser } from "@/lib/users/actions";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { oauthAccounts } from "./db/schema/oauth_accounts";
@@ -42,7 +42,7 @@ const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProv
       const { email, password } = credentials as { email: string; password: string }
       if (!email || !password) return null
       
-      const user = await userAction.findByEmail(email)
+      const user = await findUserByEmail(email)
       if (!user || !user.passwordHash) return null
       
       const passwordsMatch = await bcrypt.compare(password, user.passwordHash)
@@ -141,7 +141,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check if user exists with this email
-        const existingUser = await userAction.findByEmail(profile?.email as string);
+        const existingUser = await findUserByEmail(profile?.email as string);
         
         if (existingUser) {
           // Update existing user's profile image if provided
@@ -166,7 +166,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Create new user and OAuth account
-        const newUser = await userAction.create({
+        const newUser = await createUser({
           email: profile?.email as string,
           username: profile?.name?.replace(/\s+/g, '') as string,
           passwordHash: null,
