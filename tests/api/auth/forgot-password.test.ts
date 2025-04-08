@@ -6,15 +6,13 @@
 // A simplified test of the forgot-password API route
 // We use a direct test approach for this one, as mocking all dependencies can be tricky
 
-import { userAction } from '@/lib/users/actions';
+import { findUserByEmail } from '@/lib/users/actions';
 import { sendPasswordResetEmail } from '@/lib/actions';
 import { NextResponse } from 'next/server';
 
 // Mock dependencies first
 jest.mock('@/lib/users/actions', () => ({
-  userAction: {
-    findByEmail: jest.fn(),
-  }
+  findUserByEmail: jest.fn(),
 }));
 
 jest.mock('@/lib/actions', () => ({
@@ -40,7 +38,7 @@ const mockHandler = async (request: Request) => {
   try {
     const { email } = await request.json();
     
-    const user = await userAction.findByEmail(email);
+    const user = await findUserByEmail(email);
     
     if (user) {
       await sendPasswordResetEmail(email, 'test-token');
@@ -62,7 +60,7 @@ describe('Forgot Password API', () => {
   
   it('should send reset email for existing user', async () => {
     // Mock user to exist
-    (userAction.findByEmail as jest.Mock).mockResolvedValue({
+    (findUserByEmail as jest.Mock).mockResolvedValue({
       id: 1,
       email: 'test@example.com'
     });
@@ -76,7 +74,7 @@ describe('Forgot Password API', () => {
     await mockHandler(request);
     
     // Verify service was called
-    expect(userAction.findByEmail).toHaveBeenCalledWith('test@example.com');
+    expect(findUserByEmail).toHaveBeenCalledWith('test@example.com');
     
     // Verify email was sent
     expect(sendPasswordResetEmail).toHaveBeenCalledWith('test@example.com', 'test-token');
@@ -87,7 +85,7 @@ describe('Forgot Password API', () => {
   
   it('should not send email but still return success for security reasons', async () => {
     // Mock user to not exist
-    (userAction.findByEmail as jest.Mock).mockResolvedValue(null);
+    (findUserByEmail as jest.Mock).mockResolvedValue(null);
     
     // Create mock request
     const request = {
@@ -98,7 +96,7 @@ describe('Forgot Password API', () => {
     await mockHandler(request);
     
     // Verify service was called
-    expect(userAction.findByEmail).toHaveBeenCalledWith('nonexistent@example.com');
+    expect(findUserByEmail).toHaveBeenCalledWith('nonexistent@example.com');
     
     // Verify email was NOT sent
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
@@ -109,7 +107,7 @@ describe('Forgot Password API', () => {
   
   it('should handle errors gracefully', async () => {
     // Force an error
-    (userAction.findByEmail as jest.Mock).mockRejectedValue(new Error('Database error'));
+    (findUserByEmail as jest.Mock).mockRejectedValue(new Error('Database error'));
     
     // Create mock request
     const request = {

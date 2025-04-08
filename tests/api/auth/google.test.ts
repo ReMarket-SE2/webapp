@@ -3,7 +3,7 @@
  */
 
 import { authOptions, GoogleProfile } from '@/lib/auth';
-import { userAction } from '@/lib/users/actions';
+import { findUserByEmail, createUser } from '@/lib/users/actions';
 import { db } from '@/lib/db';
 import { oauthAccounts } from '@/lib/db/schema/oauth_accounts';
 import type { User } from '@/lib/db/schema/users';
@@ -59,6 +59,7 @@ describe('Google OAuth Authentication', () => {
     id: '1',
     email: 'test@example.com',
     name: 'Test User',
+    role: 'user',
   };
 
   const mockAccount: Account = {
@@ -138,7 +139,7 @@ describe('Google OAuth Authentication', () => {
     });
 
     // Mock finding existing user by email
-    (userAction.findByEmail as jest.Mock).mockResolvedValueOnce({
+    (findUserByEmail as jest.Mock).mockResolvedValueOnce({
       id: 1,
       email: 'test@example.com',
       username: 'testuser',
@@ -169,10 +170,10 @@ describe('Google OAuth Authentication', () => {
     });
 
     // Mock no existing user
-    (userAction.findByEmail as jest.Mock).mockResolvedValueOnce(null);
+    (findUserByEmail as jest.Mock).mockResolvedValueOnce(null);
 
     // Mock user creation
-    (userAction.create as jest.Mock).mockResolvedValueOnce({
+    (createUser as jest.Mock).mockResolvedValueOnce({
       id: 1,
       email: 'test@example.com',
       username: 'TestUser',
@@ -189,7 +190,7 @@ describe('Google OAuth Authentication', () => {
     expect(global.fetch).toHaveBeenCalledWith('https://example.com/profile.jpg');
     // Verify photo was inserted
     expect(db.insert).toHaveBeenCalledTimes(2); // Once for photo, once for OAuth account
-    expect(userAction.create).toHaveBeenCalledWith(expect.objectContaining({
+    expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
       email: 'test@example.com',
       username: 'TestUser',
       profileImageId: 1,
@@ -210,7 +211,7 @@ describe('Google OAuth Authentication', () => {
       user: mockUser,
       account: mockAccount,
       profile: mockProfile,
-    });
+    }); 
 
     expect(result).toBe(false);
   });
@@ -226,10 +227,10 @@ describe('Google OAuth Authentication', () => {
     (db.select as jest.Mock).mockReturnValue(mockChain);
 
     // Mock no existing user
-    (userAction.findByEmail as jest.Mock).mockResolvedValueOnce(null);
+    (findUserByEmail as jest.Mock).mockResolvedValueOnce(null);
 
     // Mock user creation
-    (userAction.create as jest.Mock).mockResolvedValueOnce({
+    (createUser as jest.Mock).mockResolvedValueOnce({
       id: 1,
       email: 'test@example.com',
       username: 'testuser',
@@ -245,7 +246,7 @@ describe('Google OAuth Authentication', () => {
     });
 
     expect(result).toBe(true); // Should still succeed even if image fetch fails
-    expect(userAction.create).toHaveBeenCalledWith(expect.objectContaining({
+    expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
       email: 'test@example.com',
       username: 'TestUser',
       profileImageId: null,

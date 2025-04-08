@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
-import { userAction } from '@/lib/users/actions'
+import { findUserById, validateResetToken, updateUser, } from '@/lib/users/actions'
 import { checkPasswordStrength } from '@/lib/validators/password-strength'
 
 // POST /api/auth/reset-password
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Find user
-    const user = await userAction.findById(payload.userId as number)
+    const user = await findUserById(payload.userId as number)
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -43,14 +43,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const validToken = await userAction.validateResetToken(user.id, token)
+    const validToken = await validateResetToken(user.id, token)
     if (!validToken) {
       const updatedUser = {
         ...user,
         password_reset_token: null, // Clear reset token
         password_reset_expires: null,
       }
-      await userAction.update(updatedUser)
+      await updateUser(updatedUser)
 
       return NextResponse.json(
         { error: 'Invalid reset token' },
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
 
     // Update user password
-    await userAction.update(updatedUser)
+    await updateUser(updatedUser)
 
     return NextResponse.json({ success: true })
   } catch (error) {
