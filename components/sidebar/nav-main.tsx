@@ -20,10 +20,11 @@ export function NavMain({
     isActive?: boolean
   }[]
 }) {
+  const visibleItems = items.filter((item) => item.isActive !== false)
   return (
     <SidebarGroup>
       <SidebarMenu>
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton asChild tooltip={item.title}>
               <Link href={item.url}>
