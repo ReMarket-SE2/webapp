@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, decimal, text, pgEnum, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, decimal, text, pgEnum, integer, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { categories } from './categories';
 import { listingPhotos } from './listing_photos';
@@ -17,6 +17,8 @@ export const listings = pgTable('listings', {
   description: varchar('description', { length: 500 }),
   longDescription: text('long_description'),
   categoryId: integer('category_id').references(() => categories.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Define the relations

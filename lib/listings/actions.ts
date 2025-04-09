@@ -2,11 +2,12 @@
 
 import { db } from '@/lib/db';
 import { listings, NewListing, ListingStatus } from '@/lib/db/schema/listings';
+import { categories } from '@/lib/db/schema/categories';
 import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, asc, desc } from 'drizzle-orm';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -46,6 +47,14 @@ export interface ListingWithPhotos {
   photos: string[]; // Base64 encoded images
 }
 
+export interface ShortListing {
+  id: number;
+  title: string;
+  price: string;
+  category: string | null;
+  photo: string | null; // Single thumbnail photo Base64 encoded
+}
+
 export async function createListing(
   formData: ListingFormData,
   photoData: string[] = []
@@ -57,11 +66,13 @@ export async function createListing(
     // Prepare listing data for database
     const listingData: NewListing = {
       title: validatedData.title,
-      price: validatedData.price.toString(), // Convert to string for the database
+      price: validatedData.price.toString(),
       description: validatedData.description ?? null,
       longDescription: validatedData.longDescription ?? null,
       categoryId: validatedData.categoryId ?? null,
       status: validatedData.status,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     // Insert listing and get ID
@@ -152,5 +163,78 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
+  }
+}
+
+export async function getAllListings(
+  options?: {
+    page?: number;
+    pageSize?: number;
+    sortBy?: 'price' | 'date';
+    sortOrder?: 'asc' | 'desc'; // asc for low-to-high or oldest-first, desc for high-to-low or newest-first
+  }
+): Promise<ShortListing[]> {
+  try {
+    const query = db.select().from(listings);
+
+    // Apply sorting
+    if (options?.sortBy) {
+      const sortColumn = options.sortBy === 'price' ? listings.price : listings.createdAt;
+      const sortOrder = options.sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn);
+      query.orderBy(sortOrder);
+    }
+
+    // Apply pagination
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 20;
+    const offset = (page - 1) * pageSize;
+    query.limit(pageSize).offset(offset);
+
+    const listingsData = await query;
+
+    // Fetch the first linked photo for each listing
+    const shortListings: ShortListing[] = [];
+
+    for (const listing of listingsData) {
+      const [photoRecord] = await db
+        .select({ photoId: listingPhotos.photoId })
+        .from(listingPhotos)
+        .where(eq(listingPhotos.listingId, listing.id))
+        .limit(1);
+
+      let photo: string | null = null;
+
+      if (photoRecord) {
+        const [photoResult] = await db
+          .select()
+          .from(photos)
+          .where(eq(photos.id, photoRecord.photoId))
+          .limit(1);
+
+        if (photoResult) {
+          photo = photoResult.image;
+        }
+      }
+
+      const categoryName = await db.select({ name: categories.name })
+        .from(categories)
+        .where(listing.categoryId !== null ? eq(categories.id, listing.categoryId) : undefined)
+        .limit(1);
+
+      const category = categoryName.length > 0 ? categoryName[0].name : null;
+
+      shortListings.push({
+        id: listing.id,
+        title: listing.title,
+        price: listing.price,
+        category,
+        photo,
+      });
+    }
+
+    return shortListings;
+  } catch (error) {
+    console.error('Error fetching all listings:', error);
+    return [];
   }
 }
