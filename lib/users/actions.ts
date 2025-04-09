@@ -4,7 +4,7 @@ import { eq, and, gt, isNotNull } from 'drizzle-orm'
 import { User } from '@/lib/db/schema'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { photosActions } from '@/lib/photos/actions'
+import { insertPhoto } from '@/lib/photos/actions'
 
 export class UserAction {
   protected table = users
@@ -129,7 +129,7 @@ export class UserAction {
     }
 
     if (profileImage) {
-      const photoData = await photosActions.insertPhoto(profileImage)
+      const photoData = await insertPhoto(profileImage)
 
       if (!photoData) {
         throw new Error('Photo not found')
