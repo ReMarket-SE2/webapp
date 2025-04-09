@@ -15,6 +15,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'),  // Make password optional for OAuth users
   email: varchar('email', { length: 255 }).notNull().unique(),
   profileImageId: integer('profile_image_id').references(() => photos.id),
+  bio: text('bio'),
   role: userRoleEnum('role').notNull().default('user'),
   password_reset_token: text('password_reset_token'),
   password_reset_expires: timestamp('password_reset_expires'),
@@ -37,4 +38,4 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 // Types for TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type UserRole = 'user' | 'admin'; 
+export type UserRole = 'user' | 'admin';

@@ -1,7 +1,10 @@
 import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { users, photos } from '@/lib/db/schema'
 import { eq, and, gt, isNotNull } from 'drizzle-orm'
 import { User } from '@/lib/db/schema'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { insertPhoto } from '@/lib/photos/actions'
 
 export class UserAction {
   protected table = users
@@ -97,6 +100,50 @@ export class UserAction {
       .limit(1)
 
     return result.length > 0
+  }
+
+  async getProfileImage(id: number | null): Promise<string | null> {
+    if (!id) {
+      return null
+    }
+    const result = await db
+      .select({ image: photos.image })
+      .from(photos)
+      .where(eq(photos.id, id))
+      .limit(1)
+    return result[0]?.image || null
+  }
+
+  async updateUserProfile(bio?: string, profileImage?: string | null): Promise<User> {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      throw new Error('Unauthorized: You must be signed in to update your profile')
+    }
+
+    const userId = parseInt(session.user.id)
+    const userData = await this.findById(userId)
+
+    if (!userData) {
+      throw new Error('User not found')
+    }
+
+    if (profileImage) {
+      const photoData = await insertPhoto(profileImage)
+
+      if (!photoData) {
+        throw new Error('Photo not found')
+      }
+
+      userData.profileImageId = photoData.id
+    }
+
+    return this.update({
+      ...userData,
+      bio: bio !== undefined ? bio : userData.bio,
+      profileImageId: userData.profileImageId,
+      updatedAt: new Date(),
+    })
   }
 }
 
