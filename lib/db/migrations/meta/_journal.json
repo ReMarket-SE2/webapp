@@ -22,6 +22,13 @@
       "when": 1743438276249,
       "tag": "0002_add_oauth_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1744203998712,
+      "tag": "0003_add-createdAt-and-updatedAt-to-listings-table",
+      "breakpoints": true
     }
   ]
 }

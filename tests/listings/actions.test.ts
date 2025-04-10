@@ -5,6 +5,7 @@ import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
 import { eq, inArray } from 'drizzle-orm';
+import { create } from 'domain';
 
 // Mock the database and revalidatePath
 jest.mock('@/lib/db', () => {
@@ -86,6 +87,8 @@ describe('Listing Actions', () => {
         longDescription: 'Detailed test description',
         categoryId: null,
         status: 'Active',
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
       });
 
       // Verify cache was revalidated
