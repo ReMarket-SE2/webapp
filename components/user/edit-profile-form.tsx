@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/lib/db/schema';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { updateUserProfile } from '@/lib/users/actions';
+import { useSession } from 'next-auth/react';
 
 interface EditProfileFormProps {
   user: User;
@@ -18,6 +20,7 @@ interface EditProfileFormProps {
 
 export default function EditProfileForm({ user, profileImageData }: EditProfileFormProps) {
   const router = useRouter();
+  const { update } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [bio, setBio] = useState(user.bio || '');
   const [previewImage, setPreviewImage] = useState<string | null>(profileImageData || null);
@@ -53,22 +56,14 @@ export default function EditProfileForm({ user, profileImageData }: EditProfileF
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/user/update-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bio,
-          profileImage: previewImage !== profileImageData ? previewImage : undefined,
-        }),
-      });
+      // Call the server action directly
+      await updateUserProfile(
+        bio,
+        previewImage !== profileImageData ? previewImage : undefined
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update profile');
-      }
+      // Refresh the session so the sidebar avatar updates
+      if (update) await update();
 
       toast.success('Profile updated successfully');
       router.refresh();
