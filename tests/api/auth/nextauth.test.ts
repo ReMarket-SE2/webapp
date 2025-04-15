@@ -6,20 +6,14 @@ import { authOptions } from '@/lib/auth';
 
 // Mock the needed services and dependencies
 jest.mock('@/lib/users/actions', () => ({
-  userAction: {
-    findByEmail: jest.fn(),
-    findByUsername: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    findById: jest.fn(),
-    exists: jest.fn(),
-  },
+  findUserByEmail: jest.fn(),
+  createUser: jest.fn(),
 }));
 jest.mock('bcryptjs');
 
 interface JwtCallback {
   token: Record<string, unknown>;
-  user: { id: string } | null;
+  user: { id: string; email?: string; role?: string; avatar?: string } | null;
   account: unknown;
   profile: unknown;
 }
@@ -27,7 +21,7 @@ interface JwtCallback {
 interface SessionCallback {
   session: Record<string, unknown>;
   token: Record<string, unknown>;
-  user: unknown;
+  user: { id: string; email?: string; role?: string; avatar?: string } | null;
 }
 
 describe('NextAuth Configuration', () => {
@@ -37,7 +31,7 @@ describe('NextAuth Configuration', () => {
 
   describe('JWT Callback', () => {
     it('should add user ID to token', async () => {
-      const { jwt } = authOptions.callbacks as { jwt: (params: JwtCallback) => Promise<Record<string, unknown>> };
+      const { jwt } = authOptions.callbacks as unknown as { jwt: (params: JwtCallback) => Promise<Record<string, unknown>> };
       
       const token = {};
       const user = { id: '123' };
@@ -48,7 +42,7 @@ describe('NextAuth Configuration', () => {
     });
 
     it('should return unmodified token when no user is provided', async () => {
-      const { jwt } = authOptions.callbacks as { jwt: (params: JwtCallback) => Promise<Record<string, unknown>> };
+      const { jwt } = authOptions.callbacks as unknown as { jwt: (params: JwtCallback) => Promise<Record<string, unknown>> };
       
       const token = { someData: 'value' };
       
