@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { userAction } from '@/lib/users/actions'
+import { findUserByUsername, findUserByEmail, createUser } from '@/lib/users/actions'
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
 
 // POST /api/auth/register
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     // Check if username is taken
-    const existingUsername = await userAction.findByUsername(username)
+    const existingUsername = await findUserByUsername(username)
     if (existingUsername) {
       return NextResponse.json(
         { error: 'Username already taken' },
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user exists 
-    const existingUser = await userAction.findByEmail(email)
+    const existingUser = await findUserByEmail(email)
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Create new user
-    await userAction.create({
+    await createUser({
       email,
       passwordHash: hashedPassword,
       username: username,

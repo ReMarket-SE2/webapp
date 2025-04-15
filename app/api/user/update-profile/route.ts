@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { userAction } from '@/lib/users/actions';
+import { updateUserProfile } from '@/lib/users/actions';
 
 // API route for updating user profile
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const { bio, profileImage }: { bio: string, profileImage: string | null} = await request.json();
     
     // Update profile using our server action
-    const updatedUser = await userAction.updateUserProfile(bio, profileImage);
+    const updatedUser = await updateUserProfile(bio, profileImage);
     
     return NextResponse.json({
       success: true,

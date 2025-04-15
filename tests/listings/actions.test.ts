@@ -86,6 +86,8 @@ describe('Listing Actions', () => {
         longDescription: 'Detailed test description',
         categoryId: null,
         status: 'Active',
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
       });
 
       // Verify cache was revalidated

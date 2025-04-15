@@ -2,7 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { userAction } from '@/lib/users/actions';
+import { findUserById, getProfileImage } from '@/lib/users/actions';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
@@ -20,13 +20,13 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   const session = await getServerSession(authOptions);
   const isOwnProfile = session?.user?.id === id;
   
-  const user = await userAction.findById(userId);
+  const user = await findUserById(userId);
   
   if (!user) {
     return notFound();
   }
   
-  const profileImage = await userAction.getProfileImage(user!.profileImageId);
+  const profileImage = await getProfileImage(user!.profileImageId);
 
   return (
     <div className="container mx-auto py-10">

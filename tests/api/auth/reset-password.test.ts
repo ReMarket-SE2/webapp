@@ -3,12 +3,14 @@
  */
 
 import { POST } from '@/app/api/auth/reset-password/route';
-import { userAction } from '@/lib/users/actions';
+import { validateResetToken, updateUser, findUserById } from '@/lib/users/actions';
 import { checkPasswordStrength } from '@/lib/validators/password-strength';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
 
-const mockUserAction = userAction as jest.Mocked<typeof userAction>;
+const mockValidateResetToken = validateResetToken as jest.Mock;
+const mockUpdateUser = updateUser as jest.Mock;
+const mockFindUserById = findUserById as jest.Mock;
 const mockJwtVerify = jwtVerify as jest.Mock;
 const mockPasswordValidator = checkPasswordStrength as jest.Mock;
 const mockBcryptHash = bcrypt.hash as jest.Mock;
@@ -24,11 +26,9 @@ jest.mock('next/server', () => ({
 }));
 
 jest.mock('@/lib/users/actions', () => ({
-  userAction: {
-    validateResetToken: jest.fn(),
-    update: jest.fn(),
-    findById: jest.fn(),
-  },
+  validateResetToken: jest.fn(),
+  updateUser: jest.fn(),
+  findUserById: jest.fn(),
 }));
 
 describe('POST /api/auth/reset-password', () => {
@@ -54,8 +54,8 @@ describe('POST /api/auth/reset-password', () => {
     // Ensure bcrypt hash returns a consistent value
     mockBcryptHash.mockResolvedValue('hashed-password');
 
-    // Mock userAction.findById to return a valid user
-    mockUserAction.findById.mockResolvedValue({
+    // Mock findUserById to return a valid user
+    mockFindUserById.mockResolvedValue({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -68,15 +68,15 @@ describe('POST /api/auth/reset-password', () => {
       updatedAt: new Date(),
     });
 
-    // Mock userAction.update to accept and return the expected structure
-    mockUserAction.update.mockImplementation(async (user) => ({
+    // Mock updateUser to accept and return the expected structure
+    mockUpdateUser.mockImplementation(async (user) => ({
       ...user,
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
 
-    // Mock userAction.validateResetToken
-    mockUserAction.validateResetToken.mockResolvedValue(true);
+    // Mock validateResetToken
+    mockValidateResetToken.mockResolvedValue(true);
   });
 
   it('should reset password successfully', async () => {
@@ -94,16 +94,16 @@ describe('POST /api/auth/reset-password', () => {
     expect(mockBcryptHash).toHaveBeenCalledWith('NewP@ssword123', 10);
 
     // Verify user was fetched
-    expect(mockUserAction.findById).toHaveBeenCalledWith(1);
+    expect(mockFindUserById).toHaveBeenCalledWith(1);
 
     // Verify reset token was validated
-    expect(mockUserAction.validateResetToken).toHaveBeenCalledWith(
+    expect(mockValidateResetToken).toHaveBeenCalledWith(
       1,
       'valid-token'
     );
 
     // Verify user password was updated
-    expect(mockUserAction.update).toHaveBeenCalledWith({
+    expect(mockUpdateUser).toHaveBeenCalledWith({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -136,7 +136,7 @@ describe('POST /api/auth/reset-password', () => {
     );
 
     // Verify user password was NOT updated
-    expect(mockUserAction.update).not.toHaveBeenCalled();
+    expect(mockUpdateUser).not.toHaveBeenCalled();
   });
 
   it('should return error when token is invalid', async () => {
@@ -154,7 +154,7 @@ describe('POST /api/auth/reset-password', () => {
     );
 
     // Verify user password was NOT updated
-    expect(mockUserAction.update).not.toHaveBeenCalled();
+    expect(mockUpdateUser).not.toHaveBeenCalled();
   });
 
   it('should handle JWT verification errors', async () => {
@@ -170,12 +170,12 @@ describe('POST /api/auth/reset-password', () => {
     );
 
     // Verify user password was NOT updated
-    expect(mockUserAction.update).not.toHaveBeenCalled();
+    expect(mockUpdateUser).not.toHaveBeenCalled();
   });
 
   it('should handle internal server errors', async () => {
     // Mock update to throw an error
-    mockUserAction.update.mockRejectedValue(new Error('Database error'));
+    mockUpdateUser.mockRejectedValue(new Error('Database error'));
 
     await POST(mockRequest);
 
@@ -188,7 +188,7 @@ describe('POST /api/auth/reset-password', () => {
 
   it('should return error when reset token is expired', async () => {
     // Mock validateResetToken to return false for expired token
-    mockUserAction.validateResetToken.mockResolvedValue(false);
+    mockValidateResetToken.mockResolvedValue(false);
 
     await POST(mockRequest);
 
@@ -199,7 +199,7 @@ describe('POST /api/auth/reset-password', () => {
     );
 
     // Verify user update was called to clear the reset token
-    expect(mockUserAction.update).toHaveBeenCalledWith({
+    expect(mockUpdateUser).toHaveBeenCalledWith({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -223,11 +223,11 @@ describe('POST /api/auth/reset-password', () => {
     } as unknown as Request;
 
     // Mock validateResetToken to return false for missing token
-    mockUserAction.validateResetToken.mockResolvedValue(false);
+    mockValidateResetToken.mockResolvedValue(false);
 
     await POST(mockRequest);
 
-    expect(mockUserAction.validateResetToken).toHaveBeenCalledWith(
+    expect(mockValidateResetToken).toHaveBeenCalledWith(
       1,
       null
     );
@@ -238,8 +238,8 @@ describe('POST /api/auth/reset-password', () => {
       { status: 400 }
     );
 
-    //Veryfy user update was called to clear the reset token
-    expect(mockUserAction.update).toHaveBeenCalledWith({
+    // Verify user update was called to clear the reset token
+    expect(mockUpdateUser).toHaveBeenCalledWith({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',

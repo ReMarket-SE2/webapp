@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';
-import { userAction } from '@/lib/users/actions';
+import { findUserById, getProfileImage } from '@/lib/users/actions';
 import { authOptions } from '@/lib/auth';
 import EditProfileForm from '@/components/user/edit-profile-form';
 
@@ -13,8 +13,8 @@ export default async function EditProfilePage() {
 
   const userId = parseInt(session.user.id);
 
-  const user = await userAction.findById(userId);
-  const profileImage = await userAction.getProfileImage(user!.profileImageId);
+  const user = await findUserById(userId);
+  const profileImage = await getProfileImage(user!.profileImageId);
 
   return (
     <div className="container mx-auto py-10">

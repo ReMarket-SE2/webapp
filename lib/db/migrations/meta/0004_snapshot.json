@@ -1,6 +1,6 @@
 {
-  "id": "3a5b7015-890b-4bab-bfab-3ddc9faa8c74",
-  "prevId": "2e4f3c0b-1978-416a-80dd-5a290e48f7a0",
+  "id": "697df702-7339-4c5b-8886-0ebf65b7cd20",
+  "prevId": "3a5b7015-890b-4bab-bfab-3ddc9faa8c74",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -66,6 +66,12 @@
         "profile_image_id": {
           "name": "profile_image_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bio": {
+          "name": "bio",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
