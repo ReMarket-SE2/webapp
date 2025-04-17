@@ -50,14 +50,14 @@ RUN pnpm install --prod
 RUN pnpm add -D ts-node
 
 # Create a script to run migrations and start the server
-RUN echo '#!/bin/sh\n\
-if [ "$RUN_MIGRATIONS" = "true" ]; then\n\
-  echo "Running database migrations..."\n\
-  node -r ts-node/register lib/db/migrate.ts || echo "Migration failed, but continuing..."\n\
-fi\n\
-echo "Starting server..."\n\
-exec node server.js\n\
-' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
+RUN echo -e '#!/bin/sh\n\
+    if [ "$RUN_MIGRATIONS" = "true" ]; then\n\
+    echo "Running database migrations..."\n\
+    node -r ts-node/register lib/db/migrate.ts || echo "Migration failed, but continuing..."\n\
+    fi\n\
+    echo "Starting server..."\n\
+    exec node server.js\n\
+    ' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -75,4 +75,4 @@ ENV PORT=3000
 ENV RUN_MIGRATIONS=true
 
 # Start the Next.js application with migrations
-CMD ["/app/docker-entrypoint.sh"] 
+CMD ["/app/docker-entrypoint.sh"]
