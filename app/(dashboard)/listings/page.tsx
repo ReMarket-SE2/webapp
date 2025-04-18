@@ -1,6 +1,6 @@
 "use client";
 
-import { useListings } from '@/lib/hooks/use-listings';
+import { useListingsContext } from "@/components/contexts/listings-context";
 import { ListingCard } from '@/components/listings/listing-card';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -28,12 +28,7 @@ const item = {
 };
 
 export default function ListingsPage() {
-  const { listings, loading } = useListings({
-    page: 1,
-    pageSize: 20,
-    sortBy: 'date',
-    sortOrder: 'desc',
-  });
+  const { listings, loading } = useListingsContext();
 
   if (loading) {
     return (

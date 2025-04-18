@@ -171,9 +171,14 @@ export async function getAllListings(options?: {
   page?: number;
   pageSize?: number;
   sortBy?: 'price' | 'date';
-  sortOrder?: 'asc' | 'desc'; // asc for low-to-high or oldest-first, desc for high-to-low or newest-first
-}): Promise<ShortListing[]> {
+  sortOrder?: 'asc' | 'desc';
+}): Promise<{ listings: ShortListing[]; totalCount: number }> {
   try {
+    // Get total count first
+    const allListings = await db.select().from(listings);
+    const totalCount = allListings.length;
+
+    // Build the query for paginated results
     const query = db.select().from(listings);
 
     // Apply sorting
@@ -233,9 +238,15 @@ export async function getAllListings(options?: {
       });
     }
 
-    return shortListings;
+    return {
+      listings: shortListings,
+      totalCount,
+    };
   } catch (error) {
     console.error('Error fetching all listings:', error);
-    return [];
+    return {
+      listings: [],
+      totalCount: 0,
+    };
   }
 }
