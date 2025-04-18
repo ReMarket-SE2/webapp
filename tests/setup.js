@@ -9,6 +9,18 @@ process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
 global.TextEncoder = require('util').TextEncoder;
 global.TextDecoder = require('util').TextDecoder;
 
+// Mock window.matchMedia
+global.matchMedia = jest.fn().mockImplementation(query => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener: jest.fn(), // Deprecated
+  removeListener: jest.fn(), // Deprecated
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  dispatchEvent: jest.fn(),
+}));
+
 // Add DOM testing matchers
 require('@testing-library/jest-dom');
 
