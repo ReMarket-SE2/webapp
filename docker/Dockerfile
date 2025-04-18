@@ -42,7 +42,9 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/lib/db/migrations ./lib/db/migrations
 COPY --from=builder /app/lib/db/migrate.ts ./lib/db/migrate.ts
+COPY --from=builder /app/lib/db/index.ts ./lib/db/index.ts
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.migrate.json ./tsconfig.migrate.json
 
 # Enable pnpm and install dependencies
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -53,7 +55,7 @@ RUN pnpm add -D ts-node
 RUN echo -e '#!/bin/sh\n\
     if [ "$RUN_MIGRATIONS" = "true" ]; then\n\
     echo "Running database migrations..."\n\
-    node -r ts-node/register lib/db/migrate.ts || echo "Migration failed, but continuing..."\n\
+    pnpm db:migrate || echo "Migration failed, but continuing..."\n\
     fi\n\
     echo "Starting server..."\n\
     exec node server.js\n\

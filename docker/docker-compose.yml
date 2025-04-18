@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:16
     container_name: remarket-postgres
@@ -45,4 +44,4 @@ volumes:
 networks:
   default:
     name: remarket-network
-    driver: bridge 
+    driver: bridge
