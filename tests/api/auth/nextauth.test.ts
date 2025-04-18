@@ -56,7 +56,7 @@ describe('NextAuth Configuration', () => {
     it('should add user ID to session user object', async () => {
       const { session } = authOptions.callbacks as unknown as { session: (params: SessionCallback) => Promise<Record<string, unknown>> };
       
-      const sessionObj = { user: {} };
+      const sessionObj = { user: { id: '123' } };
       const token = { id: '123' };
       
       const result = await session({ session: sessionObj, token, user: null });

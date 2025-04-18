@@ -26,7 +26,7 @@ export default function EditProfileForm({ user, profileImageData }: EditProfileF
   const [previewImage, setPreviewImage] = useState<string | null>(profileImageData || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -36,12 +36,23 @@ export default function EditProfileForm({ user, profileImageData }: EditProfileF
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setPreviewImage(base64String);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const base64String = await new Promise<string | null>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(null);
+        reader.readAsDataURL(file);
+      });
+
+      if (base64String) {
+        setPreviewImage(base64String);
+      } else {
+        toast.error('Failed to encode image. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error encoding image:', error);
+      toast.error('An error occurred while processing the image.');
+    }
   };
 
   const handleRemoveImage = () => {
@@ -63,7 +74,7 @@ export default function EditProfileForm({ user, profileImageData }: EditProfileF
       );
 
       // Refresh the session so the sidebar avatar updates
-      if (update) await update();
+      await update();
 
       toast.success('Profile updated successfully');
       router.refresh();
