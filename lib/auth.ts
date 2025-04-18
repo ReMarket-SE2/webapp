@@ -30,7 +30,6 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<string | nul
   }
 }
 
-
 const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProvider>> = [
   CredentialsProvider({
     name: 'Credentials',
@@ -172,6 +171,7 @@ export const authOptions: NextAuthOptions = {
           passwordHash: null,
           role: 'user',
           profileImageId: photoId,
+          bio: null,
           password_reset_token: null,
           password_reset_expires: null,
           createdAt: new Date(),

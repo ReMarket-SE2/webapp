@@ -29,6 +29,13 @@
       "when": 1744203998712,
       "tag": "0003_add-createdAt-and-updatedAt-to-listings-table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1744739910845,
+      "tag": "0004_add_bio_to_users_table",
+      "breakpoints": true
     }
   ]
 }

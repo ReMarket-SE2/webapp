@@ -61,6 +61,7 @@ This directory contains the database setup for the ReMarket online store using D
 - `passwordHash`: Hashed password (text)
 - `email`: Unique email address (varchar(255))
 - `profileImageId`: Foreign key to photos (integer, nullable)
+- `bio`: Bio of the user profile
 - `role`: Enum ('user', 'admin') with default 'user'
 - `createdAt`: Timestamp of creation (default: now())
 - `updatedAt`: Timestamp of last update (default: now())
