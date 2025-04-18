@@ -1,10 +1,10 @@
-import { createListing, getListingById } from '@/lib/listings/actions';
+import { createListing, getListingById, getAllListings } from '@/lib/listings/actions';
 import { db } from '@/lib/db';
 import { listings } from '@/lib/db/schema/listings';
 import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
-import { eq, inArray } from 'drizzle-orm';
+import { asc, eq, inArray, desc } from 'drizzle-orm';
 import { create } from 'domain';
 
 // Mock the database and revalidatePath
@@ -23,7 +23,7 @@ jest.mock('@/lib/db', () => {
   };
 
   return { db: mockDb };
-});
+    });
 
 jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
@@ -32,11 +32,17 @@ jest.mock('next/cache', () => ({
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn(),
   inArray: jest.fn(),
+  asc: jest.fn((col) => `asc(${col})`),
+  desc: jest.fn((col) => `desc(${col})`),
 }));
 
 jest.mock('@/lib/db/schema/listings', () => ({
-  listings: {},
+  listings: {
+    price: 'mock_price_column',
+    createdAt: 'mock_createdAt_column',
+  },
 }));
+
 
 jest.mock('@/lib/db/schema/photos', () => ({
   photos: {},
@@ -265,6 +271,136 @@ describe('Listing Actions', () => {
         ...mockListing,
         photos: [],
       });
+    });
+  });
+
+  describe('getAllListings', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+
+      // Reset db mock for each test
+      (db.select as jest.Mock).mockReturnValue({
+        from: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockResolvedValue([]),
+      });
+    });
+  
+    test('should fetch listings with pagination and sorting', async () => {
+      const mockListings = [
+        { id: 1, title: 'Listing 1', price: '50', categoryId: 10 },
+        { id: 2, title: 'Listing 2', price: '70', categoryId: null },
+      ];
+  
+      const mockPhotoLinks = [
+        { photoId: 101 },
+        null,
+      ];
+  
+      const mockPhotos = [
+        { id: 101, image: 'url-101' },
+      ];
+  
+      const mockCategories = [
+        { name: 'Electronics' },
+      ];
+  
+      // 1. Listing data
+      (db.select as jest.Mock).mockReturnValueOnce({
+        from: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockResolvedValueOnce(mockListings),
+      });
+  
+      // 2. Photo links for listing ID 1
+      (db.select as jest.Mock).mockReturnValueOnce({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockPhotoLinks[0]]),
+      });
+  
+      // 3. Photo data for photo ID 101
+      (db.select as jest.Mock).mockReturnValueOnce({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockPhotos[0]]),
+      });
+  
+      // 4. Category data for category ID 10
+      (db.select as jest.Mock).mockReturnValueOnce({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce(mockCategories),
+      });
+  
+      // 5. Photo links for listing ID 2 (none)
+      (db.select as jest.Mock).mockReturnValueOnce({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([]),
+      });
+  
+      // 6. No category for listing ID 2
+      (db.select as jest.Mock).mockReturnValueOnce({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([]),
+      });
+
+      // log the calls to db.select spying on the mock
+      const dbSelectCalls = (db.select as jest.Mock).mock.calls;
+      console.log('db.select calls:', dbSelectCalls);
+
+
+      const result = await getAllListings({
+        page: 2,
+        pageSize: 5,
+        sortBy: 'price',
+        sortOrder: 'asc',
+      });
+  
+      expect(result).toEqual([
+        {
+          id: 1,
+          title: 'Listing 1',
+          price: '50',
+          category: 'Electronics',
+          photo: 'url-101',
+        },
+        {
+          id: 2,
+          title: 'Listing 2',
+          price: '70',
+          category: null,
+          photo: null,
+        },
+      ]);
+    });
+  
+    test('should return an empty array if no listings are found', async () => {
+      (db.select as jest.Mock).mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockResolvedValueOnce([]),
+      }));
+  
+      const result = await getAllListings();
+      expect(result).toEqual([]);
+    });
+  
+    test('should handle database errors gracefully', async () => {
+      (db.select as jest.Mock).mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockRejectedValueOnce(new Error('Database error')),
+      }));
+  
+      const result = await getAllListings();
+      expect(result).toEqual([]);
     });
   });
 });
