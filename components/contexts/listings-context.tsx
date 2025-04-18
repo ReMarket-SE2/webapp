@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, ReactNode } from 'react';
-import { UseListingsOptions, useListings, ListingsPaginationMetadata } from './use-listings';
+import { UseListingsOptions, useListings, ListingsPaginationMetadata } from '@/lib/hooks/use-listings';
 import { ShortListing } from '@/lib/listings/actions';
 
 interface ListingsContextType {
