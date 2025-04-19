@@ -1,42 +1,57 @@
 "use client";
 
-import { useListings } from '@/lib/hooks/use-listings';
+import { useListingsContext } from "@/components/contexts/listings-context";
 import { ListingCard } from '@/components/listings/listing-card';
+import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut"
+    }
+  }
+};
 
 export default function ListingsPage() {
-  const { listings, loading, updateOptions, options } = useListings({
-    page: 1,
-    pageSize: 20,
-    sortBy: 'date',
-    sortOrder: 'desc',
-  });
+  const { listings, loading } = useListingsContext();
 
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="flex-1 flex flex-col gap-4 p-4 pb-20">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="flex-1 grid grid-cols-1 lg:grid-cols-2 auto-rows-max gap-2"
+      >
         {listings.map(listing => (
-          <ListingCard key={listing.id} listing={listing} />
+          <motion.div key={listing.id} variants={item}>
+            <ListingCard listing={listing} />
+          </motion.div>
         ))}
-      </div>
-      <div className="flex justify-between mt-4">
-        <button
-          onClick={() => updateOptions({ page: Math.max(1, options.page! - 1) })}
-          disabled={options.page === 1}
-          className="px-4 py-2 bg-muted/50 rounded-lg"
-        >
-          Previous
-        </button>
-        <button
-          onClick={() => updateOptions({ page: (options.page || 1) + 1 })}
-          className="px-4 py-2 bg-muted/50 rounded-lg"
-        >
-          Next
-        </button>
-      </div>
-    </div>
+      </motion.div>
+    </div >
   );
 }
