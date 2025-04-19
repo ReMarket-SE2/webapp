@@ -2,78 +2,99 @@
  * @jest-environment node
  */
 
-import { authOptions } from '@/lib/auth';
-
-// Mock the needed services and dependencies
 jest.mock('@/lib/users/actions', () => ({
   findUserByEmail: jest.fn(),
   createUser: jest.fn(),
 }));
 jest.mock('bcryptjs');
 
-interface JwtCallback {
-  token: Record<string, unknown>;
-  user: { id: string; email?: string; role?: string; avatar?: string } | null;
-  account: unknown;
-  profile: unknown;
-}
-
-interface SessionCallback {
-  session: Record<string, unknown>;
-  token: Record<string, unknown>;
-  user: { id: string; email?: string; role?: string; avatar?: string } | null;
-}
-
 describe('NextAuth Configuration', () => {
+  let authOptions: any;
+
   beforeEach(() => {
+    jest.resetModules();
     jest.resetAllMocks();
+
+    jest.doMock('@/lib/db', () => {
+      const builder: any = {};
+      builder.select = jest.fn().mockReturnValue(builder);
+      builder.from = jest.fn().mockReturnValue(builder);
+      builder.leftJoin = jest.fn().mockReturnValue(builder);
+      builder.where = jest.fn().mockReturnValue(builder);
+      builder.then = jest.fn().mockImplementation((cb: Function) =>
+        Promise.resolve(
+          cb([
+            {
+              id: 123,
+              username: 'testuser',
+              email: 'test@example.com',
+              role: 'admin',
+              image: 'avatar.png',
+            },
+          ])
+        )
+      );
+      return { db: builder };
+    });
+
+    ({ authOptions } = require('@/lib/auth'));
   });
 
   describe('JWT Callback', () => {
     it('should add user ID to token', async () => {
-      const { jwt } = authOptions.callbacks as unknown as { jwt: (params: JwtCallback) => Promise<Record<string, unknown>> };
-      
+      const jwt = (authOptions.callbacks as any).jwt as (
+        params: { token: Record<string, unknown>; user: any }
+      ) => Promise<Record<string, unknown>>;
+
       const token = {};
-      const user = { id: '123' };
-      
-      const result = await jwt({ token, user, account: null, profile: null });
-      
-      expect(result).toEqual({ id: '123' });
+      const user = { id: '123', role: 'user' };
+
+      const result = await jwt({ token, user});
+      expect(result).toEqual({ id: '123', role: 'user' });
     });
 
     it('should return unmodified token when no user is provided', async () => {
-      const { jwt } = authOptions.callbacks as unknown as { jwt: (params: JwtCallback) => Promise<Record<string, unknown>> };
-      
+      const jwt = (authOptions.callbacks as any).jwt as (
+        params: { token: Record<string, unknown>; user: any }
+      ) => Promise<Record<string, unknown>>;
+
       const token = { someData: 'value' };
-      
-      const result = await jwt({ token, user: null, account: null, profile: null });
-      
+      const result = await jwt({ token, user: null});
       expect(result).toEqual({ someData: 'value' });
     });
   });
 
   describe('Session Callback', () => {
-    it('should add user ID to session user object', async () => {
-      const { session } = authOptions.callbacks as unknown as { session: (params: SessionCallback) => Promise<Record<string, unknown>> };
-      
+    it('should populate session.user with database user info', async () => {
+      const sessionCb = (authOptions.callbacks as any).session as (
+        params: { session: any; token: any }
+      ) => Promise<any>;
+
       const sessionObj = { user: {} };
       const token = { id: '123' };
-      
-      const result = await session({ session: sessionObj, token, user: null });
-      
-      expect(result).toEqual({ user: { id: '123' } });
+      const result = await sessionCb({ session: sessionObj, token });
+
+      expect(result).toEqual({
+        user: {
+          id: '123',
+          name: 'testuser',
+          email: 'test@example.com',
+          role: 'admin',
+          image: 'avatar.png',
+        },
+      });
     });
 
-    it('should return unmodified session when no user object exists', async () => {
-      const { session } = authOptions.callbacks as unknown as { session: (params: SessionCallback) => Promise<Record<string, unknown>> };
-      
+    it('should return unmodified session when no session.user exists', async () => {
+      const sessionCb = (authOptions.callbacks as any).session as (
+        params: { session: any; token: any }
+      ) => Promise<any>;
+
       const sessionObj = { someData: 'value' };
       const token = { id: '123' };
-      
-      const result = await session({ session: sessionObj, token, user: null });
-      
+      const result = await sessionCb({ session: sessionObj, token });
+
       expect(result).toEqual({ someData: 'value' });
-      
     });
   });
 });
