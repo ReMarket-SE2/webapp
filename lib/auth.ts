@@ -47,22 +47,11 @@ const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProv
       const passwordsMatch = await bcrypt.compare(password, user.passwordHash)
       if (!passwordsMatch) return null
 
-      // Check if user has a profile image
-      let profileImage = null;
-      if (user.profileImageId) {
-        const photo = await db.select().from(photos)
-          .where(eq(photos.id, user.profileImageId))
-          .limit(1)
-          .then(rows => rows[0]);
-        profileImage = photo?.image || null;
-      }
-
       return {
         id: String(user.id),
         email: user.email,
         name: user.username,
         role: user.role,
-        image: profileImage ?? undefined,
       }
     }
   }),
@@ -198,16 +187,30 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
-        token.image = user.image;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.image = token.image as string;
-      }
+      const dbUser = await db
+         .select({
+           id: users.id,
+           username: users.username,
+           email: users.email,
+           role: users.role,
+           image: photos.image,
+         })
+         .from(users)
+         .leftJoin(photos, eq(photos.id, users.profileImageId))
+         .where(eq(users.id, Number(token.id) ))
+         .then((rows) => rows[0]);
+ 
+       if (session.user && dbUser) {
+         session.user.id    = String(dbUser.id);
+         session.user.name  = dbUser.username;
+         session.user.email = dbUser.email;
+         session.user.role  = dbUser.role;
+         session.user.image = dbUser.image ?? undefined;
+       }
       return session;
     },
   }
