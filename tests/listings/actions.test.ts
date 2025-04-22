@@ -31,6 +31,7 @@ jest.mock('next/cache', () => ({
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn(),
   inArray: jest.fn(),
+  relations: jest.fn(), 
 }));
 
 jest.mock('@/lib/db/schema/listings', () => ({
