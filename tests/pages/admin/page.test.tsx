@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import AdminPage from "@/app/(dashboard)/admin/page"
