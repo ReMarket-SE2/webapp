@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { SearchForm } from '@/components/header/search-form';
 import { ListingsProvider } from '@/components/contexts/listings-context';
@@ -5,12 +6,12 @@ import { useSearchParams } from 'next/navigation';
 
 const mockUpdateOptions = jest.fn();
 
-// Mock the listings context
+// Mock the listings context – provide a stub provider to avoid DB access
 jest.mock('@/components/contexts/listings-context', () => ({
-  ...jest.requireActual('@/components/contexts/listings-context'),
   useListingsContext: () => ({
     updateOptions: mockUpdateOptions,
   }),
+  ListingsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 jest.mock('next/navigation', () => ({
@@ -23,11 +24,7 @@ jest.mock('next/navigation', () => ({
 
 describe('SearchForm', () => {
   const renderWithProvider = () => {
-    return render(
-      <ListingsProvider>
-        <SearchForm />
-      </ListingsProvider>
-    );
+    return render(<SearchForm />);
   };
 
   beforeEach(() => {
