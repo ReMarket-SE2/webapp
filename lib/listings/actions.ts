@@ -7,7 +7,7 @@ import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { eq, inArray, asc, desc } from 'drizzle-orm';
+import { eq, inArray, asc, desc, sql } from 'drizzle-orm';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -172,20 +172,52 @@ export async function getAllListings(options?: {
   pageSize?: number;
   sortBy?: 'price' | 'date';
   sortOrder?: 'asc' | 'desc';
+  searchTerm?: string;
 }): Promise<{ listings: ShortListing[]; totalCount: number }> {
   try {
-    // Get total count first
-    const allListings = await db.select().from(listings);
-    const totalCount = allListings.length;
+    // Build the query conditions
+    const conditions = [];
 
-    // Build the query for paginated results
+    if (options?.searchTerm) {
+      conditions.push(
+        sql`(
+          levenshtein(lower(${listings.title}), lower(${options.searchTerm})) <= 3
+          OR
+          levenshtein(lower(${listings.longDescription}), lower(${options.searchTerm})) <= 5
+        )`
+      );
+    }
+
+    // Get total count
+    const countQuery = db.select().from(listings);
+    if (conditions.length > 0) {
+      countQuery.where(sql.join(conditions, sql` AND `));
+    }
+    const countResult = await countQuery.execute();
+    const totalCount = countResult.length;
+
+    // Build the main query
     const query = db.select().from(listings);
+
+    // Apply conditions
+    if (conditions.length > 0) {
+      query.where(sql.join(conditions, sql` AND `));
+    }
 
     // Apply sorting
     if (options?.sortBy) {
       const sortColumn = options.sortBy === 'price' ? listings.price : listings.createdAt;
-      const sortOrder = options.sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn);
-      query.orderBy(sortOrder);
+      query.orderBy(options.sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn));
+    } else if (options?.searchTerm) {
+      // If searching, order by Levenshtein distance (closest matches first)
+      query.orderBy(
+        asc(
+          sql`LEAST(
+            levenshtein(lower(${listings.title}), lower(${options.searchTerm})),
+            levenshtein(lower(${listings.longDescription}), lower(${options.searchTerm}))
+          )`
+        )
+      );
     }
 
     // Apply pagination
@@ -194,7 +226,7 @@ export async function getAllListings(options?: {
     const offset = (page - 1) * pageSize;
     query.limit(pageSize).offset(offset);
 
-    const listingsData = await query;
+    const listingsData = await query.execute();
 
     // Fetch the first linked photo for each listing
     const shortListings: ShortListing[] = [];
