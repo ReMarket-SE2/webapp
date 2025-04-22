@@ -129,7 +129,7 @@ export function CategoryManagement({ categories }: CategoryManagementProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to delete this category?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. Any subcategories and associated listings will be affected.
+              This action cannot be undone. You cannot delete a category that has subcategories associated with it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -138,6 +138,7 @@ export function CategoryManagement({ categories }: CategoryManagementProps) {
               onClick={handleDelete}
               disabled={isSubmitting}
               className="bg-destructive hover:bg-destructive/90"
+              data-testid="delete-button"
             >
               {isSubmitting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>

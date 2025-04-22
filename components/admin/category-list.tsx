@@ -27,7 +27,7 @@ export function CategoryList({ categories, onEdit, onDelete, depth = 0 }: Catego
   };
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" data-testid="category-list-container">
       {categories.map((category) => (
         <div key={category.id} className="w-full">
           <div 
