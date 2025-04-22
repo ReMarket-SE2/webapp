@@ -181,9 +181,17 @@ export async function getAllListings(options?: {
     if (options?.searchTerm) {
       conditions.push(
         sql`(
-          levenshtein(lower(${listings.title}), lower(${options.searchTerm})) <= 3
+          (SELECT MIN(levenshtein(
+            lower(substring(${listings.title} from i for ${sql.raw(options.searchTerm.length.toString())})),
+            lower(${options.searchTerm})
+          ))
+          FROM generate_series(1, GREATEST(1, length(${listings.title}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i) <= 3
           OR
-          levenshtein(lower(${listings.longDescription}), lower(${options.searchTerm})) <= 5
+          (SELECT MIN(levenshtein(
+            lower(substring(${listings.longDescription} from i for ${sql.raw(options.searchTerm.length.toString())})),
+            lower(substring(${options.searchTerm}, 1, 255))
+          ))
+          FROM generate_series(1, GREATEST(1, length(${listings.longDescription}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i) <= 5
         )`
       );
     }
@@ -209,12 +217,20 @@ export async function getAllListings(options?: {
       const sortColumn = options.sortBy === 'price' ? listings.price : listings.createdAt;
       query.orderBy(options.sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn));
     } else if (options?.searchTerm) {
-      // If searching, order by Levenshtein distance (closest matches first)
+      // If searching, order by minimum Levenshtein distance to any substring
       query.orderBy(
         asc(
           sql`LEAST(
-            levenshtein(lower(${listings.title}), lower(${options.searchTerm})),
-            levenshtein(lower(${listings.longDescription}), lower(${options.searchTerm}))
+            (SELECT MIN(levenshtein(
+              lower(substring(${listings.title} from i for ${sql.raw(options.searchTerm.length.toString())})),
+              lower(${options.searchTerm})
+            ))
+            FROM generate_series(1, GREATEST(1, length(${listings.title}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i),
+            (SELECT MIN(levenshtein(
+              lower(substring(${listings.longDescription} from i for ${sql.raw(options.searchTerm.length.toString())})),
+              lower(substring(${options.searchTerm}, 1, 255))
+            ))
+            FROM generate_series(1, GREATEST(1, length(${listings.longDescription}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i)
           )`
         )
       );
