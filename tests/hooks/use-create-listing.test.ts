@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useCreateListing } from '@/lib/hooks/use-create-listing';
 import { createListing } from '@/lib/listings/actions';
+import { getCategories } from '@/lib/categories/actions';
 import { toast } from 'sonner';
 
 // Mocks
@@ -13,6 +14,10 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/lib/listings/actions', () => ({
   createListing: jest.fn(),
+}));
+
+jest.mock('@/lib/categories/actions', () => ({
+  getCategories: jest.fn(),
 }));
 
 jest.mock('sonner', () => ({
@@ -35,8 +40,14 @@ global.crypto = {
 } as any;
 
 describe('useCreateListing', () => {
+  const mockCategories = [
+    { id: 1, name: 'Category 1' },
+    { id: 2, name: 'Category 2' },
+  ];
+
   beforeEach(() => {
     jest.clearAllMocks();
+    (getCategories as jest.Mock).mockResolvedValue(mockCategories);
   });
 
   test('should initialize with default values', () => {
@@ -52,6 +63,36 @@ describe('useCreateListing', () => {
     });
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.photoFiles).toEqual([]);
+    expect(result.current.categories).toEqual([]);
+    expect(result.current.isLoadingCategories).toBe(true);
+  });
+
+  test('should fetch categories on mount', async () => {
+    const { result } = renderHook(() => useCreateListing());
+
+    // Wait for the categories to be fetched
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(getCategories).toHaveBeenCalled();
+    expect(result.current.categories).toEqual(mockCategories);
+    expect(result.current.isLoadingCategories).toBe(false);
+  });
+
+  test('should handle category fetch error', async () => {
+    const error = new Error('Failed to fetch categories');
+    (getCategories as jest.Mock).mockRejectedValueOnce(error);
+
+    const { result } = renderHook(() => useCreateListing());
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Failed to load categories');
+    expect(result.current.categories).toEqual([]);
+    expect(result.current.isLoadingCategories).toBe(false);
   });
 
   test('should update form values', () => {
@@ -168,6 +209,26 @@ describe('useCreateListing', () => {
     expect(createListing).not.toHaveBeenCalled();
   });
 
+  test('should show error when saving without category', async () => {
+    const { result } = renderHook(() => useCreateListing());
+
+    act(() => {
+      result.current.updateForm({
+        title: 'Test Title',
+        price: 100,
+        categoryId: null,
+      });
+    });
+
+    const listingId = await act(async () => {
+      return await result.current.saveListing();
+    });
+
+    expect(listingId).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith('Category is required');
+    expect(createListing).not.toHaveBeenCalled();
+  });
+
   test('should save listing successfully', async () => {
     const mockListingId = 123;
     (createListing as jest.Mock).mockResolvedValue({
@@ -231,6 +292,7 @@ describe('useCreateListing', () => {
       result.current.updateForm({
         title: 'Test Title',
         price: 100,
+        categoryId: 1,
       });
     });
 
@@ -255,6 +317,7 @@ describe('useCreateListing', () => {
       result.current.updateForm({
         title: 'Test Title',
         price: 100,
+        categoryId: 1,
       });
     });
 
@@ -284,6 +347,7 @@ describe('useCreateListing', () => {
       result.current.updateForm({
         title: 'Test Title',
         price: 100,
+        categoryId: 1,
       });
     });
 
@@ -308,6 +372,7 @@ describe('useCreateListing', () => {
       result.current.updateForm({
         title: 'Test Title',
         price: 100,
+        categoryId: 1,
       });
       result.current.addPhoto(file);
     });

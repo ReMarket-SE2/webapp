@@ -9,6 +9,14 @@ process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
 global.TextEncoder = require('util').TextEncoder;
 global.TextDecoder = require('util').TextDecoder;
 
+// Mock Request for Next.js server components
+global.Request = class Request {
+  constructor(input, init) {
+    this.input = input;
+    this.init = init;
+  }
+};
+
 // Mock window.matchMedia
 global.matchMedia = jest.fn().mockImplementation(query => ({
   matches: false,

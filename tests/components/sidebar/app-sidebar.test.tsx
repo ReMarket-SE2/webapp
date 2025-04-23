@@ -102,10 +102,28 @@ describe("AppSidebar", () => {
     expect(screen.getByText("Refurbished Laptop")).toBeInTheDocument();
   });
 
-  it("renders the default user name when session is null", () => {
+  it("renders sign in button when there is no session", () => {
     renderWithSession(null);
 
-    expect(screen.getByText("shadcn")).toBeInTheDocument();
-    expect(screen.getByText("m@example.com")).toBeInTheDocument();
+    const signInButton = screen.getByRole("button", { name: /sign in/i });
+    expect(signInButton).toBeInTheDocument();
+    expect(signInButton.closest("a")).toHaveAttribute("href", "/auth/sign-in");
+  });
+
+  it("renders user profile when session exists", () => {
+    const session = {
+      user: {
+        name: "Test User",
+        email: "test@example.com",
+        image: "/test-avatar.png",
+        role: "user",
+      },
+    };
+
+    renderWithSession(session);
+
+    expect(screen.getByText("Test User")).toBeInTheDocument();
+    expect(screen.getByText("test@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sign in/i })).not.toBeInTheDocument();
   });
 });

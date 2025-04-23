@@ -185,11 +185,13 @@ export async function getAllListings(options?: {
   sortBy?: 'price' | 'date';
   sortOrder?: 'asc' | 'desc';
   searchTerm?: string;
+  categoryId?: number | null;
 }): Promise<{ listings: ShortListing[]; totalCount: number }> {
   try {
-    // Build the query conditions
-    const conditions = [];
+    /* --------------------------- build WHERE clauses -------------------------- */
+    const conditions: ReturnType<typeof sql>[] = [];
 
+    // fuzzy search on title & longDescription
     if (options?.searchTerm) {
       conditions.push(
         sql`(
@@ -200,86 +202,73 @@ export async function getAllListings(options?: {
       );
     }
 
-    // Get total count
+    // exact category filter
+    if (options?.categoryId !== undefined && options.categoryId !== null) {
+      conditions.push(eq(listings.categoryId, options.categoryId));
+    }
+
+    /* ------------------------------ total count ------------------------------ */
     const countQuery = db.select().from(listings);
-    if (conditions.length > 0) {
-      countQuery.where(sql.join(conditions, sql` AND `));
-    }
-    const countResult = await countQuery.execute();
-    const totalCount = countResult.length;
+    if (conditions.length) countQuery.where(sql.join(conditions, sql` AND `));
+    const totalCount = (await countQuery).length;
 
-    // Build the main query
+    /* ---------------------------- main list query ---------------------------- */
     const query = db.select().from(listings);
+    if (conditions.length) query.where(sql.join(conditions, sql` AND `));
 
-    // Apply conditions
-    if (conditions.length > 0) {
-      query.where(sql.join(conditions, sql` AND `));
-    }
-
-    // Apply sorting
+    // sorting
     if (options?.sortBy) {
-      const sortColumn = options.sortBy === 'price' ? listings.price : listings.createdAt;
-      query.orderBy(options.sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn));
+      const sortCol = options.sortBy === 'price' ? listings.price : listings.createdAt;
+      query.orderBy(options.sortOrder === 'desc' ? desc(sortCol) : asc(sortCol));
     } else if (options?.searchTerm) {
-      // If searching, order by minimum Levenshtein distance to any substring
+      // rank by closest Levenshtein distance
       query.orderBy(
         asc(
           sql`LEAST(
-            ${getLevenshteinSql(listings.title, options.searchTerm, Number.MAX_SAFE_INTEGER)},
-            ${getLevenshteinSql(listings.longDescription, options.searchTerm, Number.MAX_SAFE_INTEGER)}
+            ${getLevenshteinSql(listings.title, options.searchTerm, 3)},
+            ${getLevenshteinSql(listings.longDescription, options.searchTerm, 5)}
           )`
         )
       );
     }
 
-    // Apply pagination
+    // pagination
     const page = options?.page ?? 1;
     const pageSize = options?.pageSize ?? 20;
-    const offset = (page - 1) * pageSize;
-    query.limit(pageSize).offset(offset);
+    query.limit(pageSize).offset((page - 1) * pageSize);
 
     const listingsData = await query.execute();
 
-    // Fetch the first linked photo for each listing
+    /* ------------------------- enrich with photos & cats ---------------------- */
     const shortListings: ShortListing[] = [];
 
     for (const listing of listingsData) {
-      // Get first linked photo
-      const [photoRecord] = await db
+      // first photo thumbnail
+      const [photoLink] = await db
         .select({ photoId: listingPhotos.photoId })
         .from(listingPhotos)
         .where(eq(listingPhotos.listingId, listing.id))
-        .limit(1)
-        .execute();
+        .limit(1);
 
-      // Fetch the actual photo if one exists
       let photo: string | null = null;
-      if (photoRecord) {
-        const [photoResult] = await db
+      if (photoLink) {
+        const [photoRow] = await db
           .select()
           .from(photos)
-          .where(eq(photos.id, photoRecord.photoId))
-          .limit(1)
-          .execute();
-
-        if (photoResult) {
-          photo = photoResult.image;
-        }
+          .where(eq(photos.id, photoLink.photoId))
+          .limit(1);
+        photo = photoRow?.image ?? null;
       }
 
-      // Get category name if categoryId exists
+      // category name
       let category: string | null = null;
       if (listing.categoryId !== null) {
-        const [categoryResult] = await db
+        const [catRow] = await db
           .select({ name: categories.name })
           .from(categories)
           .where(eq(categories.id, listing.categoryId))
-          .limit(1)
-          .execute();
-
-        if (categoryResult) {
-          category = categoryResult.name;
-        }
+          .limit(1);
+        category = catRow?.name ?? null;
       }
 
       shortListings.push({
@@ -292,15 +281,9 @@ export async function getAllListings(options?: {
       });
     }
 
-    return {
-      listings: shortListings,
-      totalCount,
-    };
-  } catch (error) {
-    console.error('Error fetching all listings:', error);
-    return {
-      listings: [],
-      totalCount: 0,
-    };
+    return { listings: shortListings, totalCount };
+  } catch (err) {
+    console.error('Error fetching listings:', err);
+    return { listings: [], totalCount: 0 };
   }
 }
