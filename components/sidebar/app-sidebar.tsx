@@ -5,6 +5,7 @@ import {
   Carrot,
   Banana,
   ShieldCheck,
+  LogIn,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -22,17 +23,20 @@ import {
 import Image from "next/image"
 import { NavWishlist } from "@/components/sidebar/nav-wishlist"
 import { useSession } from "next-auth/react"
+import { Button } from "../ui/button"
 
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
 
+  console.log('session', session);
+
   const data = {
-    user: {
-      name: session?.user?.name ?? "shadcn",
-      email: session?.user?.email ?? "m@example.com",
-      avatar: session?.user?.image ?? "/avatar.png",
-    },
+    user: session?.user ? {
+      name: session.user.name ?? "shadcn",
+      email: session.user.email ?? "m@example.com",
+      avatar: session.user.image ?? "/avatar.png",
+    } : null,
     navMain: [
       {
         title: "View Listings",
@@ -159,7 +163,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavWishlist listings={data.wishlist} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {session?.user ? (
+          <NavUser user={data.user!} />
+        ) : (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
+                <Link href="/auth/sign-in" className="flex items-center gap-2">
+                  <Button variant="outline" className="w-full">
+                    <LogIn className="size-4" />
+                    <span>Sign In</span>
+                  </Button>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
       </SidebarFooter>
     </Sidebar>
   )
