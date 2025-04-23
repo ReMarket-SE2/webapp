@@ -36,6 +36,13 @@
       "when": 1744739910845,
       "tag": "0004_add_bio_to_users_table",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1745258759895,
+      "tag": "0005_add_parent_id_to_categories",
+      "breakpoints": true
     }
   ]
 }
