@@ -9,6 +9,7 @@ import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { Separator } from "@radix-ui/react-separator";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -122,6 +123,14 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
                 <p className="font-medium">{seller.username}</p>
               </div>
             </div>
+
+            <Separator className="my-4" />
+
+            {seller.bio && (
+              <div className="text-sm text-muted-foreground">
+                <p>{seller.bio}</p>
+              </div>
+            )}
             
             <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
               <div className="flex items-center">

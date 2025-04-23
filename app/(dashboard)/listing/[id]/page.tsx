@@ -9,19 +9,19 @@ import Link from 'next/link';
 import { DetailedDescription } from '@/components/listings/detailed-description';
 
 interface ListingPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ListingPage({ params }: ListingPageProps) {
-  const id = parseInt(params.id);
+  const {id} = await params;
   
-  if (isNaN(id)) {
+  if (isNaN(parseInt(id))) {
     return notFound();
   }
   
-  const listing = await getListingById(id);
+  const listing = await getListingById(parseInt(id));
   
   if (!listing) {
     return notFound();

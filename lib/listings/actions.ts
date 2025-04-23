@@ -45,6 +45,7 @@ export interface SellerInfo {
   profileImage?: string | null;
   activeListingsCount: number;
   archivedListingsCount: number;
+  bio?: string | null;
 }
 
 export interface ListingWithPhotos {
@@ -244,7 +245,7 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     return {
       ...listing,
       categoryName,
-      seller,
+      seller: seller ?? undefined,
       photos: photoData,
     };
   } catch (error) {
