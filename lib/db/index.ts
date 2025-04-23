@@ -3,16 +3,17 @@ import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import { Pool } from '@neondatabase/serverless';
+import * as schema from './schema';
 
 // For local development
 const connectionString =
   process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/remarket';
 
-// Create a Drizzle client based on environment
+// Create a Drizzle client based on environment with the schema for query builder
 export const db =
   process.env.NODE_ENV === 'production'
-    ? drizzleNeon(new Pool({ connectionString }))
-    : drizzlePostgres(postgres(connectionString, { max: 10 }));
+    ? drizzleNeon(new Pool({ connectionString }), { schema })
+    : drizzlePostgres(postgres(connectionString, { max: 10 }), { schema });
 
 // Function to run migrations programmatically if needed
 export const runMigrations = async () => {
