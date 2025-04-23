@@ -172,14 +172,28 @@ export async function getAllListings(options?: {
   pageSize?: number;
   sortBy?: 'price' | 'date';
   sortOrder?: 'asc' | 'desc';
+  categoryId?: number | null;
 }): Promise<{ listings: ShortListing[]; totalCount: number }> {
   try {
-    // Get total count first
-    const allListings = await db.select().from(listings);
-    const totalCount = allListings.length;
+    // Build the where condition for category filter
+    let whereCondition = undefined;
+    if (options?.categoryId) {
+      whereCondition = eq(listings.categoryId, options.categoryId);
+    }
+
+    // Get total count with filters applied
+    const countQuery = db.select().from(listings);
+    if (whereCondition) {
+      countQuery.where(whereCondition);
+    }
+    const filteredListings = await countQuery;
+    const totalCount = filteredListings.length;
 
     // Build the query for paginated results
     const query = db.select().from(listings);
+    if (whereCondition) {
+      query.where(whereCondition);
+    }
 
     // Apply sorting
     if (options?.sortBy) {

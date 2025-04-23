@@ -8,6 +8,7 @@ export interface UseListingsOptions {
   pageSize?: number;
   sortBy?: 'price' | 'date';
   sortOrder?: 'asc' | 'desc'; // asc for low-to-high or oldest-first, desc for high-to-low or newest-first
+  categoryId?: number | null;
   // Future filters can be added here, e.g., categoryId, minPrice, maxPrice
 }
 
@@ -29,6 +30,7 @@ export function useListings(initialOptions: UseListingsOptions = {}) {
   const [options, setOptions] = useState<UseListingsOptions>({
     page: 1,
     pageSize: 20,
+    categoryId: null,
     ...initialOptions,
   });
   const [metadata, setMetadata] = useState<ListingsPaginationMetadata>({
