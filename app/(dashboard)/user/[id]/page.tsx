@@ -46,7 +46,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             <div className="flex flex-col items-center gap-4">
               <Avatar className="w-32 h-32">
                 {profileImage ? (
-                  <AvatarImage src={profileImage} alt={user.username} />
+                  <AvatarImage src={profileImage} alt={user.username} className="object-cover" />
                 ) : (
                   <AvatarFallback className="text-4xl">
                     {user.username.charAt(0).toUpperCase()}

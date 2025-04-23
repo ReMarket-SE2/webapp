@@ -20,7 +20,7 @@ export function ListingCard({ listing }: ListingCardProps) {
               src={listing.photo || "/listing/no-image.png"}
               alt={listing.title}
               fill
-              className="object-cover"
+              className="object-contain"
               sizes="(max-width: 768px) 33vw, 25vw"
             />
           </CardHeader>
