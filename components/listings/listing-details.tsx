@@ -3,12 +3,12 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ShoppingCart, Heart } from "lucide-react";
+import { ShoppingCart, Heart, Tag, User, Package, Archive, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
-import Markdown from "react-markdown";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -19,10 +19,18 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
     title,
     price,
     description,
-    longDescription,
-    categoryId,
-    status
+    categoryName,
+    status,
+    createdAt,
+    seller
   } = listing;
+
+  // Format the creation date
+  const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   const container = {
     hidden: { opacity: 0 },
@@ -58,9 +66,17 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
     >
       <motion.div variants={item}>
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
           <Badge variant="outline">{status}</Badge>
-          {categoryId && <Badge variant="secondary">Category {categoryId}</Badge>}
+          {categoryName && (
+            <Badge variant="secondary">
+              <Tag className="h-4 w-4 mr-1" />
+              {categoryName}
+            </Badge>
+          )}
+          <Badge variant="secondary" className="text-xs">
+            Posted on {formattedDate}
+          </Badge>
         </div>
       </motion.div>
 
@@ -76,24 +92,59 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
       )}
 
       <motion.div variants={item}>
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={handleAddToCart}>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Add to Cart
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleAddToWishlist}>
-              <Heart className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex gap-3">
+          <Button className="flex-1" onClick={handleAddToCart}>
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            Add to Cart
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleAddToWishlist}>
+            <Heart className="h-4 w-4" />
+          </Button>
+        </div>
       </motion.div>
 
-      {longDescription && (
-        <motion.div variants={item} className="mt-8">
-          <Separator className="my-4" />
-          <h2 className="text-lg font-semibold mb-3">Detailed Description</h2>
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <Markdown>{longDescription}</Markdown>
-          </div>
+      {/* Seller Information Card */}
+      {seller && (
+        <motion.div variants={item} className="mt-6">
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3">Seller Information</h3>
+            <div className="flex items-center mb-3">
+              <Avatar className="">
+                {seller.profileImage ? (
+                  <AvatarImage src={seller.profileImage} alt={seller.username} />
+                ) : (
+                  <AvatarFallback>
+                    <User className="h-5 w-5" />
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="ml-2">
+                <p className="font-medium">{seller.username}</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+              <div className="flex items-center">
+                <Package className="mr-1 h-4 w-4 text-primary" />
+                <span>Active: {seller.activeListingsCount}</span>
+              </div>
+              <div className="flex items-center">
+                <Archive className="mr-1 h-4 w-4 text-muted-foreground" />
+                <span>Archived: {seller.archivedListingsCount}</span>
+              </div>
+            </div>
+            
+            <div className="mt-3 space-y-2">
+              <Button className="w-full text-xs" variant="secondary" size="sm">
+                <User className="mr-1 h-3 w-3" />
+                View Profile
+              </Button>
+              <Button className="w-full text-xs" variant="outline" size="sm">
+                <ExternalLink className="mr-1 h-3 w-3" />
+                See All Listings
+              </Button>
+            </div>
+          </Card>
         </motion.div>
       )}
     </motion.div>

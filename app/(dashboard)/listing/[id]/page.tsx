@@ -6,6 +6,7 @@ import ListingImagesGallery from '@/components/listings/listing-images-gallery';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
+import { DetailedDescription } from '@/components/listings/detailed-description';
 
 interface ListingPageProps {
   params: {
@@ -48,7 +49,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <Suspense fallback={<Skeleton className="rounded-lg aspect-[4/3] w-full" />}>
           <ListingImagesGallery images={listing.photos} title={listing.title} />
         </Suspense>
@@ -62,6 +63,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <ListingDetails listing={listing} />
         </Suspense>
       </div>
+
+      {listing.longDescription && (
+        <Suspense fallback={<div className="space-y-4 mt-8">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>}>
+          <DetailedDescription longDescription={listing.longDescription} />
+        </Suspense>
+      )}
     </div>
   );
 } 
