@@ -105,7 +105,7 @@ export default function ListingImagesGallery({ images, title }: ListingImagesGal
                 alt={`${title} - Thumbnail ${index + 1}`}
                 fill
                 sizes="64px"
-                className="object-cover"
+                className="object-contain"
               />
             </motion.button>
           ))}

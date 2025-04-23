@@ -202,6 +202,7 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
         id: users.id,
         username: users.username,
         profileImageId: users.profileImageId,
+        bio: users.bio,
       })
       .from(users)
       .limit(1);
@@ -237,6 +238,7 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
         id: user.id,
         username: user.username,
         profileImage,
+        bio: user.bio,
         activeListingsCount: activeCount?.count || 0,
         archivedListingsCount: archivedCount?.count || 0,
       };
