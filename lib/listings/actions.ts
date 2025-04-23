@@ -209,12 +209,20 @@ export async function getAllListings(options?: {
 
     /* ------------------------------ total count ------------------------------ */
     const countQuery = db.select().from(listings);
-    if (conditions.length) countQuery.where(sql.join(conditions, sql` AND `));
-    const totalCount = (await countQuery).length;
+    if (conditions.length) {
+      for (const condition of conditions) {
+        countQuery.where(condition);
+      }
+    }
+    const totalCount = (await countQuery.execute()).length;
 
     /* ---------------------------- main list query ---------------------------- */
     const query = db.select().from(listings);
-    if (conditions.length) query.where(sql.join(conditions, sql` AND `));
+    if (conditions.length) {
+      for (const condition of conditions) {
+        query.where(condition);
+      }
+    }
 
     // sorting
     if (options?.sortBy) {
