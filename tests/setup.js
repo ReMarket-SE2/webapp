@@ -96,3 +96,11 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalConsoleError;
 });
+
+// Mock Request API for Next.js
+global.Request = class Request {
+  constructor(input, init) {
+    this.input = input;
+    this.init = init;
+  }
+};

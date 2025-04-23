@@ -8,6 +8,7 @@ export interface UseListingsOptions {
   pageSize?: number;
   sortBy?: 'price' | 'date';
   sortOrder?: 'asc' | 'desc'; // asc for low-to-high or oldest-first, desc for high-to-low or newest-first
+  searchTerm?: string;
   categoryId?: number | null;
   // Future filters can be added here, e.g., categoryId, minPrice, maxPrice
 }

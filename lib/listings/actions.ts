@@ -7,7 +7,8 @@ import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { eq, inArray, asc, desc } from 'drizzle-orm';
+import { eq, inArray, asc, desc, sql } from 'drizzle-orm';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -54,6 +55,17 @@ export interface ShortListing {
   category: string | null;
   photo: string | null; // Single thumbnail photo Base64 encoded
   createdAt: Date;
+}
+
+// Helper function to generate Levenshtein distance SQL for a column
+function getLevenshteinSql(column: PgColumn, searchTerm: string, maxDistance: number) {
+  return sql`(
+    SELECT MIN(levenshtein(
+      lower(substring(${column} from i for ${sql.raw(searchTerm.length.toString())})),
+      lower(substring(${searchTerm}, 1, 255))
+    ))
+    FROM generate_series(1, GREATEST(1, length(${column}) - ${sql.raw(searchTerm.length.toString())} + 1)) as i
+  ) <= ${maxDistance}`;
 }
 
 export async function createListing(
@@ -172,75 +184,92 @@ export async function getAllListings(options?: {
   pageSize?: number;
   sortBy?: 'price' | 'date';
   sortOrder?: 'asc' | 'desc';
+  searchTerm?: string;
   categoryId?: number | null;
 }): Promise<{ listings: ShortListing[]; totalCount: number }> {
   try {
-    // Build the where condition for category filter
-    let whereCondition = undefined;
-    if (options?.categoryId) {
-      whereCondition = eq(listings.categoryId, options.categoryId);
+    /* --------------------------- build WHERE clauses -------------------------- */
+    const conditions: ReturnType<typeof sql>[] = [];
+
+    // fuzzy search on title & longDescription
+    if (options?.searchTerm) {
+      conditions.push(
+        sql`(
+          ${getLevenshteinSql(listings.title, options.searchTerm, 3)}
+          OR
+          ${getLevenshteinSql(listings.longDescription, options.searchTerm, 5)}
+        )`
+      );
     }
 
-    // Get total count with filters applied
+    // exact category filter
+    if (options?.categoryId !== undefined && options.categoryId !== null) {
+      conditions.push(eq(listings.categoryId, options.categoryId));
+    }
+
+    /* ------------------------------ total count ------------------------------ */
     const countQuery = db.select().from(listings);
-    if (whereCondition) {
-      countQuery.where(whereCondition);
-    }
-    const filteredListings = await countQuery;
-    const totalCount = filteredListings.length;
+    if (conditions.length) countQuery.where(sql.join(conditions, sql` AND `));
+    const totalCount = (await countQuery).length;
 
-    // Build the query for paginated results
+    /* ---------------------------- main list query ---------------------------- */
     const query = db.select().from(listings);
-    if (whereCondition) {
-      query.where(whereCondition);
-    }
+    if (conditions.length) query.where(sql.join(conditions, sql` AND `));
 
-    // Apply sorting
+    // sorting
     if (options?.sortBy) {
-      const sortColumn = options.sortBy === 'price' ? listings.price : listings.createdAt;
-      const sortOrder = options.sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn);
-      query.orderBy(sortOrder);
+      const sortCol = options.sortBy === 'price' ? listings.price : listings.createdAt;
+      query.orderBy(options.sortOrder === 'desc' ? desc(sortCol) : asc(sortCol));
+    } else if (options?.searchTerm) {
+      // rank by closest Levenshtein distance
+      query.orderBy(
+        asc(
+          sql`LEAST(
+            ${getLevenshteinSql(listings.title, options.searchTerm, 3)},
+            ${getLevenshteinSql(listings.longDescription, options.searchTerm, 5)}
+          )`
+        )
+      );
     }
 
-    // Apply pagination
+    // pagination
     const page = options?.page ?? 1;
     const pageSize = options?.pageSize ?? 20;
-    const offset = (page - 1) * pageSize;
-    query.limit(pageSize).offset(offset);
+    query.limit(pageSize).offset((page - 1) * pageSize);
 
-    const listingsData = await query;
+    const listingsData = await query.execute();
 
-    // Fetch the first linked photo for each listing
+    /* ------------------------- enrich with photos & cats ---------------------- */
     const shortListings: ShortListing[] = [];
 
     for (const listing of listingsData) {
-      const [photoRecord] = await db
+      // first photo thumbnail
+      const [photoLink] = await db
         .select({ photoId: listingPhotos.photoId })
         .from(listingPhotos)
         .where(eq(listingPhotos.listingId, listing.id))
         .limit(1);
 
       let photo: string | null = null;
-
-      if (photoRecord) {
-        const [photoResult] = await db
+      if (photoLink) {
+        const [photoRow] = await db
           .select()
           .from(photos)
-          .where(eq(photos.id, photoRecord.photoId))
+          .where(eq(photos.id, photoLink.photoId))
           .limit(1);
-
-        if (photoResult) {
-          photo = photoResult.image;
-        }
+        photo = photoRow?.image ?? null;
       }
 
-      const categoryName = await db
-        .select({ name: categories.name })
-        .from(categories)
-        .where(listing.categoryId !== null ? eq(categories.id, listing.categoryId) : undefined)
-        .limit(1);
-
-      const category = categoryName.length > 0 ? categoryName[0].name : null;
+      // category name
+      let category: string | null = null;
+      if (listing.categoryId !== null) {
+        const [catRow] = await db
+          .select({ name: categories.name })
+          .from(categories)
+          .where(eq(categories.id, listing.categoryId))
+          .limit(1);
+        category = catRow?.name ?? null;
+      }
 
       shortListings.push({
         id: listing.id,
@@ -252,15 +281,9 @@ export async function getAllListings(options?: {
       });
     }
 
-    return {
-      listings: shortListings,
-      totalCount,
-    };
-  } catch (error) {
-    console.error('Error fetching all listings:', error);
-    return {
-      listings: [],
-      totalCount: 0,
-    };
+    return { listings: shortListings, totalCount };
+  } catch (err) {
+    console.error('Error fetching listings:', err);
+    return { listings: [], totalCount: 0 };
   }
 }
