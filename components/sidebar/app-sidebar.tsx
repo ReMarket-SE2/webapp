@@ -29,8 +29,6 @@ import { Button } from "../ui/button"
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
 
-  console.log('session', session);
-
   const data = {
     user: session?.user ? {
       name: session.user.name ?? "shadcn",
