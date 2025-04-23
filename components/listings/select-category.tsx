@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import {
   Select,
   SelectItem,
@@ -5,22 +8,49 @@ import {
   SelectValue,
   SelectTrigger
 } from "@/components/ui/select";
+import { getCategories } from '@/lib/categories/actions';
+import { useListingsContext } from '@/components/contexts/listings-context';
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 export function SelectCategory() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const { updateOptions } = useListingsContext();
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const fetchedCategories = await getCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    }
+
+    fetchCategories();
+  }, []);
+
+  const handleCategoryChange = (value: string) => {
+    const categoryId = value === 'all' ? null : parseInt(value, 10);
+    updateOptions({ categoryId, page: 1 }); // Reset to first page when changing category
+  };
+
   return (
-    <Select>
+    <Select onValueChange={handleCategoryChange}>
       <SelectTrigger className="w-54 py-0">
         <SelectValue placeholder="Filter by category" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="electronics">Electronics</SelectItem>
-        <SelectItem value="furniture">Furniture</SelectItem>
-        <SelectItem value="home">Home</SelectItem>
-        <SelectItem value="outdoors">Outdoors</SelectItem>
-        <SelectItem value="sports">Sports</SelectItem>
-        <SelectItem value="toys">Toys</SelectItem>
-        <SelectItem value="other">Other</SelectItem>
+        <SelectItem value="all">All Categories</SelectItem>
+        {categories.map((category) => (
+          <SelectItem key={category.id} value={category.id.toString()}>
+            {category.name}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
-  )
+  );
 }
