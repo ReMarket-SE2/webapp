@@ -8,12 +8,15 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { PhotoUpload } from "./photo-upload"
 import { MarkdownEditor } from "./markdown-editor"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function CreateListingForm() {
   const {
     form,
     isSubmitting,
     photoFiles,
+    categories,
+    isLoadingCategories,
     updateForm,
     addPhoto,
     removePhoto,
@@ -101,6 +104,30 @@ export function CreateListingForm() {
               disabled={isSubmitting}
               required
             />
+          </div>
+
+          {/* Category Select */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <p className="text-xs text-muted-foreground">
+              Choose a category for your item.
+            </p>
+            <Select
+              value={form.categoryId?.toString() || ""}
+              onValueChange={(value) => updateForm({ categoryId: parseInt(value) || null })}
+              disabled={isSubmitting || isLoadingCategories}
+            >
+              <SelectTrigger id="category" className="w-[200px]">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Short Description */}
