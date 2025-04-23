@@ -133,6 +133,19 @@ describe('SearchForm', () => {
     expect(form).toHaveClass('test-form');
   });
 
+  it('updates input value on change', () => {
+    renderWithProvider();
+    const input = screen.getByPlaceholderText(/Type to search/i);
+    fireEvent.change(input, { target: { value: 'foo' } });
+    expect((input as HTMLInputElement).value).toBe('foo');
+  });
+
+  it('input has correct id for label association', () => {
+    renderWithProvider();
+    const input = screen.getByPlaceholderText(/Type to search/i);
+    expect(input).toHaveAttribute('id', 'search');
+  });
+
   it('associates label with input for accessibility', () => {
     renderWithProvider();
     expect(screen.getByLabelText(/Search/i)).toBeInTheDocument();
