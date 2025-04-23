@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, createEvent } from '@testing-library/react';
 import { SearchForm } from '@/components/header/search-form';
 import { ListingsProvider } from '@/components/contexts/listings-context';
 import { useSearchParams } from 'next/navigation';
@@ -71,5 +71,70 @@ describe('SearchForm', () => {
       searchTerm: undefined,
       page: 1,
     });
+  });
+
+  it('calls updateOptions on mount with undefined searchTerm', () => {
+    renderWithProvider();
+    expect(mockUpdateOptions).toHaveBeenCalledWith({
+      searchTerm: undefined,
+      page: 1,
+    });
+  });
+
+  it('debounces rapid input changes correctly', async () => {
+    renderWithProvider();
+    mockUpdateOptions.mockClear();
+    const input = screen.getByPlaceholderText(/Type to search/i);
+    fireEvent.change(input, { target: { value: 'a' } });
+    fireEvent.change(input, { target: { value: 'ab' } });
+    fireEvent.change(input, { target: { value: 'abc' } });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+    expect(mockUpdateOptions).toHaveBeenCalledTimes(1);
+    expect(mockUpdateOptions).toHaveBeenCalledWith({
+      searchTerm: 'abc',
+      page: 1,
+    });
+  });
+
+  it('does not call updateOptions before debounce delay', () => {
+    jest.useFakeTimers();
+    renderWithProvider();
+    mockUpdateOptions.mockClear();
+    const input = screen.getByPlaceholderText(/Type to search/i);
+    act(() => {
+      fireEvent.change(input, { target: { value: 'hello' } });
+      jest.advanceTimersByTime(300);
+    });
+    expect(mockUpdateOptions).not.toHaveBeenCalled();
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+    expect(mockUpdateOptions).toHaveBeenCalledWith({
+      searchTerm: 'hello',
+      page: 1,
+    });
+    jest.useRealTimers();
+  });
+
+  it('prevents default form submission', () => {
+    const { container } = renderWithProvider();
+    const form = container.querySelector('form');
+    const submitEvent = createEvent.submit(form!);
+    const preventDefaultSpy = jest.spyOn(submitEvent, 'preventDefault');
+    fireEvent(form!, submitEvent);
+    expect(preventDefaultSpy).toHaveBeenCalled();
+  });
+
+  it('forwards additional props to form', () => {
+    render(<SearchForm data-testid="search-form" className="test-form" />);
+    const form = screen.getByTestId('search-form');
+    expect(form).toHaveClass('test-form');
+  });
+
+  it('associates label with input for accessibility', () => {
+    renderWithProvider();
+    expect(screen.getByLabelText(/Search/i)).toBeInTheDocument();
   });
 }); 
