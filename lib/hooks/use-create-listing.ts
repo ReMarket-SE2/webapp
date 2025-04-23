@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ListingStatus } from '@/lib/db/schema/listings';
 import { toast } from 'sonner';
 import { createListing, ListingFormData } from '@/lib/listings/actions';
+import { getCategories } from '@/lib/categories/actions';
+import { Category } from '@/lib/db/schema/categories';
 
 export interface CreateListingForm {
   title: string;
@@ -25,6 +27,8 @@ interface UseCreateListingReturn {
   form: CreateListingForm;
   isSubmitting: boolean;
   photoFiles: PhotoFile[];
+  categories: Category[];
+  isLoadingCategories: boolean;
   updateForm: (updates: Partial<CreateListingForm>) => void;
   addPhoto: (file: File) => void;
   removePhoto: (id: string) => void;
@@ -56,7 +60,25 @@ export function useCreateListing(): UseCreateListingReturn {
   const [form, setForm] = useState<CreateListingForm>(DEFAULT_FORM);
   const [photoFiles, setPhotoFiles] = useState<PhotoFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const fetchedCategories = await getCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        toast.error('Failed to load categories');
+        console.error('Error loading categories:', error);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const updateForm = (updates: Partial<CreateListingForm>) => {
     // Validate longDescription length
@@ -113,6 +135,11 @@ export function useCreateListing(): UseCreateListingReturn {
 
     if (form.price <= 0) {
       toast.error('Price must be greater than 0');
+      return null;
+    }
+
+    if (!form.categoryId) {
+      toast.error('Category is required');
       return null;
     }
 
@@ -184,6 +211,8 @@ export function useCreateListing(): UseCreateListingReturn {
     form,
     isSubmitting,
     photoFiles,
+    categories,
+    isLoadingCategories,
     updateForm,
     addPhoto,
     removePhoto,
