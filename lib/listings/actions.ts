@@ -8,6 +8,7 @@ import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { eq, inArray, asc, desc, sql } from 'drizzle-orm';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -54,6 +55,17 @@ export interface ShortListing {
   category: string | null;
   photo: string | null; // Single thumbnail photo Base64 encoded
   createdAt: Date;
+}
+
+// Helper function to generate Levenshtein distance SQL for a column
+function getLevenshteinSql(column: PgColumn, searchTerm: string, maxDistance: number) {
+  return sql`(
+    SELECT MIN(levenshtein(
+      lower(substring(${column} from i for ${sql.raw(searchTerm.length.toString())})),
+      lower(substring(${searchTerm}, 1, 255))
+    ))
+    FROM generate_series(1, GREATEST(1, length(${column}) - ${sql.raw(searchTerm.length.toString())} + 1)) as i
+  ) <= ${maxDistance}`;
 }
 
 export async function createListing(
@@ -181,17 +193,9 @@ export async function getAllListings(options?: {
     if (options?.searchTerm) {
       conditions.push(
         sql`(
-          (SELECT MIN(levenshtein(
-            lower(substring(${listings.title} from i for ${sql.raw(options.searchTerm.length.toString())})),
-            lower(${options.searchTerm})
-          ))
-          FROM generate_series(1, GREATEST(1, length(${listings.title}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i) <= 3
+          ${getLevenshteinSql(listings.title, options.searchTerm, 3)}
           OR
-          (SELECT MIN(levenshtein(
-            lower(substring(${listings.longDescription} from i for ${sql.raw(options.searchTerm.length.toString())})),
-            lower(substring(${options.searchTerm}, 1, 255))
-          ))
-          FROM generate_series(1, GREATEST(1, length(${listings.longDescription}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i) <= 5
+          ${getLevenshteinSql(listings.longDescription, options.searchTerm, 5)}
         )`
       );
     }
@@ -221,16 +225,8 @@ export async function getAllListings(options?: {
       query.orderBy(
         asc(
           sql`LEAST(
-            (SELECT MIN(levenshtein(
-              lower(substring(${listings.title} from i for ${sql.raw(options.searchTerm.length.toString())})),
-              lower(${options.searchTerm})
-            ))
-            FROM generate_series(1, GREATEST(1, length(${listings.title}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i),
-            (SELECT MIN(levenshtein(
-              lower(substring(${listings.longDescription} from i for ${sql.raw(options.searchTerm.length.toString())})),
-              lower(substring(${options.searchTerm}, 1, 255))
-            ))
-            FROM generate_series(1, GREATEST(1, length(${listings.longDescription}) - ${sql.raw(options.searchTerm.length.toString())} + 1)) as i)
+            ${getLevenshteinSql(listings.title, options.searchTerm, Number.MAX_SAFE_INTEGER)},
+            ${getLevenshteinSql(listings.longDescription, options.searchTerm, Number.MAX_SAFE_INTEGER)}
           )`
         )
       );
@@ -248,62 +244,43 @@ export async function getAllListings(options?: {
     const shortListings: ShortListing[] = [];
 
     for (const listing of listingsData) {
-      // ------------------------------
-      // 1. Fetch first linked photo id
-      // ------------------------------
-      const photoRecordResults = await db
+      // Get first linked photo
+      const [photoRecord] = await db
         .select({ photoId: listingPhotos.photoId })
         .from(listingPhotos)
         .where(eq(listingPhotos.listingId, listing.id))
         .limit(1)
         .execute();
 
-      const photoRecord = photoRecordResults[0];
-
-      // ------------------------------
-      // 2. Fetch the actual photo (always execute to satisfy mocks)
-      // ------------------------------
+      // Fetch the actual photo if one exists
       let photo: string | null = null;
-      let photoResults;
-
       if (photoRecord) {
-        photoResults = await db
+        const [photoResult] = await db
           .select()
           .from(photos)
           .where(eq(photos.id, photoRecord.photoId))
           .limit(1)
           .execute();
-      } else {
-        // Still execute a query to satisfy mocks even when no photo is linked
-        photoResults = await db.select().from(photos).limit(1).execute();
+
+        if (photoResult) {
+          photo = photoResult.image;
+        }
       }
 
-      if (photoResults.length > 0) {
-        photo = photoResults[0].image;
-      }
-
-      // ------------------------------
-      // 3. Fetch the category name (always execute to satisfy mocks)
-      // ------------------------------
-      let categoryResults;
-
+      // Get category name if categoryId exists
+      let category: string | null = null;
       if (listing.categoryId !== null) {
-        categoryResults = await db
+        const [categoryResult] = await db
           .select({ name: categories.name })
           .from(categories)
           .where(eq(categories.id, listing.categoryId))
           .limit(1)
           .execute();
-      } else {
-        // Still execute to satisfy mocks
-        categoryResults = await db
-          .select({ name: categories.name })
-          .from(categories)
-          .limit(1)
-          .execute();
-      }
 
-      const category = categoryResults.length > 0 ? categoryResults[0].name : null;
+        if (categoryResult) {
+          category = categoryResult.name;
+        }
+      }
 
       shortListings.push({
         id: listing.id,

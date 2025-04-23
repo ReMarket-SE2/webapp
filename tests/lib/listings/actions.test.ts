@@ -73,13 +73,9 @@ describe('listings actions', () => {
         .mockResolvedValueOnce(mockListings) // countQuery
         .mockResolvedValueOnce(mockListings) // main listings query
         // Listing 1
-        .mockResolvedValueOnce([]) // listingPhotos for photo
-        .mockResolvedValueOnce([]) // photos for photo
-        .mockResolvedValueOnce([]) // categories for category
+        .mockResolvedValueOnce([]) // listingPhotos for listing 1
         // Listing 2
-        .mockResolvedValueOnce([]) // listingPhotos for photo
-        .mockResolvedValueOnce([]) // photos for photo
-        .mockResolvedValueOnce([]); // categories for category
+        .mockResolvedValueOnce([]); // listingPhotos for listing 2
 
       const result = await getAllListings();
 
@@ -95,8 +91,8 @@ describe('listings actions', () => {
         totalCount: mockListings.length,
       });
       expect(mockSelect).toHaveBeenCalled();
-      // Ensure all execute calls were consumed
-      expect(mockExecute).toHaveBeenCalledTimes(8);
+      // Ensure all execute calls were consumed (countQuery, main listings query, and one listingPhotos call per listing)
+      expect(mockExecute).toHaveBeenCalledTimes(4);
     });
   });
 });
