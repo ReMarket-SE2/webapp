@@ -12,7 +12,7 @@ interface ListingCardProps {
 
 export function ListingCard({ listing }: ListingCardProps) {
   return (
-    <Link href={`/listing/${listing.id}`} className="block">
+    <Link href={`/listings/${listing.id}`} className="block">
       <Card className="overflow-hidden hover:bg-muted transition-colors p-0 shadow-none">
         <div className="flex">
           <CardHeader className="relative w-48 h-48 shrink-0 p-0">
