@@ -9,25 +9,25 @@ import Link from 'next/link';
 
 interface ListingPageProps {
   params: {
-    listingId: string;
+    id: string;
   };
 }
 
 export default async function ListingPage({ params }: ListingPageProps) {
-  const listingId = parseInt(params.listingId);
+  const id = parseInt(params.id);
   
-  if (isNaN(listingId)) {
+  if (isNaN(id)) {
     return notFound();
   }
   
-  const listing = await getListingById(listingId);
+  const listing = await getListingById(id);
   
   if (!listing) {
     return notFound();
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container w-full p-4">
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>

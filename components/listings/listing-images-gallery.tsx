@@ -50,7 +50,7 @@ export default function ListingImagesGallery({ images, title }: ListingImagesGal
             alt={`${title} - Image ${currentIndex + 1}`}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover"
+            className="object-contain"
             priority={currentIndex === 0}
           />
           
@@ -88,7 +88,7 @@ export default function ListingImagesGallery({ images, title }: ListingImagesGal
 
       {/* Thumbnails */}
       {images.length > 1 && (
-        <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide">
+        <div className="flex overflow-x-auto gap-2 p-4 scrollbar-hide">
           {images.map((image, index) => (
             <motion.button
               key={index}

@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ShoppingCart, Heart } from "lucide-react";
 import { toast } from "sonner";
@@ -77,7 +76,6 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
       )}
 
       <motion.div variants={item}>
-        <Card className="p-4">
           <div className="flex gap-3">
             <Button className="flex-1" onClick={handleAddToCart}>
               <ShoppingCart className="mr-2 h-4 w-4" />
@@ -87,7 +85,6 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
               <Heart className="h-4 w-4" />
             </Button>
           </div>
-        </Card>
       </motion.div>
 
       {longDescription && (
