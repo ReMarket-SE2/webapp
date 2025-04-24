@@ -16,7 +16,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <SidebarProvider className="flex flex-col">
           <ListingsProvider initialOptions={{
             page: 1,
-            pageSize: 20,
+            pageSize: 16,
             sortBy: 'date',
             sortOrder: 'desc',
           }}>
