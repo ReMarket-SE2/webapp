@@ -39,7 +39,7 @@ export function CreateListingForm() {
     if (listingId) {
       toast.success("Listing published successfully!")
       reset()
-      router.push(`/listings/${listingId}`)
+      router.push(`/listing/${listingId}`)
     }
   }
 
@@ -48,7 +48,7 @@ export function CreateListingForm() {
     if (listingId) {
       toast.success("Draft saved successfully!")
       reset()
-      router.push(`/listings/${listingId}`)
+      router.push(`/listing/${listingId}`)
     }
   }
 

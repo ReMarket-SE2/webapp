@@ -9,6 +9,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { eq, inArray, asc, desc, sql } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import { users } from '@/lib/db/schema/users';
+import { count } from 'drizzle-orm';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -37,6 +39,15 @@ export interface ListingFormData {
   status: ListingStatus;
 }
 
+export interface SellerInfo {
+  id: number;
+  username: string;
+  profileImage?: string | null;
+  activeListingsCount: number;
+  archivedListingsCount: number;
+  bio?: string | null;
+}
+
 export interface ListingWithPhotos {
   id: number;
   title: string;
@@ -44,7 +55,11 @@ export interface ListingWithPhotos {
   description: string | null;
   longDescription: string | null;
   categoryId: number | null;
+  categoryName?: string | null;
   status: ListingStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  seller?: SellerInfo;
   photos: string[]; // Base64 encoded images
 }
 
@@ -169,8 +184,70 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
       photoData.push(...photoResults.map(photo => photo.image));
     }
 
+    // Get category name if there's a categoryId
+    let categoryName = null;
+    if (listing.categoryId !== null) {
+      const [catRow] = await db
+        .select({ name: categories.name })
+        .from(categories)
+        .where(eq(categories.id, listing.categoryId))
+        .limit(1);
+      categoryName = catRow?.name ?? null;
+    }
+
+    // Since our schema doesn't have a sellerId yet, we'll get the first user
+    // In a real implementation, you would join with users based on the sellerId field
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        profileImageId: users.profileImageId,
+        bio: users.bio,
+      })
+      .from(users)
+      .limit(1);
+
+    let seller = null;
+    if (user) {
+      // Get profile image if exists
+      let profileImage: string | null = null;
+      if (user.profileImageId) {
+        const [photoRecord] = await db
+          .select()
+          .from(photos)
+          .where(eq(photos.id, user.profileImageId));
+        
+        if (photoRecord) {
+          profileImage = photoRecord.image;
+        }
+      }
+
+      // Get count of active listings
+      const [activeCount] = await db
+        .select({ count: count() })
+        .from(listings)
+        .where(eq(listings.status, 'Active'));
+
+      // Get count of archived listings
+      const [archivedCount] = await db
+        .select({ count: count() })
+        .from(listings)
+        .where(eq(listings.status, 'Archived'));
+
+      seller = {
+        id: user.id,
+        username: user.username,
+        profileImage,
+        bio: user.bio,
+        activeListingsCount: activeCount?.count || 0,
+        archivedListingsCount: archivedCount?.count || 0,
+      };
+    }
+
     return {
       ...listing,
+      categoryName,
+      seller: seller ?? undefined,
       photos: photoData,
     };
   } catch (error) {
