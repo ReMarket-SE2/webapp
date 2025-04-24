@@ -42,6 +42,7 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/lib/db/migrations ./lib/db/migrations
 COPY --from=builder /app/lib/db/migrate.ts ./lib/db/migrate.ts
+COPY --from=builder /app/lib/db/schema ./lib/db/schema
 COPY --from=builder /app/lib/db/index.ts ./lib/db/index.ts
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/tsconfig.migrate.json ./tsconfig.migrate.json
