@@ -7,6 +7,7 @@ import { User } from '@/lib/db/schema'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { insertPhoto } from '@/lib/photos/actions'
+import { createWishlist } from '@/lib/wishlist/actions'
 
 export async function findUserByEmail(email: string): Promise<User | null> {
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1)
@@ -20,6 +21,7 @@ export async function findUserByUsername(username: string): Promise<User | null>
 
 export async function createUser(data: Omit<User, 'id'>): Promise<User> {
   const result = await db.insert(users).values({ ...data }).returning()
+  await createWishlist(result[0].id) // Create a wishlist for the new user
   return result[0]
 }
 

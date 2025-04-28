@@ -9,6 +9,9 @@ import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useWishlist } from "@/lib/hooks/use-wishlist";
+import { useSession } from "next-auth/react";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -16,6 +19,7 @@ interface ListingDetailsProps {
 
 export default function ListingDetails({ listing }: ListingDetailsProps) {
   const {
+    id,
     title,
     price,
     description,
@@ -24,6 +28,39 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
     createdAt,
     seller
   } = listing;
+  const session = useSession();
+  const userId = session.data?.user?.id;
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlist(userId ? parseInt(userId, 10) : 0);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+
+  useEffect(() => {
+    setIsInWishlist(wishlist.some(item => item.id === id));
+  }, [wishlist, id]);
+
+  const toggleWishlist = async () => {
+    if (!userId) {
+      toast.info("You need to be logged in to manage your wishlist.");
+      return;
+    }
+
+    if (isInWishlist) {
+      try {
+        await removeFromWishlist(id);
+        setIsInWishlist(false);
+      } catch (error) {
+        toast.error("Failed to remove from wishlist.");
+        console.error("Error removing from wishlist:", error);
+      }
+    } else {
+      try {
+        await addToWishlist(id);
+        setIsInWishlist(true);
+      } catch (error) {
+        toast.error("Failed to add to wishlist.");
+        console.error("Error adding to wishlist:", error);
+      }
+    }
+  };
 
   // Format the creation date
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
@@ -50,11 +87,6 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
   const handleAddToCart = () => {
     toast.success("Added to cart");
     // Implement actual cart functionality
-  };
-
-  const handleAddToWishlist = () => {
-    toast.success("Added to wishlist");
-    // Implement actual wishlist functionality
   };
 
   return (
@@ -97,8 +129,13 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
             <ShoppingCart className="mr-2 h-4 w-4" />
             Add to Cart
           </Button>
-          <Button variant="outline" size="icon" onClick={handleAddToWishlist}>
-            <Heart className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleWishlist}
+            className={isInWishlist ? "text-red-500" : ""}
+          >
+            <Heart className={`h-4 w-4 ${isInWishlist ? "fill-current" : ""}`} />
           </Button>
         </div>
       </motion.div>
@@ -155,4 +192,4 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
       )}
     </motion.div>
   );
-} 
+}

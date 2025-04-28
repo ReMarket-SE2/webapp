@@ -29,7 +29,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.profileImageId],
     references: [photos.id],
   }),
-  wishlists: many(wishlists),
+  wishlist: one(wishlists, {
+    fields: [users.id],
+    references: [wishlists.userId],
+  }),
   reviews: many(reviews),
   orders: many(orders),
   oauthAccounts: many(oauthAccounts),

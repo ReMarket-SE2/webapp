@@ -43,6 +43,13 @@
       "when": 1745258759895,
       "tag": "0005_add_parent_id_to_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1745661295434,
+      "tag": "0006_update-user-wishlist-relations-remove-name",
+      "breakpoints": true
     }
   ]
 }
