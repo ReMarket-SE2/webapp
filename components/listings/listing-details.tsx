@@ -9,12 +9,17 @@ import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { useRouter } from 'next/navigation';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { deleteListing } from '@/lib/listings/actions';
+import React from 'react';
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
+  sessionUserId?: number | null;
 }
 
-export default function ListingDetails({ listing }: ListingDetailsProps) {
+export default function ListingDetails({ listing, sessionUserId }: ListingDetailsProps) {
   const {
     title,
     price,
@@ -24,6 +29,9 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
     createdAt,
     seller
   } = listing;
+
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   // Format the creation date
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
@@ -56,6 +64,18 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
     toast.success("Added to wishlist");
     // Implement actual wishlist functionality
   };
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    const res = await deleteListing(listing.id);
+    setIsDeleting(false);
+    if (res.success) {
+      toast.success('Listing deleted');
+      router.push('/listings');
+    } else {
+      toast.error(res.error || 'Failed to delete listing');
+    }
+  }
 
   return (
     <motion.div
@@ -91,17 +111,49 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
         </motion.div>
       )}
 
-      <motion.div variants={item}>
-        <div className="flex gap-3">
-          <Button className="flex-1" onClick={handleAddToCart}>
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Add to Cart
-          </Button>
-          <Button variant="outline" size="icon" onClick={handleAddToWishlist}>
-            <Heart className="h-4 w-4" />
-          </Button>
-        </div>
-      </motion.div>
+      {/* Owner controls */}
+      {sessionUserId && seller && sessionUserId === seller.id ? (
+        <motion.div variants={item}>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1">
+              Edit
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="flex-1" disabled={isDeleting}>
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your listing.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-white hover:bg-destructive/90">
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div variants={item}>
+          <div className="flex gap-3">
+            <Button className="flex-1" onClick={handleAddToCart}>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Add to Cart
+            </Button>
+            <Button variant="outline" size="icon" onClick={handleAddToWishlist}>
+              <Heart className="h-4 w-4" />
+            </Button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Seller Information Card */}
       {seller && (
@@ -128,7 +180,7 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
                 <p>{seller.bio}</p>
               </div>
             )}
-            
+
             <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
               <div className="flex items-center">
                 <Package className="mr-1 h-4 w-4 text-primary" />
@@ -139,7 +191,7 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
                 <span>Archived: {seller.archivedListingsCount}</span>
               </div>
             </div>
-            
+
             <div className="mt-3 space-y-2">
               <Button className="w-full text-xs" variant="secondary" size="sm">
                 <User className="mr-1 h-3 w-3" />

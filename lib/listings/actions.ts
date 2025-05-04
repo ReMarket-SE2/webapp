@@ -216,7 +216,7 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
           .select()
           .from(photos)
           .where(eq(photos.id, user.profileImageId));
-        
+
         if (photoRecord) {
           profileImage = photoRecord.image;
         }
@@ -362,5 +362,16 @@ export async function getAllListings(options?: {
   } catch (err) {
     console.error('Error fetching listings:', err);
     return { listings: [], totalCount: 0 };
+  }
+}
+
+export async function deleteListing(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    await db.delete(listings).where(eq(listings.id, id));
+    revalidatePath('/listings');
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    return { success: false, error: 'Failed to delete listing' };
   }
 }
