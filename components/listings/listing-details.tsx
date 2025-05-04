@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { deleteListing } from '@/lib/listings/actions';
 import React from 'react';
+import Link from 'next/link';
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -115,9 +116,11 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
       {sessionUserId && seller && sessionUserId === seller.id ? (
         <motion.div variants={item}>
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1">
-              Edit
-            </Button>
+            <Link href={`/listing/${listing.id}/edit`} className="flex-1">
+              <Button variant="outline" className="w-full">
+                Edit
+              </Button>
+            </Link>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" className="flex-1" disabled={isDeleting}>

@@ -79,6 +79,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <DetailedDescription longDescription={listing.longDescription} />
         </Suspense>
       )}
+
+      {/* Owner controls */}
+      {/* Owner controls are handled inside ListingDetails */}
     </div>
   );
 } 
