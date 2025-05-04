@@ -65,30 +65,30 @@ describe('ListingPage', () => {
   });
 
   it('renders the not found page for NaN id', async () => {
-    await ListingPage({ params: { id: 'abc' } });
+    await ListingPage({ params: Promise.resolve({ id: 'abc' }) });
     expect(notFound).toHaveBeenCalled();
   });
 
   it('renders the not found page when listing is not found', async () => {
     (getListingById as jest.Mock).mockResolvedValue(null);
-    await ListingPage({ params: { id: '1' } });
+    await ListingPage({ params: Promise.resolve({ id: '1' }) });
     expect(getListingById).toHaveBeenCalledWith(1);
     expect(notFound).toHaveBeenCalled();
   });
 
   it('renders the listing page with all components when listing exists', async () => {
     (getListingById as jest.Mock).mockResolvedValue(mockListing);
-    
-    const Component = await ListingPage({ params: { id: '1' } });
+
+    const Component = await ListingPage({ params: Promise.resolve({ id: '1' }) });
     const { container } = render(Component);
-    
+
     expect(getListingById).toHaveBeenCalledWith(1);
     expect(notFound).not.toHaveBeenCalled();
-    
+
     expect(screen.getByTestId('listing-details')).toBeInTheDocument();
     expect(screen.getByTestId('listing-images-gallery')).toBeInTheDocument();
     expect(screen.getByTestId('detailed-description')).toBeInTheDocument();
-    
+
     expect(screen.getByTestId('listing-title')).toHaveTextContent('Test Listing');
     expect(screen.getByTestId('gallery-title')).toHaveTextContent('Test Listing');
     expect(screen.getByTestId('gallery-images-count')).toHaveTextContent('2');
@@ -97,10 +97,10 @@ describe('ListingPage', () => {
   it('renders the listing page without detailed description when longDescription is null', async () => {
     const listingWithoutDescription = { ...mockListing, longDescription: null };
     (getListingById as jest.Mock).mockResolvedValue(listingWithoutDescription);
-    
-    const Component = await ListingPage({ params: { id: '1' } });
+
+    const Component = await ListingPage({ params: Promise.resolve({ id: '1' }) });
     const { container } = render(Component);
-    
+
     expect(getListingById).toHaveBeenCalledWith(1);
     expect(screen.getByTestId('listing-details')).toBeInTheDocument();
     expect(screen.getByTestId('listing-images-gallery')).toBeInTheDocument();
@@ -109,22 +109,22 @@ describe('ListingPage', () => {
 
   it('renders the breadcrumb navigation with correct links', async () => {
     (getListingById as jest.Mock).mockResolvedValue(mockListing);
-    
-    const Component = await ListingPage({ params: { id: '1' } });
+
+    const Component = await ListingPage({ params: Promise.resolve({ id: '1' }) });
     const { container } = render(Component);
-    
+
     const homeLink = screen.getByText('Home');
     const listingsLink = screen.getByText('Listings');
-    
+
     // Get all breadcrumb items
     const breadcrumbItems = document.querySelectorAll('[data-slot="breadcrumb-item"]');
     expect(breadcrumbItems.length).toBe(3); // Home, Listings, and the current page
-    
+
     // The last breadcrumb item should be the title
     const lastBreadcrumbItem = breadcrumbItems[breadcrumbItems.length - 1];
     const titleSpan = lastBreadcrumbItem.querySelector('.text-muted-foreground');
     expect(titleSpan).toHaveTextContent('Test Listing');
-    
+
     expect(homeLink).toBeInTheDocument();
     expect(listingsLink).toBeInTheDocument();
     expect(homeLink.closest('a')).toHaveAttribute('href', '/');

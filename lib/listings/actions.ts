@@ -9,8 +9,6 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { eq, inArray, asc, desc, sql } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
-import { users } from '@/lib/db/schema/users';
-import { count } from 'drizzle-orm';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -134,7 +132,7 @@ export async function createListing(
     }
 
     // Revalidate the listings page
-    revalidatePath('/');
+    revalidatePath('/listings');
 
     return {
       success: true,
@@ -161,7 +159,7 @@ export async function createListing(
 export async function getListingById(id: number): Promise<ListingWithPhotos | null> {
   try {
     // Get listing by id
-    const [listing] = await db.select().from(listings).where(eq(listings.id, id));
+    const [listing] = await db.select().from(listings).where(eq(listings.id, id)).execute();
 
     if (!listing) {
       return null;
@@ -171,7 +169,8 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     const photoRecords = await db
       .select({ photoId: listingPhotos.photoId })
       .from(listingPhotos)
-      .where(eq(listingPhotos.listingId, id));
+      .where(eq(listingPhotos.listingId, id))
+      .execute();
 
     // Fetch actual photo data if there are linked photos
     const photoData: string[] = [];
@@ -179,75 +178,25 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     if (photoRecords.length > 0) {
       const photoIds = photoRecords.map(record => record.photoId);
 
-      const photoResults = await db.select().from(photos).where(inArray(photos.id, photoIds));
+      const photoResults = await db
+        .select()
+        .from(photos)
+        .where(inArray(photos.id, photoIds))
+        .execute();
 
       photoData.push(...photoResults.map(photo => photo.image));
     }
 
-    // Get category name if there's a categoryId
-    let categoryName = null;
-    if (listing.categoryId !== null) {
-      const [catRow] = await db
-        .select({ name: categories.name })
-        .from(categories)
-        .where(eq(categories.id, listing.categoryId))
-        .limit(1);
-      categoryName = catRow?.name ?? null;
-    }
-
-    // Since our schema doesn't have a sellerId yet, we'll get the first user
-    // In a real implementation, you would join with users based on the sellerId field
-    const [user] = await db
-      .select({
-        id: users.id,
-        username: users.username,
-        profileImageId: users.profileImageId,
-        bio: users.bio,
-      })
-      .from(users)
-      .limit(1);
-
-    let seller = null;
-    if (user) {
-      // Get profile image if exists
-      let profileImage: string | null = null;
-      if (user.profileImageId) {
-        const [photoRecord] = await db
-          .select()
-          .from(photos)
-          .where(eq(photos.id, user.profileImageId));
-
-        if (photoRecord) {
-          profileImage = photoRecord.image;
-        }
-      }
-
-      // Get count of active listings
-      const [activeCount] = await db
-        .select({ count: count() })
-        .from(listings)
-        .where(eq(listings.status, 'Active'));
-
-      // Get count of archived listings
-      const [archivedCount] = await db
-        .select({ count: count() })
-        .from(listings)
-        .where(eq(listings.status, 'Archived'));
-
-      seller = {
-        id: user.id,
-        username: user.username,
-        profileImage,
-        bio: user.bio,
-        activeListingsCount: activeCount?.count || 0,
-        archivedListingsCount: archivedCount?.count || 0,
-      };
-    }
-
     return {
-      ...listing,
-      categoryName,
-      seller: seller ?? undefined,
+      id: listing.id,
+      title: listing.title,
+      price: listing.price,
+      description: listing.description,
+      longDescription: listing.longDescription,
+      categoryId: listing.categoryId,
+      status: listing.status,
+      createdAt: listing.createdAt,
+      updatedAt: listing.updatedAt,
       photos: photoData,
     };
   } catch (error) {
@@ -287,7 +236,8 @@ export async function getAllListings(options?: {
     /* ------------------------------ total count ------------------------------ */
     const countQuery = db.select().from(listings);
     if (conditions.length) countQuery.where(sql.join(conditions, sql` AND `));
-    const totalCount = (await countQuery).length;
+    const countResult = await countQuery.execute();
+    const totalCount = countResult.length;
 
     /* ---------------------------- main list query ---------------------------- */
     const query = db.select().from(listings);
@@ -316,6 +266,10 @@ export async function getAllListings(options?: {
 
     const listingsData = await query.execute();
 
+    if (!listingsData || listingsData.length === 0) {
+      return { listings: [], totalCount: totalCount ?? 0 };
+    }
+
     /* ------------------------- enrich with photos & cats ---------------------- */
     const shortListings: ShortListing[] = [];
 
@@ -325,7 +279,8 @@ export async function getAllListings(options?: {
         .select({ photoId: listingPhotos.photoId })
         .from(listingPhotos)
         .where(eq(listingPhotos.listingId, listing.id))
-        .limit(1);
+        .limit(1)
+        .execute();
 
       let photo: string | null = null;
       if (photoLink) {
@@ -333,7 +288,8 @@ export async function getAllListings(options?: {
           .select()
           .from(photos)
           .where(eq(photos.id, photoLink.photoId))
-          .limit(1);
+          .limit(1)
+          .execute();
         photo = photoRow?.image ?? null;
       }
 
@@ -344,7 +300,8 @@ export async function getAllListings(options?: {
           .select({ name: categories.name })
           .from(categories)
           .where(eq(categories.id, listing.categoryId))
-          .limit(1);
+          .limit(1)
+          .execute();
         category = catRow?.name ?? null;
       }
 
