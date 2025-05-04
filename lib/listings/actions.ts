@@ -134,7 +134,7 @@ export async function createListing(
     }
 
     // Revalidate the listings page
-    revalidatePath('/listings');
+    revalidatePath('/');
 
     return {
       success: true,
@@ -368,7 +368,7 @@ export async function getAllListings(options?: {
 export async function deleteListing(id: number): Promise<{ success: boolean; error?: string }> {
   try {
     await db.delete(listings).where(eq(listings.id, id));
-    revalidatePath('/listings');
+    revalidatePath('/');
     return { success: true };
   } catch (error) {
     console.error('Error deleting listing:', error);
@@ -415,7 +415,7 @@ export async function updateListing(
       }
     }
 
-    revalidatePath('/listings');
+    revalidatePath('/');
     revalidatePath(`/listing/${id}`);
     return { success: true };
   } catch (error) {

@@ -74,7 +74,7 @@ export function CreateListingForm({ mode = 'create', initialData, onSubmit }: Cr
       const photoData: string[] = []
       for (const photoFile of newPhotoFiles) {
         try {
-          const base64Image = await fileToBase64(photoFile.file)
+          const base64Image = await fileToBase64(photoFile.file!)
           photoData.push(base64Image)
         } catch {
           // skip
@@ -97,7 +97,7 @@ export function CreateListingForm({ mode = 'create', initialData, onSubmit }: Cr
       const photoData: string[] = []
       for (const photoFile of newPhotoFiles) {
         try {
-          const base64Image = await fileToBase64(photoFile.file)
+          const base64Image = await fileToBase64(photoFile.file!)
           photoData.push(base64Image)
         } catch {
           // skip
