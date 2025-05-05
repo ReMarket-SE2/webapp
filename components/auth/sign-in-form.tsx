@@ -22,8 +22,8 @@ export function SignInForm({
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnTo = searchParams.get('returnTo') || '/'
-  const callbackUrl = searchParams.get('callbackUrl')
+  const returnTo = searchParams?.get('returnTo') || '/'
+  const callbackUrl = searchParams?.get('callbackUrl')
 
   useEffect(() => {
     if (status === "authenticated") {
