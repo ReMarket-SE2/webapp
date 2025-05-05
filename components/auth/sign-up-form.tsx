@@ -25,7 +25,7 @@ export function SignUpForm({
   const router = useRouter()
   const { status } = useSession()
   const searchParams = useSearchParams()
-  const returnTo = searchParams.get('returnTo') || '/'
+  const returnTo = searchParams?.get('returnTo') || '/'
 
   useEffect(() => {
     if (status === "authenticated") {
