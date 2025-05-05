@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   MoreHorizontal,
   Link as LinkIcon,
-  StarOff,
   Trash2,
 } from "lucide-react"
 
@@ -27,6 +26,9 @@ import {
 import Link from "next/link"
 import { CheckoutButton } from "./checkout-button"
 import { WishlistItem } from "@/lib/hooks/use-wishlist"
+import { useCallback } from "react"
+import { toast } from "sonner"
+import { useWishlistContext } from "@/components/contexts/wishlist-provider"
 
 export function NavWishlist({
   listings,
@@ -34,6 +36,24 @@ export function NavWishlist({
   listings: WishlistItem[]
 }) {
   const { isMobile } = useSidebar()
+  const { removeFromWishlist } = useWishlistContext()
+
+  const handleCopyLink = useCallback((listingId: number) => {
+    const link = `${window.location.origin}/listing/${listingId}`
+    navigator.clipboard.writeText(link).then(() => {
+      toast.success("Link copied to clipboard")
+    }).catch(() => {
+      toast.error("Failed to copy link")
+    })
+  }, [])
+
+  const handleOpenNewTab = useCallback((listingId: number) => {
+    window.open(`/listing/${listingId}`, "_blank")
+  }, [])
+
+  const handleDelete = useCallback((listingId: number) => {
+    removeFromWishlist(listingId)
+  }, [removeFromWishlist])
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -60,21 +80,16 @@ export function NavWishlist({
                 side={isMobile ? "bottom" : "right"}
                 align={isMobile ? "end" : "start"}
               >
-                <DropdownMenuItem>
-                  <StarOff className="text-muted-foreground" />
-                  <span>Remove from Favorites</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCopyLink(item.id)}>
                   <LinkIcon className="text-muted-foreground" />
                   <span>Copy Link</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleOpenNewTab(item.id)}>
                   <ArrowUpRight className="text-muted-foreground" />
                   <span>Open in New Tab</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDelete(item.id)}>
                   <Trash2 className="text-muted-foreground" />
                   <span>Delete</span>
                 </DropdownMenuItem>
