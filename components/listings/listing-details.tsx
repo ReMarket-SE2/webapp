@@ -97,7 +97,9 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
       animate="show"
     >
       <motion.div variants={item}>
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-bold tracking-tight truncate max-w-full overflow-hidden">
+          {title}
+        </h1>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <Badge variant="outline">{status}</Badge>
           {categoryName && (

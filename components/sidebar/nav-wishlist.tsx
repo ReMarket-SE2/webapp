@@ -43,7 +43,9 @@ export function NavWishlist({
           <SidebarMenuItem key={item.id}>
             <SidebarMenuButton asChild>
               <Link href={`/listing/${item.id}`} title={item.title}>
-                <span>{item.title}</span>
+                <span className="truncate max-w-[12rem] block overflow-hidden">
+                  {item.title}
+                </span>
               </Link>
             </SidebarMenuButton>
             <DropdownMenu>
