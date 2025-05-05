@@ -49,6 +49,7 @@ jest.mock('@/lib/db/schema/listing_photos', () => ({
 describe('Listing Actions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.resetModules();
   });
 
   describe('createListing', () => {
