@@ -24,12 +24,11 @@ import Image from "next/image"
 import { NavWishlist } from "@/components/sidebar/nav-wishlist"
 import { useSession } from "next-auth/react"
 import { Button } from "../ui/button"
-import { useWishlist } from "@/lib/hooks/use-wishlist"
-
+import { useWishlistContext } from "@/components/contexts/wishlist-provider"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
-  const { wishlist, isLoading} = useWishlist(session?.user.id ? parseInt(session.user.id, 10) : null);
+  const { wishlist, isLoading } = useWishlistContext();
 
   const data = {
     user: session?.user ? {
@@ -73,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Image src="/logo.png" alt="logo" width={32} height={32} />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-m</div>edium">ReMarket</span>
+                  <span className="truncate font-medium">ReMarket</span>
                   <span className="truncate text-xs">Your secure marketplace</span>
                 </div>
               </Link>

@@ -2,7 +2,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import ListingDetails from '@/components/listings/listing-details';
 import { toast } from 'sonner';
 import { SessionProvider, useSession } from 'next-auth/react';
-import { useWishlist } from '@/lib/hooks/use-wishlist';
+import { useWishlistContext } from '@/components/contexts/wishlist-provider';
 import { ListingStatus } from '@/lib/db/schema/listings';
 
 jest.mock('sonner', () => ({
@@ -35,12 +35,12 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
 }));
 
-jest.mock('@/lib/hooks/use-wishlist', () => ({
-  useWishlist: jest.fn(),
+jest.mock("@/components/contexts/wishlist-provider", () => ({
+  useWishlistContext: jest.fn(),
 }));
 
 const mockUseSession = useSession as jest.MockedFunction<typeof useSession>;
-const mockUseWishlist = useWishlist as jest.MockedFunction<typeof useWishlist>;
+const mockUseWishlistContext = useWishlistContext as jest.MockedFunction<typeof useWishlistContext>;
 
 describe('ListingDetails', () => {
   const mockListing = {
@@ -71,7 +71,7 @@ describe('ListingDetails', () => {
       status: 'unauthenticated',
       update: jest.fn(),
     });
-    mockUseWishlist.mockReturnValue({
+    mockUseWishlistContext.mockReturnValue({
       wishlist: [],
       isLoading: false,
       hasError: false,
@@ -168,7 +168,7 @@ describe('ListingDetails', () => {
       status: 'authenticated',
       update: jest.fn(),
     });
-    mockUseWishlist.mockReturnValue({
+    mockUseWishlistContext.mockReturnValue({
       wishlist: [],
       isLoading: false,
       hasError: false,
