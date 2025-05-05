@@ -29,7 +29,7 @@ import { useWishlist } from "@/lib/hooks/use-wishlist"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
-  const { wishlist} = useWishlist(session?.user.id ? parseInt(session.user.id, 10) : null);
+  const { wishlist, isLoading} = useWishlist(session?.user.id ? parseInt(session.user.id, 10) : null);
 
   const data = {
     user: session?.user ? {
@@ -83,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavWishlist listings={wishlist} />
+        {!isLoading && <NavWishlist listings={wishlist} />}
       </SidebarContent>
       <SidebarFooter>
         {session?.user ? (
