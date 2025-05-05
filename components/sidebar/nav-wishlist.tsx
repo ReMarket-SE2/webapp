@@ -26,15 +26,12 @@ import {
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 import { CheckoutButton } from "./checkout-button"
+import { WishlistItem } from "@/lib/hooks/use-wishlist"
 
 export function NavWishlist({
   listings,
 }: {
-  listings: {
-    name: string
-    url: string
-    emoji: string
-  }[]
+  listings: WishlistItem[]
 }) {
   const { isMobile } = useSidebar()
 
@@ -43,11 +40,10 @@ export function NavWishlist({
       <SidebarGroupLabel>Your Wishlist</SidebarGroupLabel>
       <SidebarMenu>
         {listings.map((item) => (
-          <SidebarMenuItem key={item.name}>
+          <SidebarMenuItem key={item.id}>
             <SidebarMenuButton asChild>
-              <Link href={item.url} title={item.name}>
-                <span>{item.emoji}</span>
-                <span>{item.name}</span>
+              <Link href={`/listing/${item.id}`} title={item.title}>
+                <span>{item.title}</span>
               </Link>
             </SidebarMenuButton>
             <DropdownMenu>
