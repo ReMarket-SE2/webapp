@@ -6,6 +6,7 @@ import {
   Banana,
   ShieldCheck,
   LogIn,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -82,7 +83,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {!isLoading && <NavWishlist listings={wishlist} />}
+        {isLoading
+          ? (
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          )
+          : <NavWishlist listings={wishlist} />}
       </SidebarContent>
       <SidebarFooter>
         {session?.user ? (
