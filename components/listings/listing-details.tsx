@@ -30,7 +30,7 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
   } = listing;
   const session = useSession();
   const userId = session.data?.user?.id;
-  const { wishlist, addToWishlist, removeFromWishlist } = useWishlist(userId ? parseInt(userId, 10) : 0);
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlist(userId ? parseInt(userId, 10) : null);
   const [isInWishlist, setIsInWishlist] = useState(false);
 
   useEffect(() => {
