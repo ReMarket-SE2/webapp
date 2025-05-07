@@ -31,7 +31,7 @@ jest.mock('next/cache', () => ({
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn(),
   inArray: jest.fn(),
-  relations: jest.fn(), 
+  relations: jest.fn(),
 }));
 
 jest.mock('@/lib/db/schema/listings', () => ({
@@ -68,6 +68,7 @@ describe('Listing Actions', () => {
         description: 'Test Description',
         longDescription: 'Detailed test description',
         status: 'Active' as const,
+        sellerId: 1,
       };
 
       // No photos in this test
@@ -88,6 +89,7 @@ describe('Listing Actions', () => {
         longDescription: 'Detailed test description',
         categoryId: null,
         status: 'Active',
+        sellerId: 1,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });
@@ -124,6 +126,7 @@ describe('Listing Actions', () => {
         title: 'Test Listing',
         price: 100,
         status: 'Draft' as const,
+        sellerId: 1,
       };
 
       const photoData = ['data:image/jpeg;base64,test123'];
@@ -146,6 +149,7 @@ describe('Listing Actions', () => {
         title: '', // Empty title should fail validation
         price: 0, // Zero price should fail validation
         status: 'Draft' as const,
+        sellerId: 1,
       };
 
       const result = await createListing(listingData, []);
@@ -233,7 +237,7 @@ describe('Listing Actions', () => {
       // Verify the results
       expect(result).toBeNull();
     });
-    
+
     //TODO: FIX THIS TEST TO PASS IN A PIPELINE IT WORKS LOCALLY IDK
     // test('should fetch a listing without photos', async () => {
     //   const mockListing = {

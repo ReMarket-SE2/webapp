@@ -60,7 +60,7 @@ describe("NavWishlist", () => {
 
     // Open the dropdown for the first item
     const moreButtons = screen.getAllByLabelText("More")
-    fireEvent.click(moreButtons[0])
+    fireEvent.pointerDown(moreButtons[0])
 
     // Wait for and click the Delete button
     const deleteButtons = await screen.findAllByTestId("delete-button")
@@ -86,7 +86,7 @@ describe("NavWishlist", () => {
 
     // Open the dropdown for the first item
     const moreButtons = screen.getAllByLabelText("More")
-    fireEvent.click(moreButtons[0])
+    fireEvent.pointerDown(moreButtons[0])
 
     // Wait for and click the Copy Link item
     const copyLinkItem = await screen.findByText("Copy Link")
@@ -111,7 +111,7 @@ describe("NavWishlist", () => {
 
     // Open the dropdown for the first item
     const moreButtons = screen.getAllByLabelText("More")
-    fireEvent.click(moreButtons[0])
+    fireEvent.pointerDown(moreButtons[0])
 
     // Wait for and click the Open in New Tab item
     const openItem = await screen.findByText("Open in New Tab")
