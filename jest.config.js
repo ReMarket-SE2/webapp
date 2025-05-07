@@ -14,7 +14,7 @@ const customJestConfig = {
   testEnvironment: 'jsdom',
   coverageReporters: [['text', { skipFull: true }], 'cobertura'],
   transformIgnorePatterns: [
-    '/node_modules/(?!.*(?:jose|openid-client))/',
+    '/node_modules/(?!(\.pnpm/jose@|\.pnpm/openid-client@|\.pnpm/next-auth@))/',
     '^.+\.module\.(css|sass|scss)$',
   ],
 };
