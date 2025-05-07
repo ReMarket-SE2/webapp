@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { createListing, ListingFormData } from '@/lib/listings/actions';
 import { getCategories } from '@/lib/categories/actions';
 import { Category } from '@/lib/db/schema/categories';
+import { useSession } from 'next-auth/react';
 
 export interface CreateListingForm {
   title: string;
@@ -57,6 +58,7 @@ const generateId = (): string => {
 };
 
 export function useCreateListing(): UseCreateListingReturn {
+  const { data: session } = useSession();
   const [form, setForm] = useState<CreateListingForm>(DEFAULT_FORM);
   const [photoFiles, setPhotoFiles] = useState<PhotoFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -165,6 +167,7 @@ export function useCreateListing(): UseCreateListingReturn {
         longDescription: form.longDescription,
         categoryId: form.categoryId,
         status,
+        sellerId: parseInt(session?.user?.id || '1'),
       };
 
       // Call server action to create listing

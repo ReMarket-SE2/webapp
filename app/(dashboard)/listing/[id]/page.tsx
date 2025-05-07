@@ -15,14 +15,14 @@ interface ListingPageProps {
 }
 
 export default async function ListingPage({ params }: ListingPageProps) {
-  const {id} = await params;
-  
+  const { id } = await params;
+
   if (isNaN(parseInt(id))) {
     return notFound();
   }
-  
+
   const listing = await getListingById(parseInt(id));
-  
+
   if (!listing) {
     return notFound();
   }
@@ -53,7 +53,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
         <Suspense fallback={<Skeleton className="rounded-lg aspect-[4/3] w-full" />}>
           <ListingImagesGallery images={listing.photos} title={listing.title} />
         </Suspense>
-        
+
         <Suspense fallback={<div className="space-y-4">
           <Skeleton className="h-8 w-3/4" />
           <Skeleton className="h-6 w-1/4" />

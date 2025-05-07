@@ -7,7 +7,7 @@ import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { eq, inArray, asc, desc, sql } from 'drizzle-orm';
+import { eq, inArray, asc, desc, sql, and } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import { users } from '@/lib/db/schema/users';
 import { count } from 'drizzle-orm';
@@ -23,6 +23,7 @@ const listingSchema = z.object({
     .optional(),
   categoryId: z.number().optional().nullable(),
   status: z.enum(['Active', 'Archived', 'Draft']),
+  sellerId: z.number(),
 });
 
 // Validation schema for photo uploads
@@ -37,6 +38,7 @@ export interface ListingFormData {
   longDescription?: string;
   categoryId?: number | null;
   status: ListingStatus;
+  sellerId: number;
 }
 
 export interface SellerInfo {
@@ -70,6 +72,7 @@ export interface ShortListing {
   category: string | null;
   photo: string | null; // Single thumbnail photo Base64 encoded
   createdAt: Date;
+  sellerId: number;
 }
 
 // Helper function to generate Levenshtein distance SQL for a column
@@ -99,6 +102,7 @@ export async function createListing(
       longDescription: validatedData.longDescription ?? null,
       categoryId: validatedData.categoryId ?? null,
       status: validatedData.status,
+      sellerId: validatedData.sellerId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -195,53 +199,55 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
       categoryName = catRow?.name ?? null;
     }
 
-    // Since our schema doesn't have a sellerId yet, we'll get the first user
-    // In a real implementation, you would join with users based on the sellerId field
-    const [user] = await db
-      .select({
-        id: users.id,
-        username: users.username,
-        profileImageId: users.profileImageId,
-        bio: users.bio,
-      })
-      .from(users)
-      .limit(1);
-
+    // Fetch seller info using sellerId
     let seller = null;
-    if (user) {
-      // Get profile image if exists
-      let profileImage: string | null = null;
-      if (user.profileImageId) {
-        const [photoRecord] = await db
-          .select()
-          .from(photos)
-          .where(eq(photos.id, user.profileImageId));
-        
-        if (photoRecord) {
-          profileImage = photoRecord.image;
+    if (listing.sellerId) {
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          profileImageId: users.profileImageId,
+          bio: users.bio,
+        })
+        .from(users)
+        .where(eq(users.id, listing.sellerId))
+        .limit(1);
+
+      if (user) {
+        // Get profile image if exists
+        let profileImage: string | null = null;
+        if (user.profileImageId) {
+          const [photoRecord] = await db
+            .select()
+            .from(photos)
+            .where(eq(photos.id, user.profileImageId));
+
+          if (photoRecord) {
+            profileImage = photoRecord.image;
+          }
         }
+
+        // Get count of active listings for this seller
+        const [activeCount] = await db
+          .select({ count: count() })
+          .from(listings)
+          .where(and(eq(listings.sellerId, user.id), eq(listings.status, 'Active')));
+
+        // Get count of archived listings for this seller
+        const [archivedCount] = await db
+          .select({ count: count() })
+          .from(listings)
+          .where(and(eq(listings.sellerId, user.id), eq(listings.status, 'Archived')));
+
+        seller = {
+          id: user.id,
+          username: user.username,
+          profileImage,
+          bio: user.bio,
+          activeListingsCount: activeCount?.count || 0,
+          archivedListingsCount: archivedCount?.count || 0,
+        };
       }
-
-      // Get count of active listings
-      const [activeCount] = await db
-        .select({ count: count() })
-        .from(listings)
-        .where(eq(listings.status, 'Active'));
-
-      // Get count of archived listings
-      const [archivedCount] = await db
-        .select({ count: count() })
-        .from(listings)
-        .where(eq(listings.status, 'Archived'));
-
-      seller = {
-        id: user.id,
-        username: user.username,
-        profileImage,
-        bio: user.bio,
-        activeListingsCount: activeCount?.count || 0,
-        archivedListingsCount: archivedCount?.count || 0,
-      };
     }
 
     return {
@@ -363,6 +369,7 @@ export async function getAllListings(options?: {
         category,
         photo,
         createdAt: listing.createdAt,
+        sellerId: listing.sellerId,
       });
     }
 
