@@ -1,4 +1,10 @@
-import { createListing, getListingById, getAllListings } from '@/lib/listings/actions';
+import {
+  createListing,
+  getListingById,
+  getAllListings,
+  updateListing,
+  deleteListing,
+} from '@/lib/listings/actions';
 import { db } from '@/lib/db';
 import { listings } from '@/lib/db/schema/listings';
 import { photos } from '@/lib/db/schema/photos';
@@ -14,8 +20,19 @@ jest.mock('@/lib/db', () => {
     returning: jest.fn(),
   };
 
+  const mockUpdateChain = {
+    set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+  };
+
+  const mockDeleteChain = {
+    where: jest.fn().mockReturnThis(),
+  };
+
   const mockDb = {
     insert: jest.fn(() => mockInsertChain),
+    update: jest.fn(() => mockUpdateChain),
+    delete: jest.fn(() => mockDeleteChain),
     select: jest.fn().mockReturnThis(),
     from: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
@@ -31,7 +48,7 @@ jest.mock('next/cache', () => ({
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn(),
   inArray: jest.fn(),
-  relations: jest.fn(), 
+  relations: jest.fn(),
 }));
 
 jest.mock('@/lib/db/schema/listings', () => ({
@@ -68,6 +85,7 @@ describe('Listing Actions', () => {
         description: 'Test Description',
         longDescription: 'Detailed test description',
         status: 'Active' as const,
+        sellerId: 1,
       };
 
       // No photos in this test
@@ -88,6 +106,7 @@ describe('Listing Actions', () => {
         longDescription: 'Detailed test description',
         categoryId: null,
         status: 'Active',
+        sellerId: 1,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });
@@ -124,6 +143,7 @@ describe('Listing Actions', () => {
         title: 'Test Listing',
         price: 100,
         status: 'Draft' as const,
+        sellerId: 1,
       };
 
       const photoData = ['data:image/jpeg;base64,test123'];
@@ -146,6 +166,7 @@ describe('Listing Actions', () => {
         title: '', // Empty title should fail validation
         price: 0, // Zero price should fail validation
         status: 'Draft' as const,
+        sellerId: 1,
       };
 
       const result = await createListing(listingData, []);
@@ -233,7 +254,7 @@ describe('Listing Actions', () => {
       // Verify the results
       expect(result).toBeNull();
     });
-    
+
     //TODO: FIX THIS TEST TO PASS IN A PIPELINE IT WORKS LOCALLY IDK
     // test('should fetch a listing without photos', async () => {
     //   const mockListing = {
@@ -465,6 +486,100 @@ describe('Listing Actions', () => {
       const result = await getAllListings();
 
       expect(result).toEqual({ listings: [], totalCount: 0 });
+    });
+  });
+
+  describe('updateListing', () => {
+    test('should update listing successfully without photos', async () => {
+      const mockDbUpdate = db.update as jest.Mock;
+      mockDbUpdate.mockReturnValueOnce({
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+      });
+      const mockFormData = {
+        title: 'Updated Listing',
+        price: 150,
+        description: 'Updated desc',
+        longDescription: 'Updated long desc',
+        categoryId: null,
+        status: 'Active' as const,
+        sellerId: 1,
+      };
+      const result = await updateListing(1, mockFormData, []);
+      expect(result).toEqual({ success: true });
+      expect(db.update).toHaveBeenCalledWith(listings);
+      expect(revalidatePath).toHaveBeenCalledWith('/');
+      expect(revalidatePath).toHaveBeenCalledWith('/listing/1');
+    });
+
+    test('should replace photos when new photo data is provided', async () => {
+      const mockDbUpdate = db.update as jest.Mock;
+      const mockDbDelete = db.delete as jest.Mock;
+      const mockInsert = db.insert as jest.Mock;
+      mockDbUpdate.mockReturnValue({
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+      });
+      mockDbDelete.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+      });
+      mockInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValueOnce([{ id: 10 }]),
+      }));
+      mockInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+      }));
+      const mockPhotoData = ['data:image/jpeg;base64,newphoto'];
+      const mockFormData = {
+        title: 'Updated Listing',
+        price: 150,
+        description: undefined,
+        longDescription: undefined,
+        categoryId: null,
+        status: 'Draft' as const,
+        sellerId: 1,
+      };
+      const result = await updateListing(2, mockFormData, mockPhotoData);
+      expect(result).toEqual({ success: true });
+      expect(db.delete).toHaveBeenCalledWith(listingPhotos);
+      expect(db.insert).toHaveBeenCalledWith(photos);
+      expect(db.insert).toHaveBeenCalledWith(listingPhotos);
+    });
+
+    test('should return error on validation failure', async () => {
+      const mockFormData = {
+        title: '',
+        price: 0,
+        status: 'Draft' as const,
+        sellerId: 1,
+      };
+      const result = await updateListing(1, mockFormData, []);
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+    });
+  });
+
+  describe('deleteListing', () => {
+    test('should delete listing successfully', async () => {
+      const mockDbDelete = db.delete as jest.Mock;
+      mockDbDelete.mockReturnValueOnce({
+        where: jest.fn().mockReturnThis(),
+      });
+      const result = await deleteListing(1);
+      expect(result).toEqual({ success: true });
+      expect(db.delete).toHaveBeenCalledWith(listings);
+      expect(revalidatePath).toHaveBeenCalledWith('/');
+    });
+
+    test('should return error when db delete fails', async () => {
+      const mockDbDelete = db.delete as jest.Mock;
+      mockDbDelete.mockImplementationOnce(() => {
+        throw new Error('Delete failed');
+      });
+      const result = await deleteListing(2);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Failed to delete listing');
     });
   });
 });

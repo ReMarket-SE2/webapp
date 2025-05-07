@@ -31,7 +31,6 @@ export function useListings(initialOptions: UseListingsOptions = {}) {
   const [options, setOptions] = useState<UseListingsOptions>({
     page: 1,
     pageSize: 20,
-    categoryId: null,
     ...initialOptions,
   });
   const [metadata, setMetadata] = useState<ListingsPaginationMetadata>({

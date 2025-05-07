@@ -9,8 +9,16 @@ import { useRouter } from "next/navigation"
 import { PhotoUpload } from "./photo-upload"
 import { MarkdownEditor } from "./markdown-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ListingWithPhotos, ListingFormData } from '@/lib/listings/actions'
+import React, { useEffect } from 'react'
+import { useSession } from "next-auth/react"
+interface CreateListingFormProps {
+  mode?: 'create' | 'edit'
+  initialData?: ListingWithPhotos | null
+  onSubmit?: (formData: ListingFormData, photoData: string[]) => Promise<void>
+}
 
-export function CreateListingForm() {
+export function CreateListingForm({ mode = 'create', initialData, onSubmit }: CreateListingFormProps) {
   const {
     form,
     isSubmitting,
@@ -22,10 +30,36 @@ export function CreateListingForm() {
     removePhoto,
     saveListingAsDraft,
     publishListing,
-    reset
+    reset,
+    setForm,
+    setPhotoFiles
   } = useCreateListing()
+  const { data: session } = useSession();
 
   const router = useRouter()
+
+  // Prefill form state if editing
+  useEffect(() => {
+    if (mode === 'edit' && initialData) {
+      setForm({
+        title: initialData.title,
+        price: parseFloat(initialData.price),
+        description: initialData.description || '',
+        longDescription: initialData.longDescription || '',
+        categoryId: initialData.categoryId,
+        status: initialData.status,
+      })
+      // Prefill photos as preview-only (cannot edit existing photos in this version)
+      setPhotoFiles(
+        (initialData.photos || []).map((img, idx) => ({
+          id: `existing-${idx}`,
+          file: null as File | null, // Not editable, just for preview
+          previewUrl: img,
+        }))
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialData])
 
   const handleAddPhotos = (files: FileList) => {
     // Add each file to the hook
@@ -35,6 +69,21 @@ export function CreateListingForm() {
   }
 
   const handlePublish = async () => {
+    if (mode === 'edit' && onSubmit) {
+      // Only send new photos (File type)
+      const newPhotoFiles = photoFiles.filter(p => p.file)
+      const photoData: string[] = []
+      for (const photoFile of newPhotoFiles) {
+        try {
+          const base64Image = await fileToBase64(photoFile.file!)
+          photoData.push(base64Image)
+        } catch {
+          // skip
+        }
+      }
+      await onSubmit({ ...form, sellerId: session?.user?.id ? parseInt(session.user.id) : 1 }, photoData)
+      return
+    }
     const listingId = await publishListing()
     if (listingId) {
       toast.success("Listing published successfully!")
@@ -44,6 +93,20 @@ export function CreateListingForm() {
   }
 
   const handleSaveDraft = async () => {
+    if (mode === 'edit' && onSubmit) {
+      const newPhotoFiles = photoFiles.filter(p => p.file)
+      const photoData: string[] = []
+      for (const photoFile of newPhotoFiles) {
+        try {
+          const base64Image = await fileToBase64(photoFile.file!)
+          photoData.push(base64Image)
+        } catch {
+          // skip
+        }
+      }
+      await onSubmit({ ...form, status: 'Draft', sellerId: session?.user?.id ? parseInt(session.user.id) : 1 }, photoData)
+      return
+    }
     const listingId = await saveListingAsDraft()
     if (listingId) {
       toast.success("Draft saved successfully!")
@@ -52,10 +115,22 @@ export function CreateListingForm() {
     }
   }
 
+  // Helper for base64 conversion
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = error => reject(error)
+    })
+  }
+
   return (
     <div className="w-full h-full mx-auto flex flex-col">
 
-      <h1 className="text-2xl font-bold mb-4">Show off your stuff on the market</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {mode === 'edit' ? 'Edit your listing' : 'Show off your stuff on the market'}
+      </h1>
 
       <div className="mb-4 gap-6 flex flex-col flex-1">
 
@@ -165,7 +240,7 @@ export function CreateListingForm() {
             onClick={handlePublish}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Publishing..." : "Publish Listing"}
+            {isSubmitting ? (mode === 'edit' ? 'Saving...' : 'Publishing...') : (mode === 'edit' ? 'Save Changes' : 'Publish Listing')}
           </Button>
 
           <Button
