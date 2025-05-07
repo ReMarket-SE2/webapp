@@ -16,8 +16,19 @@ async function getWishlistByUserId(userId: number) {
   return wishlist[0];
 }
 
-export async function getWishlistListingsByUserId(userId: number) {
+async function getOrCreateWishlistByUserId(userId: number) {
   const wishlist = await getWishlistByUserId(userId);
+
+  if (!wishlist) {
+    await createWishlist(userId);
+    return getWishlistByUserId(userId);
+  }
+
+  return wishlist;
+}
+
+export async function getWishlistListingsByUserId(userId: number) {
+  const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db
     .select({ id: wishlistListings.listingId, title: listings.title })
@@ -27,7 +38,7 @@ export async function getWishlistListingsByUserId(userId: number) {
 }
 
 export async function addListingToWishlist(userId: number, listingId: number) {
-  const wishlist = await getWishlistByUserId(userId);
+  const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db.insert(wishlistListings).values({
     wishlistId: wishlist.id,
@@ -36,7 +47,7 @@ export async function addListingToWishlist(userId: number, listingId: number) {
 }
 
 export async function removeListingFromWishlist(userId: number, listingId: number) {
-  const wishlist = await getWishlistByUserId(userId);
+  const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db
     .delete(wishlistListings)
@@ -49,7 +60,7 @@ export async function removeListingFromWishlist(userId: number, listingId: numbe
 }
 
 export async function clearWishlist(userId: number) {
-  const wishlist = await getWishlistByUserId(userId);
+  const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db
     .delete(wishlistListings)
