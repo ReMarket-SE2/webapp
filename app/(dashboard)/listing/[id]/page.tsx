@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
 import { DetailedDescription } from '@/components/listings/detailed-description';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
 interface ListingPageProps {
   params: Promise<{
@@ -26,6 +28,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
   if (!listing) {
     return notFound();
   }
+
+  const session = await getServerSession(authOptions);
+  const sessionUserId = session?.user?.id ? parseInt(session.user.id) : null;
 
   return (
     <div className="container w-full p-4">
@@ -60,7 +65,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-10 w-full" />
         </div>}>
-          <ListingDetails listing={listing} />
+          <ListingDetails listing={listing} sessionUserId={sessionUserId} />
         </Suspense>
       </div>
 
@@ -74,6 +79,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <DetailedDescription longDescription={listing.longDescription} />
         </Suspense>
       )}
+
+      {/* Owner controls */}
+      {/* Owner controls are handled inside ListingDetails */}
     </div>
   );
-} 
+}

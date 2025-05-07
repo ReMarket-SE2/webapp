@@ -379,3 +379,65 @@ export async function getAllListings(options?: {
     return { listings: [], totalCount: 0 };
   }
 }
+
+export async function deleteListing(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    await db.delete(listings).where(eq(listings.id, id));
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    return { success: false, error: 'Failed to delete listing' };
+  }
+}
+
+export async function updateListing(
+  id: number,
+  formData: ListingFormData,
+  photoData: string[] = []
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Validate form data
+    const validatedData = listingSchema.parse(formData);
+
+    // Prepare listing data for database
+    const listingData: Partial<NewListing> = {
+      title: validatedData.title,
+      price: validatedData.price.toString(),
+      description: validatedData.description ?? null,
+      longDescription: validatedData.longDescription ?? null,
+      categoryId: validatedData.categoryId ?? null,
+      status: validatedData.status,
+      updatedAt: new Date(),
+    };
+
+    // Update listing
+    await db.update(listings).set(listingData).where(eq(listings.id, id));
+
+    // If new photos are provided, replace all photos for this listing
+    if (photoData.length > 0) {
+      // Remove old photo links
+      await db.delete(listingPhotos).where(eq(listingPhotos.listingId, id));
+      // Insert new photos and link them
+      for (const imageData of photoData) {
+        try {
+          photoSchema.parse({ image: imageData });
+          const [photoRecord] = await db.insert(photos).values({ image: imageData }).returning();
+          await db.insert(listingPhotos).values({ listingId: id, photoId: photoRecord.id });
+        } catch (photoError) {
+          console.error('Error uploading photo:', photoError);
+        }
+      }
+    }
+
+    revalidatePath('/');
+    revalidatePath(`/listing/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating listing:', error);
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message };
+    }
+    return { success: false, error: 'Failed to update listing' };
+  }
+}

@@ -20,7 +20,7 @@ export interface CreateListingForm {
 
 interface PhotoFile {
   id: string; // Client-side ID for tracking
-  file: File;
+  file: File | null;
   previewUrl: string;
 }
 
@@ -37,6 +37,8 @@ interface UseCreateListingReturn {
   saveListingAsDraft: () => Promise<number | null>;
   publishListing: () => Promise<number | null>;
   reset: () => void;
+  setForm: React.Dispatch<React.SetStateAction<CreateListingForm>>;
+  setPhotoFiles: React.Dispatch<React.SetStateAction<PhotoFile[]>>;
 }
 
 const DEFAULT_FORM: CreateListingForm = {
@@ -152,7 +154,7 @@ export function useCreateListing(): UseCreateListingReturn {
       const photoData: string[] = [];
       for (const photoFile of photoFiles) {
         try {
-          const base64Image = await fileToBase64(photoFile.file);
+          const base64Image = await fileToBase64(photoFile.file as File);
           photoData.push(base64Image);
         } catch (error) {
           console.error('Failed to convert photo to base64:', error);
@@ -167,7 +169,7 @@ export function useCreateListing(): UseCreateListingReturn {
         longDescription: form.longDescription,
         categoryId: form.categoryId,
         status,
-        sellerId: parseInt(session?.user?.id || '1'),
+        sellerId: session?.user?.id ? parseInt(session.user.id) : 1,
       };
 
       // Call server action to create listing
@@ -223,5 +225,7 @@ export function useCreateListing(): UseCreateListingReturn {
     saveListingAsDraft,
     publishListing,
     reset,
+    setForm,
+    setPhotoFiles,
   };
 }
