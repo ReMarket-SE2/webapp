@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { createListing, ListingFormData } from '@/lib/listings/actions';
 import { getCategories } from '@/lib/categories/actions';
 import { Category } from '@/lib/db/schema/categories';
+import { useSession } from 'next-auth/react';
 
 export interface CreateListingForm {
   title: string;
@@ -19,7 +20,7 @@ export interface CreateListingForm {
 
 interface PhotoFile {
   id: string; // Client-side ID for tracking
-  file: File;
+  file: File | null;
   previewUrl: string;
 }
 
@@ -36,6 +37,8 @@ interface UseCreateListingReturn {
   saveListingAsDraft: () => Promise<number | null>;
   publishListing: () => Promise<number | null>;
   reset: () => void;
+  setForm: React.Dispatch<React.SetStateAction<CreateListingForm>>;
+  setPhotoFiles: React.Dispatch<React.SetStateAction<PhotoFile[]>>;
 }
 
 const DEFAULT_FORM: CreateListingForm = {
@@ -57,6 +60,7 @@ const generateId = (): string => {
 };
 
 export function useCreateListing(): UseCreateListingReturn {
+  const { data: session } = useSession();
   const [form, setForm] = useState<CreateListingForm>(DEFAULT_FORM);
   const [photoFiles, setPhotoFiles] = useState<PhotoFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,7 +154,7 @@ export function useCreateListing(): UseCreateListingReturn {
       const photoData: string[] = [];
       for (const photoFile of photoFiles) {
         try {
-          const base64Image = await fileToBase64(photoFile.file);
+          const base64Image = await fileToBase64(photoFile.file as File);
           photoData.push(base64Image);
         } catch (error) {
           console.error('Failed to convert photo to base64:', error);
@@ -165,6 +169,7 @@ export function useCreateListing(): UseCreateListingReturn {
         longDescription: form.longDescription,
         categoryId: form.categoryId,
         status,
+        sellerId: session?.user?.id ? parseInt(session.user.id) : 1,
       };
 
       // Call server action to create listing
@@ -220,5 +225,7 @@ export function useCreateListing(): UseCreateListingReturn {
     saveListingAsDraft,
     publishListing,
     reset,
+    setForm,
+    setPhotoFiles,
   };
 }

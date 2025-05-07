@@ -1,5 +1,5 @@
 {
-  "id": "6add0c35-5f52-4249-ab7f-c54e8d54b4ad",
+  "id": "0fb9c15e-ab02-491d-8271-b8cc40a3f656",
   "prevId": "ce8ae016-5dc6-4db8-97ce-ac0e0fa4c9d4",
   "version": "7",
   "dialect": "postgresql",
@@ -228,6 +228,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "seller_id": {
+          "name": "seller_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -250,6 +256,15 @@
           "tableFrom": "listings",
           "tableTo": "categories",
           "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "listings_seller_id_users_id_fk": {
+          "name": "listings_seller_id_users_id_fk",
+          "tableFrom": "listings",
+          "tableTo": "users",
+          "columnsFrom": ["seller_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -439,13 +454,6 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {},

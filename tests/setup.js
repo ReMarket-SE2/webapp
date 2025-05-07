@@ -87,6 +87,10 @@ jest.mock('jose', () => ({
   }),
 }));
 
+jest.mock('next-auth/next', () => ({
+  getServerSession: jest.fn().mockResolvedValue(null),
+}));
+
 // Mock console.error to suppress error messages during tests
 const originalConsoleError = console.error;
 beforeAll(() => {

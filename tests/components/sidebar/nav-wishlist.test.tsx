@@ -1,5 +1,5 @@
 import React from "react"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import "@testing-library/jest-dom"
 import { NavWishlist } from "@/components/sidebar/nav-wishlist"
@@ -62,9 +62,10 @@ describe("NavWishlist", () => {
     const moreButtons = screen.getAllByLabelText("More")
     await userEvent.click(moreButtons[0])
 
-    // Wait for and click the Delete button
-    const deleteButtons = await screen.findAllByTestId("delete-button")
-    await userEvent.click(deleteButtons[0])
+    // Wait for the menu to appear and then query within it
+    const menu = await screen.findByRole("menu")
+    const deleteButton = await within(menu).findByTestId("delete-button")
+    await userEvent.click(deleteButton)
 
     expect(removeFromWishlist).toHaveBeenCalledWith(1)
   })
@@ -88,8 +89,9 @@ describe("NavWishlist", () => {
     const moreButtons = screen.getAllByLabelText("More")
     await userEvent.click(moreButtons[0])
 
-    // Wait for and click the Copy Link item
-    const copyLinkItem = await screen.findByText("Copy Link")
+    // Wait for the menu to appear and then query within it
+    const menu = await screen.findByRole("menu")
+    const copyLinkItem = await within(menu).findByText("Copy Link")
     await userEvent.click(copyLinkItem)
 
     // Expect clipboard.writeText called with the correct URL
@@ -113,8 +115,9 @@ describe("NavWishlist", () => {
     const moreButtons = screen.getAllByLabelText("More")
     await userEvent.click(moreButtons[0])
 
-    // Wait for and click the Open in New Tab item
-    const openItem = await screen.findByText("Open in New Tab")
+    // Wait for the menu to appear and then query within it
+    const menu = await screen.findByRole("menu")
+    const openItem = await within(menu).findByText("Open in New Tab")
     await userEvent.click(openItem)
 
     expect(openSpy).toHaveBeenCalledWith("/listing/1", "_blank")
