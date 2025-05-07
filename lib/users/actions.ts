@@ -1,15 +1,15 @@
 "use server"
 
 import { db } from '@/lib/db'
-import { users, photos } from '@/lib/db/schema'
-import { eq, and, gt, isNotNull } from 'drizzle-orm'
+import { users, photos, listings, listingPhotos, categories } from '@/lib/db/schema'
+import { eq, and, gt, isNotNull, asc, desc } from 'drizzle-orm'
 import { User } from '@/lib/db/schema'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { insertPhoto } from '@/lib/photos/actions'
 import { createWishlist } from '@/lib/wishlist/actions'
-import { listings } from '@/lib/db/schema'
 import { count } from 'drizzle-orm'
+import { ShortListing } from '@/lib/listings/actions'
 
 export async function findUserByEmail(email: string): Promise<User | null> {
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1)
@@ -35,9 +35,29 @@ export async function userExists(id: number): Promise<boolean> {
 export interface UserWithListingCounts extends User {
   activeListingsCount: number;
   archivedListingsCount: number;
+  activeListings: ShortListing[];
+  totalListings: number;
+  categories: { id: number; name: string }[];
 }
 
-export async function findUserById(id: number): Promise<UserWithListingCounts | null> {
+export interface UserListingsOptions {
+  page?: number;
+  pageSize?: number;
+  sortOrder?: 'asc' | 'desc';
+  categoryId?: number | null;
+}
+
+export async function findUserById(
+  id: number,
+  options: UserListingsOptions = {}
+): Promise<UserWithListingCounts | null> {
+  const {
+    page = 1,
+    pageSize = 10,
+    sortOrder = 'desc',
+    categoryId = null,
+  } = options;
+
   const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   
   if (!user) {
@@ -56,10 +76,75 @@ export async function findUserById(id: number): Promise<UserWithListingCounts | 
     .from(listings)
     .where(eq(listings.status, 'Archived'));
 
+  // Get all categories
+  const allCategories = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+    })
+    .from(categories)
+    .orderBy(categories.name);
+
+  // Build conditions for active listings
+  const conditions = [eq(listings.status, 'Active')];
+  if (categoryId !== null) {
+    conditions.push(eq(listings.categoryId, categoryId));
+  }
+
+  // Get active listings with pagination and sorting
+  const activeListings = await db
+    .select({
+      id: listings.id,
+      title: listings.title,
+      price: listings.price,
+      category: categories.name,
+      createdAt: listings.createdAt,
+    })
+    .from(listings)
+    .leftJoin(categories, eq(listings.categoryId, categories.id))
+    .where(and(...conditions))
+    .orderBy(sortOrder === 'desc' ? desc(listings.createdAt) : asc(listings.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  // Get total count of filtered listings
+  const [totalCount] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(and(...conditions));
+
+  // Get photos for each listing
+  const listingsWithPhotos: ShortListing[] = [];
+  for (const listing of activeListings) {
+    const [photoLink] = await db
+      .select({ photoId: listingPhotos.photoId })
+      .from(listingPhotos)
+      .where(eq(listingPhotos.listingId, listing.id))
+      .limit(1);
+
+    let photo: string | null = null;
+    if (photoLink) {
+      const [photoRow] = await db
+        .select()
+        .from(photos)
+        .where(eq(photos.id, photoLink.photoId))
+        .limit(1);
+      photo = photoRow?.image ?? null;
+    }
+
+    listingsWithPhotos.push({
+      ...listing,
+      photo,
+    });
+  }
+
   return {
     ...user,
     activeListingsCount: activeCount?.count || 0,
     archivedListingsCount: archivedCount?.count || 0,
+    activeListings: listingsWithPhotos,
+    totalListings: totalCount?.count || 0,
+    categories: allCategories,
   };
 }
 

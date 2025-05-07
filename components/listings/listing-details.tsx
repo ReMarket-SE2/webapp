@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, Tag, User, Package, Archive, ExternalLink } from "lucide-react";
+import { ShoppingCart, Heart, Tag, User, Package, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useWishlistContext } from "@/components/contexts/wishlist-provider";
 import Link from "next/link";
+import router from "next/router";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -181,13 +182,11 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
             </div>
             
             <div className="mt-3 space-y-2">
-              <Button className="w-full text-xs" variant="secondary" size="sm">
+              <Button className="w-full text-xs" variant="secondary" size="sm"
+                onClick={() => router.push(`/user/${seller.id}`)}
+              >
                 <User className="mr-1 h-3 w-3" />
                 View Profile
-              </Button>
-              <Button className="w-full text-xs" variant="outline" size="sm">
-                <ExternalLink className="mr-1 h-3 w-3" />
-                See All Listings
               </Button>
             </div>
           </Card>

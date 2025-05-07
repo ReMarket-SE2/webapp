@@ -7,8 +7,13 @@ import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Package, Archive } from 'lucide-react';
+import { UserListings } from '@/components/listings/user-listings';
 
-export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function UserProfilePage({ params }: PageProps) {
   const { id } = await params;
   const userId = parseInt(id);
   
@@ -19,7 +24,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   const session = await getServerSession(authOptions);
   const isOwnProfile = session?.user?.id === id;
   
-  const user = await findUserById(userId);
+  const user = await findUserById(userId, {
+    page: 1,
+    pageSize: 10,
+    sortOrder: 'desc',
+    categoryId: null,
+  });
   
   if (!user) {
     return notFound();
@@ -28,9 +38,9 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   const profileImage = await getProfileImage(user!.profileImageId);
 
   return (
-    <div className="min-h-screen bg-background mt-4">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative h-48 bg-gradient-to-r from-primary/20 to-primary/10">
+      <div className="relative h-48" style={{ backgroundImage: "url('/user/seller_background.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
           <Avatar className="w-32 h-32 border-4 border-background">
             {profileImage ? (
@@ -60,7 +70,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
           </div>
 
           {/* Profile Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Left Column */}
             <div className="space-y-6">
               <div className="bg-muted/50 rounded-lg p-6">
@@ -109,6 +119,16 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
               </div>
             </div>
           </div>
+
+          {/* Active Listings Section */}
+          {user.activeListings.length > 0 && (
+            <UserListings
+              userId={userId}
+              initialListings={user.activeListings}
+              categories={user.categories}
+              totalListings={user.totalListings}
+            />
+          )}
         </div>
       </div>
     </div>
