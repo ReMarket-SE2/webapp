@@ -14,11 +14,8 @@ const customJestConfig = {
   testEnvironment: 'jsdom',
   coverageReporters: [['text', { skipFull: true }], 'cobertura'],
   transformIgnorePatterns: [
-    '/node_modules/(?!(.pnpm/)?(react-markdown|remark-gfm|micromark|decode-named-character-reference|character-entities|markdown|mdast|unist|unified|rehype|hast|property-information|space-separated-tokens|comma-separated-tokens|vfile|next-auth|@next-auth|openid-client|jose))',
+    '/node_modules/(?!(.pnpm/)?(react-markdown|remark-gfm|micromark|decode-named-character-reference|character-entities|markdown|mdast|unist|unified|rehype|hast|property-information|space-separated-tokens|comma-separated-tokens|vfile))',
   ],
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
-  },
 };
 
 // createJestConfig is exported in this way to ensure that next/jest can load the Next.js configuration
