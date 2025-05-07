@@ -1,14 +1,16 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import ListingDetails from '@/components/listings/listing-details';
 import { toast } from 'sonner';
 import { SessionProvider, useSession } from 'next-auth/react';
 import { useWishlistContext } from '@/components/contexts/wishlist-provider';
 import { ListingStatus } from '@/lib/db/schema/listings';
+import { deleteListing } from '@/lib/listings/actions';
 
 jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
     info: jest.fn(),
+    error: jest.fn(),
   },
 }));
 
@@ -44,6 +46,10 @@ jest.mock('next-auth/react', () => ({
 
 jest.mock("@/components/contexts/wishlist-provider", () => ({
   useWishlistContext: jest.fn(),
+}));
+
+jest.mock('@/lib/listings/actions', () => ({
+  deleteListing: jest.fn(),
 }));
 
 const mockUseSession = useSession as jest.MockedFunction<typeof useSession>;
@@ -239,5 +245,51 @@ describe('ListingDetails', () => {
 
     expect(screen.getByText('View Profile')).toBeInTheDocument();
     expect(screen.getByText('See All Listings')).toBeInTheDocument();
+  });
+
+  it('renders edit and delete buttons for owner', () => {
+    // Setup authenticated owner session
+    mockUseSession.mockReturnValue({
+      data: { user: { id: '1', name: 'Owner' }, expires: '' },
+      status: 'authenticated',
+      update: jest.fn(),
+    });
+    render(
+      <SessionProvider session={{ user: { id: '1', name: 'Owner' }, expires: '' }}>
+        <ListingDetails listing={mockListing} sessionUserId={1} />
+      </SessionProvider>
+    );
+    const editLink = screen.getByRole('link', { name: 'Edit' });
+    expect(editLink).toHaveAttribute('href', '/listing/1/edit');
+    const deleteTriggers = screen.getAllByText('Delete');
+    expect(deleteTriggers[0]).toBeInTheDocument();
+  });
+
+  it('handles delete flow for owner', async () => {
+    const mockDelete = deleteListing as jest.MockedFunction<typeof deleteListing>;
+    mockDelete.mockResolvedValueOnce({ success: true });
+    const mockPush = jest.fn();
+    const { useRouter } = require('next/navigation');
+    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+
+    // Render as owner
+    render(
+      <SessionProvider session={{ user: { id: '1', name: 'Owner' }, expires: '' }}>
+        <ListingDetails listing={mockListing} sessionUserId={1} />
+      </SessionProvider>
+    );
+    // Open delete dialog
+    const deleteTriggers = screen.getAllByText('Delete');
+    fireEvent.click(deleteTriggers[0]);
+    // Confirm dialog appears
+    await screen.findByText('Delete Listing?');
+    // Click confirm delete
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[1]);
+    await waitFor(() => {
+      expect(deleteListing).toHaveBeenCalledWith(1);
+      expect(toast.success).toHaveBeenCalledWith('Listing deleted');
+      expect(mockPush).toHaveBeenCalledWith('/listings');
+    });
   });
 });
