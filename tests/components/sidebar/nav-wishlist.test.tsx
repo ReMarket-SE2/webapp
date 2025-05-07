@@ -1,6 +1,6 @@
 import React from "react"
-import { render, screen } from "@testing-library/react"
-import { fireEvent } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import "@testing-library/jest-dom"
 import { NavWishlist } from "@/components/sidebar/nav-wishlist"
 import { useWishlistContext } from "@/components/contexts/wishlist-provider"
@@ -60,11 +60,12 @@ describe("NavWishlist", () => {
 
     // Open the dropdown for the first item
     const moreButtons = screen.getAllByLabelText("More")
-    fireEvent.pointerDown(moreButtons[0])
+    await userEvent.click(moreButtons[0])
 
-    // Wait for and click the Delete button
-    const deleteButtons = await screen.findAllByTestId("delete-button")
-    fireEvent.click(deleteButtons[0])
+    // Wait for the menu to appear and then query within it
+    const menu = await screen.findByRole("menu")
+    const deleteButton = await within(menu).findByTestId("delete-button")
+    await userEvent.click(deleteButton)
 
     expect(removeFromWishlist).toHaveBeenCalledWith(1)
   })
@@ -86,11 +87,12 @@ describe("NavWishlist", () => {
 
     // Open the dropdown for the first item
     const moreButtons = screen.getAllByLabelText("More")
-    fireEvent.pointerDown(moreButtons[0])
+    await userEvent.click(moreButtons[0])
 
-    // Wait for and click the Copy Link item
-    const copyLinkItem = await screen.findByText("Copy Link")
-    fireEvent.click(copyLinkItem)
+    // Wait for the menu to appear and then query within it
+    const menu = await screen.findByRole("menu")
+    const copyLinkItem = await within(menu).findByText("Copy Link")
+    await userEvent.click(copyLinkItem)
 
     // Expect clipboard.writeText called with the correct URL
     expect(writeTextMock).toHaveBeenCalledWith(
@@ -111,11 +113,12 @@ describe("NavWishlist", () => {
 
     // Open the dropdown for the first item
     const moreButtons = screen.getAllByLabelText("More")
-    fireEvent.pointerDown(moreButtons[0])
+    await userEvent.click(moreButtons[0])
 
-    // Wait for and click the Open in New Tab item
-    const openItem = await screen.findByText("Open in New Tab")
-    fireEvent.click(openItem)
+    // Wait for the menu to appear and then query within it
+    const menu = await screen.findByRole("menu")
+    const openItem = await within(menu).findByText("Open in New Tab")
+    await userEvent.click(openItem)
 
     expect(openSpy).toHaveBeenCalledWith("/listing/1", "_blank")
     openSpy.mockRestore()
