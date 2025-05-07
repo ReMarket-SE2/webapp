@@ -6,6 +6,7 @@ import {
   Banana,
   ShieldCheck,
   LogIn,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -24,10 +25,11 @@ import Image from "next/image"
 import { NavWishlist } from "@/components/sidebar/nav-wishlist"
 import { useSession } from "next-auth/react"
 import { Button } from "../ui/button"
-
+import { useWishlistContext } from "@/components/contexts/wishlist-provider"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
+  const { wishlist, isLoading } = useWishlistContext();
 
   const data = {
     user: session?.user ? {
@@ -55,83 +57,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         isActive: session?.user?.role === "admin",
       }
     ],
-    wishlist: [
-      {
-        name: "Vintage Record Player",
-        url: "#",
-        emoji: "🎵",
-      },
-      {
-        name: "Second-hand Mountain Bike",
-        url: "#",
-        emoji: "🚲",
-      },
-      {
-        name: "Used Gaming Console",
-        url: "#",
-        emoji: "🎮",
-      },
-      {
-        name: "Refurbished Laptop",
-        url: "#",
-        emoji: "💻",
-      },
-      {
-        name: "Antique Desk Lamp",
-        url: "#",
-        emoji: "💡",
-      },
-      {
-        name: "Project Management & Task Tracking",
-        url: "#",
-        emoji: "📊",
-      },
-      {
-        name: "Family Recipe Collection & Meal Planning",
-        url: "#",
-        emoji: "🍳",
-      },
-      {
-        name: "Fitness Tracker & Workout Routines",
-        url: "#",
-        emoji: "💪",
-      },
-      {
-        name: "Book Notes & Reading List",
-        url: "#",
-        emoji: "📚",
-      },
-      {
-        name: "Sustainable Gardening Tips & Plant Care",
-        url: "#",
-        emoji: "🌱",
-      },
-      {
-        name: "Language Learning Progress & Resources",
-        url: "#",
-        emoji: "🗣️",
-      },
-      {
-        name: "Home Renovation Ideas & Budget Tracker",
-        url: "#",
-        emoji: "🏠",
-      },
-      {
-        name: "Personal Finance & Investment Portfolio",
-        url: "#",
-        emoji: "💰",
-      },
-      {
-        name: "Movie & TV Show Watchlist with Reviews",
-        url: "#",
-        emoji: "🎬",
-      },
-      {
-        name: "Daily Habit Tracker & Goal Setting",
-        url: "#",
-        emoji: "✅",
-      },
-    ],
   }
 
   return (
@@ -158,7 +83,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavWishlist listings={data.wishlist} />
+        {isLoading
+          ? (
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          )
+          : <NavWishlist listings={wishlist} />}
       </SidebarContent>
       <SidebarFooter>
         {session?.user ? (

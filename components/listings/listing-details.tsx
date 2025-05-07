@@ -10,8 +10,8 @@ import { formatPrice } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { useSession } from "next-auth/react";
+import { useWishlistContext } from "@/components/contexts/wishlist-provider";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -30,7 +30,7 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
   } = listing;
   const session = useSession();
   const userId = session.data?.user?.id;
-  const { wishlist, addToWishlist, removeFromWishlist } = useWishlist(userId ? parseInt(userId, 10) : null);
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
   const [isInWishlist, setIsInWishlist] = useState(false);
 
   useEffect(() => {
@@ -97,7 +97,9 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
       animate="show"
     >
       <motion.div variants={item}>
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-bold tracking-tight truncate max-w-full overflow-hidden">
+          {title}
+        </h1>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <Badge variant="outline">{status}</Badge>
           {categoryName && (
