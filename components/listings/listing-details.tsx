@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useWishlistContext } from "@/components/contexts/wishlist-provider";
+import Link from "next/link";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -147,7 +148,7 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
         <motion.div variants={item} className="mt-6">
           <Card className="p-4">
             <h3 className="font-semibold mb-3">Seller Information</h3>
-            <div className="flex items-center mb-3">
+            <Link href={`/user/${seller.id}`} className="flex items-center mb-3 hover:opacity-80 transition-opacity">
               <Avatar className="">
                 {seller.profileImage ? (
                   <AvatarImage src={seller.profileImage} alt={seller.username} />
@@ -160,7 +161,7 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
               <div className="ml-2">
                 <p className="font-medium">{seller.username}</p>
               </div>
-            </div>
+            </Link>
 
             {seller.bio && (
               <div className="text-sm text-muted-foreground">
