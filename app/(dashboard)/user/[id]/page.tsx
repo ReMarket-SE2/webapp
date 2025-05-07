@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Package, Archive } from 'lucide-react';
 
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -67,6 +68,27 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                 <p className="text-muted-foreground">
                   {user.bio || 'No bio provided.'}
                 </p>
+              </div>
+
+              {/* Listing Stats */}
+              <div className="bg-muted/50 rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4">Listings</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Active</p>
+                      <p className="text-lg font-semibold">{user.activeListingsCount}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Archive className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Archived</p>
+                      <p className="text-lg font-semibold">{user.archivedListingsCount}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

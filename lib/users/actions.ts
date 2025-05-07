@@ -8,6 +8,8 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { insertPhoto } from '@/lib/photos/actions'
 import { createWishlist } from '@/lib/wishlist/actions'
+import { listings } from '@/lib/db/schema'
+import { count } from 'drizzle-orm'
 
 export async function findUserByEmail(email: string): Promise<User | null> {
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1)
@@ -30,9 +32,35 @@ export async function userExists(id: number): Promise<boolean> {
   return result.length > 0
 }
 
-export async function findUserById(id: number): Promise<User | null> {
-  const result = await db.select().from(users).where(eq(users.id, id)).limit(1)
-  return result[0] || null
+export interface UserWithListingCounts extends User {
+  activeListingsCount: number;
+  archivedListingsCount: number;
+}
+
+export async function findUserById(id: number): Promise<UserWithListingCounts | null> {
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  
+  if (!user) {
+    return null;
+  }
+
+  // Get count of active listings
+  const [activeCount] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(eq(listings.status, 'Active'));
+
+  // Get count of archived listings
+  const [archivedCount] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(eq(listings.status, 'Archived'));
+
+  return {
+    ...user,
+    activeListingsCount: activeCount?.count || 0,
+    archivedListingsCount: archivedCount?.count || 0,
+  };
 }
 
 export async function updateUser(user: User): Promise<User> {
