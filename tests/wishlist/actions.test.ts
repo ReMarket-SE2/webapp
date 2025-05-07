@@ -106,7 +106,10 @@ describe('wishlist actions', () => {
   })
 
   it('createWishlist inserts a new wishlist', async () => {
-    const insertBuilder = { values: jest.fn().mockResolvedValue({ id: 11 }) }
+    const insertBuilder = { 
+      values: jest.fn().mockReturnThis(),
+      returning: jest.fn().mockResolvedValue([{ id: 11 }])
+    }
     insertMock.mockReturnValue(insertBuilder)
 
     const res = await actions.createWishlist(77)
@@ -125,5 +128,28 @@ describe('wishlist actions', () => {
     expect(deleteMock).toHaveBeenCalledWith(wishlists)
     expect(deleteBuilder.where).toHaveBeenCalledWith(expect.any(Object))
     expect(res).toEqual({ success: true })
+  })
+
+  it('creates a new wishlist if none is found', async () => {
+    const insertBuilder = { 
+      values: jest.fn().mockReturnThis(),
+      returning: jest.fn().mockResolvedValue([{ id: 15 }])
+    }
+    const selectBuilder = {
+      from: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockResolvedValue([]),
+      innerJoin: jest.fn().mockReturnThis(),
+    }
+
+    selectMock.mockImplementationOnce(() => selectBuilder)
+    insertMock.mockReturnValue(insertBuilder)
+
+    selectMock.mockImplementationOnce(() => selectBuilder)
+    await actions.getWishlistListingsByUserId(99)
+
+    expect(selectMock).toHaveBeenCalledWith()
+    expect(insertMock).toHaveBeenCalledWith(wishlists)
+    expect(insertBuilder.values).toHaveBeenCalledWith({ userId: 99 })
   })
 })
