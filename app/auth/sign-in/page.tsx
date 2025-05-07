@@ -11,7 +11,7 @@ function SearchParamsHandler() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const error = searchParams.get('error')
+    const error = searchParams?.get('error')
     if (error) {
       toast.error(error)
     }

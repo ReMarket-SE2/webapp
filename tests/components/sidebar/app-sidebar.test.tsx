@@ -2,6 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SessionProvider } from "next-auth/react";
 import { SidebarProvider } from "@/components/ui/sidebar";
+jest.mock("@/components/contexts/wishlist-provider", () => ({
+  useWishlistContext: jest.fn(),
+}));
+import { useWishlistContext } from "@/components/contexts/wishlist-provider";
+const mockUseWishlistContext = useWishlistContext as jest.MockedFunction<typeof useWishlistContext>;
 
 // Mock window.matchMedia
 beforeAll(() => {
@@ -17,6 +22,23 @@ beforeAll(() => {
       removeEventListener: jest.fn(),
       dispatchEvent: jest.fn(),
     })),
+  });
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUseWishlistContext.mockReturnValue({
+    wishlist: [
+      { id: 1, title: "Vintage Record Player" },
+      { id: 2, title: "Second-hand Mountain Bike" },
+      { id: 3, title: "Used Gaming Console" },
+      { id: 4, title: "Refurbished Laptop" },
+    ],
+    isLoading: false,
+    hasError: false,
+    addToWishlist: jest.fn(),
+    removeFromWishlist: jest.fn(),
+    clearUserWishlist: jest.fn(),
   });
 });
 
@@ -100,6 +122,31 @@ describe("AppSidebar", () => {
     expect(screen.getByText("Second-hand Mountain Bike")).toBeInTheDocument();
     expect(screen.getByText("Used Gaming Console")).toBeInTheDocument();
     expect(screen.getByText("Refurbished Laptop")).toBeInTheDocument();
+  });
+
+  it("links each wishlist item to the correct listing page", () => {
+    const session = {
+      user: {
+        name: "Link Tester",
+        email: "tester@example.com",
+        image: "/tester-avatar.png",
+        role: "user",
+      },
+    };
+
+    renderWithSession(session);
+
+    const recordPlayerLink = screen.getByRole("link", { name: "Vintage Record Player" });
+    expect(recordPlayerLink).toHaveAttribute("href", "/listing/1");
+
+    const bikeLink = screen.getByRole("link", { name: "Second-hand Mountain Bike" });
+    expect(bikeLink).toHaveAttribute("href", "/listing/2");
+
+    const consoleLink = screen.getByRole("link", { name: "Used Gaming Console" });
+    expect(consoleLink).toHaveAttribute("href", "/listing/3");
+
+    const laptopLink = screen.getByRole("link", { name: "Refurbished Laptop" });
+    expect(laptopLink).toHaveAttribute("href", "/listing/4");
   });
 
   it("renders sign in button when there is no session", () => {

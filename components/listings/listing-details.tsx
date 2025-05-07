@@ -14,6 +14,9 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { deleteListing } from '@/lib/listings/actions';
 import React from 'react';
 import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useWishlistContext } from "@/components/contexts/wishlist-provider";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -22,6 +25,7 @@ interface ListingDetailsProps {
 
 export default function ListingDetails({ listing, sessionUserId }: ListingDetailsProps) {
   const {
+    id,
     title,
     price,
     description,
@@ -30,6 +34,39 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
     createdAt,
     seller
   } = listing;
+  const session = useSession();
+  const userId = session.data?.user?.id;
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
+  const [isInWishlist, setIsInWishlist] = useState(false);
+
+  useEffect(() => {
+    setIsInWishlist(wishlist.some(item => item.id === id));
+  }, [wishlist, id]);
+
+  const toggleWishlist = async () => {
+    if (!userId) {
+      toast.info("You need to be logged in to manage your wishlist.");
+      return;
+    }
+
+    if (isInWishlist) {
+      try {
+        await removeFromWishlist(id);
+        setIsInWishlist(false);
+      } catch (error) {
+        toast.error("Failed to remove from wishlist.");
+        console.error("Error removing from wishlist:", error);
+      }
+    } else {
+      try {
+        await addToWishlist(id);
+        setIsInWishlist(true);
+      } catch (error) {
+        toast.error("Failed to add to wishlist.");
+        console.error("Error adding to wishlist:", error);
+      }
+    }
+  };
 
   const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -61,11 +98,6 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
     // Implement actual cart functionality
   };
 
-  const handleAddToWishlist = () => {
-    toast.success("Added to wishlist");
-    // Implement actual wishlist functionality
-  };
-
   async function handleDelete() {
     setIsDeleting(true);
     const res = await deleteListing(listing.id);
@@ -86,7 +118,9 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
       animate="show"
     >
       <motion.div variants={item}>
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-bold tracking-tight truncate max-w-full overflow-hidden">
+          {title}
+        </h1>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <Badge variant="outline">{status}</Badge>
           {categoryName && (
@@ -151,8 +185,13 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
               <ShoppingCart className="mr-2 h-4 w-4" />
               Add to Cart
             </Button>
-            <Button variant="outline" size="icon" onClick={handleAddToWishlist}>
-              <Heart className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleWishlist}
+              className={isInWishlist ? "text-red-500" : ""}
+            >
+              <Heart className={`h-4 w-4 ${isInWishlist ? "fill-current" : ""}`} />
             </Button>
           </div>
         </motion.div>
@@ -210,4 +249,4 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
       )}
     </motion.div>
   );
-} 
+}
