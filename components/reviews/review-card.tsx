@@ -4,6 +4,7 @@ import { Review } from "@/lib/db/schema/reviews";
 import { Star } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card } from "../ui/card";
 
 interface ReviewCardProps {
   review: Review;
@@ -11,7 +12,7 @@ interface ReviewCardProps {
 
 export function ReviewCard({ review }: ReviewCardProps) {
   return (
-    <div className="bg-muted/50 rounded-lg p-6">
+    <Card className="bg-muted/50 rounded-lg p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold mb-1">{review.title}</h3>
@@ -34,6 +35,6 @@ export function ReviewCard({ review }: ReviewCardProps) {
       <div className="text-sm text-muted-foreground">
         {new Date(review.createdAt).toLocaleDateString()}
       </div>
-    </div>
+    </Card>
   );
 } 

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, Tag, User, Package, Archive } from "lucide-react";
+import { ShoppingCart, Heart, Tag, User, Package, Archive, Star } from "lucide-react";
 import { toast } from "sonner";
 import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useWishlistContext } from "@/components/contexts/wishlist-provider";
 import Link from "next/link";
-import router from "next/router";
+import { mockReviewStats } from "@/lib/reviews/mock-data";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
@@ -180,13 +180,35 @@ export default function ListingDetails({ listing }: ListingDetailsProps) {
                 <span>Archived: {seller.archivedListingsCount}</span>
               </div>
             </div>
+
+            {/* Seller Rating */}
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex items-center">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-4 w-4 ${
+                      i < Math.round(mockReviewStats.averageScore)
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-muted-foreground"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-sm font-medium">
+                {mockReviewStats.averageScore.toFixed(1)}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                ({mockReviewStats.totalReviews} reviews)
+              </span>
+            </div>
             
             <div className="mt-3 space-y-2">
-              <Button className="w-full text-xs" variant="secondary" size="sm"
-                onClick={() => router.push(`/user/${seller.id}`)}
-              >
-                <User className="mr-1 h-3 w-3" />
-                View Profile
+              <Button asChild className="w-full text-xs" variant="secondary" size="sm">
+                <Link href={`/user/${seller.id}`}>
+                  <User className="mr-1 h-3 w-3" />
+                  View Profile
+                </Link>
               </Button>
             </div>
           </Card>
