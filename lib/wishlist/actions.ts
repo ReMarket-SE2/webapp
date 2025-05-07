@@ -18,7 +18,11 @@ async function getWishlistByUserId(userId: number): Promise<Wishlist | null> {
     .where(eq(wishlists.userId, userId))
     .limit(1);
 
-  return wishlist[0] as Wishlist || null;
+  if (wishlist.length === 0) {
+    return null;
+  } else {
+    return wishlist[0] as Wishlist;
+  }
 }
 
 async function getOrCreateWishlistByUserId(userId: number): Promise<Wishlist> {
