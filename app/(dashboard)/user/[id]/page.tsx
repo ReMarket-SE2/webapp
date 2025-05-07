@@ -6,8 +6,11 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Package, Archive } from 'lucide-react';
+import { Package, Archive, Star } from 'lucide-react';
 import { UserListings } from '@/components/listings/user-listings';
+import { ReviewsList } from '@/components/reviews/reviews-list';
+import { ScrollToReviews } from '@/components/reviews/scroll-to-reviews';
+import { mockReviews, mockReviewStats } from '@/lib/reviews/mock-data';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -115,6 +118,30 @@ export default async function UserProfilePage({ params }: PageProps) {
                     <h3 className="text-sm font-medium text-muted-foreground">Member Since</h3>
                     <p className="text-lg">{new Date(user.createdAt).toLocaleDateString()}</p>
                   </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Seller Rating</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-5 w-5 ${
+                              i < Math.round(mockReviewStats.averageScore)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-muted-foreground"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-lg font-semibold">
+                        {mockReviewStats.averageScore.toFixed(1)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        ({mockReviewStats.totalReviews} reviews)
+                      </span>
+                    </div>
+                    <ScrollToReviews />
+                  </div>
                 </div>
               </div>
             </div>
@@ -129,6 +156,9 @@ export default async function UserProfilePage({ params }: PageProps) {
               totalListings={user.totalListings}
             />
           )}
+
+          {/* Reviews Section */}
+          <ReviewsList reviews={mockReviews} />
         </div>
       </div>
     </div>
