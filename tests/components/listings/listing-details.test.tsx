@@ -30,6 +30,13 @@ jest.mock('lucide-react', () => ({
   ExternalLink: () => <div data-testid="external-link-icon" />,
 }));
 
+// Mock Next.js router from next/navigation
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+  })),
+}));
+
 jest.mock('next-auth/react', () => ({
   SessionProvider: ({ children }: any) => children,
   useSession: jest.fn(),

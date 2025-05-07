@@ -39,6 +39,11 @@ global.crypto = {
   randomUUID: jest.fn(() => mockUUID),
 } as any;
 
+// Mock next-auth session
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({ data: null, status: 'unauthenticated' })),
+}));
+
 describe('useCreateListing', () => {
   const mockCategories = [
     { id: 1, name: 'Category 1' },
@@ -273,6 +278,7 @@ describe('useCreateListing', () => {
         longDescription: 'Test long description',
         categoryId: 1,
         status: 'Draft',
+        sellerId: 1,
       },
       ['data:image/jpeg;base64,test']
     );
