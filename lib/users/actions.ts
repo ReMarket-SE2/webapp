@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db'
 import { users, photos, listings, listingPhotos, categories } from '@/lib/db/schema'
-import { eq, and, gt, isNotNull, asc, desc } from 'drizzle-orm'
+import { eq, and, gt, isNotNull, asc, desc, inArray } from 'drizzle-orm'
 import { User } from '@/lib/db/schema'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
@@ -99,6 +99,7 @@ export async function findUserById(
       price: listings.price,
       category: categories.name,
       createdAt: listings.createdAt,
+      sellerId: listings.sellerId,
     })
     .from(listings)
     .leftJoin(categories, eq(listings.categoryId, categories.id))
@@ -113,30 +114,39 @@ export async function findUserById(
     .from(listings)
     .where(and(...conditions));
 
-  // Get photos for each listing
-  const listingsWithPhotos: ShortListing[] = [];
-  for (const listing of activeListings) {
-    const [photoLink] = await db
-      .select({ photoId: listingPhotos.photoId })
-      .from(listingPhotos)
-      .where(eq(listingPhotos.listingId, listing.id))
-      .limit(1);
+  // Batch fetch photos for all listings
+  const listingIds = activeListings.map(listing => listing.id);
+  const listingPhotoLinks = await db
+    .select({
+      listingId: listingPhotos.listingId,
+      photoId: listingPhotos.photoId,
+    })
+    .from(listingPhotos)
+    .where(and(inArray(listingPhotos.listingId, listingIds)))
+    .limit(listingIds.length);
 
-    let photo: string | null = null;
-    if (photoLink) {
-      const [photoRow] = await db
-        .select()
-        .from(photos)
-        .where(eq(photos.id, photoLink.photoId))
-        .limit(1);
-      photo = photoRow?.image ?? null;
-    }
+  const photoIds = listingPhotoLinks.map(link => link.photoId);
+  const photosData = await db
+    .select({
+      id: photos.id,
+      image: photos.image,
+    })
+    .from(photos)
+    .where(and(inArray(photos.id, photoIds)));
 
-    listingsWithPhotos.push({
+  const photoMap = new Map(
+    photosData.map(photo => [photo.id, photo.image])
+  );
+
+  const listingsWithPhotos: ShortListing[] = activeListings.map(listing => {
+    const photoLink = listingPhotoLinks.find(link => link.listingId === listing.id);
+    const photo = photoLink ? photoMap.get(photoLink.photoId) ?? null : null;
+    return {
       ...listing,
+      sellerId: listing.sellerId,
       photo,
-    });
-  }
+    };
+  });
 
   return {
     ...user,
