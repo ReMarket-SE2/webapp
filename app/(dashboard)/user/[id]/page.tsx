@@ -1,15 +1,20 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { findUserById, getProfileImage } from '@/lib/users/actions';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { UserInteractiveContent } from '@/components/user/user-interactive-content';
+import { UserProfileCards } from '@/components/user/user-profile-cards';
 
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function UserProfilePage({ params }: PageProps) {
   const { id } = await params;
   const userId = parseInt(id);
   
@@ -20,7 +25,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   const session = await getServerSession(authOptions);
   const isOwnProfile = session?.user?.id === id;
   
-  const user = await findUserById(userId);
+  const user = await findUserById(userId, {
+    page: 1,
+    pageSize: 10,
+    sortOrder: 'desc',
+    categoryId: null,
+  });
   
   if (!user) {
     return notFound();
@@ -29,50 +39,57 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   const profileImage = await getProfileImage(user!.profileImageId);
 
   return (
-    <div className="container mx-auto py-10">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-2xl flex items-center justify-between">
-            <span>{isOwnProfile ? 'Your Profile' : `${user.username}'s Profile`}</span>
-            {isOwnProfile && (
-              <Button asChild size="sm">
-                <Link href="/user/edit">Edit Profile</Link>
-              </Button>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="flex flex-col items-center gap-4">
-              <Avatar className="w-32 h-32">
-                {profileImage ? (
-                  <AvatarImage src={profileImage} alt={user.username} className="object-cover" />
-                ) : (
-                  <AvatarFallback className="text-4xl">
-                    {user.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                )}
-              </Avatar>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div 
+        className="relative h-48" 
+        style={{ backgroundImage: "url('/user/seller_background.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
+          <Suspense fallback={<Skeleton className="w-32 h-32 rounded-full" />}>
+            <Avatar className="w-32 h-32 border-4 border-background">
+              {profileImage ? (
+                <AvatarImage src={profileImage} alt={user.username} className="object-cover" />
+              ) : (
+                <AvatarFallback className="text-4xl">
+                  {user.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              )}
+            </Avatar>
+          </Suspense>
+        </div>
+      </div>
+
+      {/* Profile Content */}
+      <div className="container mx-auto pt-20 pb-10 px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header Section */}
+          <Suspense fallback={<div className="text-center mb-8">
+            <Skeleton className="h-10 w-64 mx-auto mb-4" />
+            <Skeleton className="h-10 w-32 mx-auto" />
+          </div>}>
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold mb-2">
+                {isOwnProfile ? 'Your Profile' : `${user.username}'s Profile`}
+              </h1>
+              {isOwnProfile && (
+                <Button asChild variant="outline" className="mt-4">
+                  <Link href="/user/edit">Edit Profile</Link>
+                </Button>
+              )}
             </div>
-            <div className="flex-1 space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Username</h3>
-                <p>{user.username}</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Bio</h3>
-                <p className="text-muted-foreground">
-                  {user.bio || 'No bio provided.'}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Member Since</h3>
-                <p>{new Date(user.createdAt).toLocaleDateString()}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </Suspense>
+
+          {/* Profile Cards */}
+          <UserProfileCards user={user} />
+
+          {/* Interactive Content */}
+          <UserInteractiveContent 
+            user={user} 
+            userId={userId} 
+          />
+        </div>
+      </div>
     </div>
   );
 }

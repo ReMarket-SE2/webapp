@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, text, check } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, integer, text, check, timestamp } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { users } from './users';
 import { listings } from './listings';
@@ -10,6 +10,7 @@ export const reviews = pgTable('reviews', {
   description: text('description'),
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   listingId: integer('listing_id').notNull().references(() => listings.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => {
   return {
     // Add a check constraint to ensure score is between 1 and 5
