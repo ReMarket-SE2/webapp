@@ -86,6 +86,26 @@ function getLevenshteinSql(column: PgColumn, searchTerm: string, maxDistance: nu
   ) <= ${maxDistance}`;
 }
 
+/**
+ * Recursively collect all descendant category IDs for a given category.
+ */
+async function getDescendantCategoryIds(categoryId: number): Promise<number[]> {
+  const allCategories = await db.select().from(categories);
+  const map = new Map<number, number[]>();
+  for (const cat of allCategories)
+    if (cat.parentId) (map.get(cat.parentId) ?? map.set(cat.parentId, []).get(cat.parentId)!).push(cat.id);
+  const result: number[] = [categoryId];
+  function collect(id: number) {
+    const children = map.get(id) ?? [];
+    for (const childId of children) {
+      result.push(childId);
+      collect(childId);
+    }
+  }
+  collect(categoryId);
+  return result;
+}
+
 export async function createListing(
   formData: ListingFormData,
   photoData: string[] = []
@@ -285,9 +305,10 @@ export async function getAllListings(options?: {
       );
     }
 
-    // exact category filter
+    // exact category filter (cascade)
     if (options?.categoryId !== undefined && options.categoryId !== null) {
-      conditions.push(eq(listings.categoryId, options.categoryId));
+      const ids = await getDescendantCategoryIds(options.categoryId);
+      conditions.push(inArray(listings.categoryId, ids));
     }
 
     /* ------------------------------ total count ------------------------------ */
