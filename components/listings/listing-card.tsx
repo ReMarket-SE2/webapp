@@ -5,12 +5,27 @@ import { format } from "timeago.js";
 import { ShortListing } from "@/lib/listings/actions";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
+import { Category } from '@/lib/db/schema/categories';
 
 interface ListingCardProps {
   listing: ShortListing;
+  categories?: Category[];
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+function getCategoryPath(categories: Category[], categoryId: number | null): string {
+  if (!categoryId || !categories.length) return '';
+  const map = new Map<number, Category>();
+  categories.forEach(cat => map.set(cat.id, cat));
+  const path: string[] = [];
+  let current = map.get(categoryId);
+  while (current) {
+    path.unshift(current.name);
+    current = current.parentId ? map.get(current.parentId) : undefined;
+  }
+  return path.join(' → ');
+}
+
+export function ListingCard({ listing, categories = [] }: ListingCardProps) {
   return (
     <Link href={`/listing/${listing.id}`} className="block">
       <Card className="overflow-hidden hover:bg-muted transition-colors p-0 shadow-none">
@@ -32,7 +47,9 @@ export function ListingCard({ listing }: ListingCardProps) {
 
             <div className="flex items-center justify-between gap-2">
               <p className="text-lg font-bold text-primary">${listing.price}</p>
-              <Badge variant="secondary">{listing.category || "Uncategorized"}</Badge>
+              <Badge variant="secondary">
+                {getCategoryPath(categories, (listing as any).categoryId ?? null) || listing.category || "Uncategorized"}
+              </Badge>
             </div>
           </CardContent>
         </div>
