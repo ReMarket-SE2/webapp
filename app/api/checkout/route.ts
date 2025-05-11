@@ -44,7 +44,10 @@ export async function POST(req: Request) {
   const line_items = items.map(item => ({
     price_data: {
       currency: 'usd',
-      product_data: { name: item.title },
+      product_data: {
+        name: item.title,
+        metadata: { listingId: item.id.toString() },
+      },
       unit_amount: Math.round(Number(item.price) * 100),
     },
     quantity: 1,
@@ -61,7 +64,10 @@ export async function POST(req: Request) {
       payment_method_types: ['card'],
       mode: 'payment',
       line_items,
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      shipping_address_collection: {
+        allowed_countries: ['US', 'CA', 'GB', 'DE', 'FR', 'AU'],
+      },
+      success_url: `${origin}/orders`,
       cancel_url: `${origin}`,
       metadata: { userId: userId.toString() },
     });
