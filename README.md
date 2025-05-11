@@ -1,4 +1,4 @@
-# ReMarket - Web Application
+# ReMarket - Web Application [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReMarket-SE2/webapp)
 
 A modern e-commerce marketplace web application built with Next.js, React, and TypeScript.
 
