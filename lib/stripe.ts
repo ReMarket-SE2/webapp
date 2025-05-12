@@ -1,6 +1,8 @@
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const apiKey = process.env.STRIPE_SECRET_KEY || 'invalid_secret';
+
+const stripe = new Stripe(apiKey, {
   apiVersion: '2025-04-30.basil',
 });
 
