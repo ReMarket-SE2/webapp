@@ -217,6 +217,7 @@ For detailed information about the database schema, relationships, and usage exa
 - `pnpm db:generate`: Generate database migrations
 - `pnpm db:migrate`: Apply database migrations
 - `pnpm db:studio`: View database with Drizzle Studio
+- `stripe listen --forward-to localhost:3000/api/webhooks/stripe`: Forward Stripe webhook events locally
 
 ### Git Hooks
 
