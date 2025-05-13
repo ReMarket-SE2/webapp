@@ -21,6 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Package } from 'lucide-react';
 import Image from "next/image"
 import { NavWishlist } from "@/components/sidebar/nav-wishlist"
 import { useSession } from "next-auth/react"
@@ -48,6 +49,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Sell your items",
         url: "/create-listing",
         icon: Banana,
+        isActive: true,
+      },
+      {
+        title: "My Orders",
+        url: "/orders",
+        icon: Package,
         isActive: true,
       },
       {
