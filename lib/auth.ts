@@ -30,11 +30,6 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<string | nul
   }
 }
 
-export function generateUiqueUsername(username: string): string {
-  const uniqueSuffix = `_${Math.random().toString(36).substring(2, 8)}`; // so that users with the same and last name can register
-  return `${username}${uniqueSuffix}`;
-}
-
 const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProvider>> = [
   CredentialsProvider({
     name: 'Credentials',
