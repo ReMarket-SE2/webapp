@@ -263,13 +263,7 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
                   <User className="mr-1 h-3 w-3" />
                   View Profile
                 </Link>
-              </Button>
-              
-              <Button asChild className="w-full text-xs" variant="secondary" size="sm">
-                <Link href={`/user/${seller.id}/listings`}>
-                  See All Listings
-                </Link>
-              </Button>
+              </Button>              
             </div>
           </Card>
         </motion.div>

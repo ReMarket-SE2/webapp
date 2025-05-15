@@ -296,7 +296,6 @@ describe('ListingDetails', () => {
     );
 
     expect(screen.getByText('View Profile')).toBeInTheDocument();
-    expect(screen.getByText('See All Listings')).toBeInTheDocument();
   });
 
   it('renders edit and delete buttons for owner', () => {
