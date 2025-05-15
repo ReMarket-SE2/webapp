@@ -6,6 +6,9 @@ import { useWishlistContext } from '@/components/contexts/wishlist-provider';
 import { ListingStatus } from '@/lib/db/schema/listings';
 import { deleteListing } from '@/lib/listings/actions';
 
+// Remove the mock implementation that's causing issues
+// Instead, we'll mock the necessary dependencies
+
 jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
@@ -17,7 +20,7 @@ jest.mock('sonner', () => ({
 // Mock framer-motion to avoid animation issues in tests
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, variants, ...props }: any) => <div {...props}>{children}</div>,
   },
 }));
 
@@ -29,6 +32,7 @@ jest.mock('lucide-react', () => ({
   User: () => <div data-testid="user-icon" />,
   Package: () => <div data-testid="package-icon" />,
   Archive: () => <div data-testid="archive-icon" />,
+  Star: () => <div data-testid="star-icon" />,
   ExternalLink: () => <div data-testid="external-link-icon" />,
 }));
 
@@ -50,6 +54,54 @@ jest.mock("@/components/contexts/wishlist-provider", () => ({
 
 jest.mock('@/lib/listings/actions', () => ({
   deleteListing: jest.fn(),
+}));
+
+// Mock the UI components
+jest.mock('@/components/ui/alert-dialog', () => ({
+  AlertDialog: ({ children }: any) => <div data-testid="alert-dialog">{children}</div>,
+  AlertDialogTrigger: ({ children }: any) => <div data-testid="alert-dialog-trigger">{children}</div>,
+  AlertDialogContent: ({ children }: any) => <div data-testid="alert-dialog-content">{children}</div>,
+  AlertDialogHeader: ({ children }: any) => <div data-testid="alert-dialog-header">{children}</div>,
+  AlertDialogFooter: ({ children }: any) => <div data-testid="alert-dialog-footer">{children}</div>,
+  AlertDialogTitle: ({ children }: any) => <div data-testid="alert-dialog-title">{children}</div>,
+  AlertDialogDescription: ({ children }: any) => <div data-testid="alert-dialog-description">{children}</div>,
+  AlertDialogAction: ({ children, onClick }: any) => <button data-testid="alert-dialog-action" onClick={onClick}>{children}</button>,
+  AlertDialogCancel: ({ children }: any) => <button data-testid="alert-dialog-cancel">{children}</button>,
+}));
+
+jest.mock('@/components/ui/avatar', () => ({
+  Avatar: ({ children }: any) => <div data-slot="avatar">{children}</div>,
+  AvatarFallback: ({ children }: any) => <div data-slot="avatar-fallback">{children}</div>,
+  AvatarImage: ({ src, alt }: any) => <img src={src} alt={alt} data-slot="avatar-image" />,
+}));
+
+jest.mock('@/components/ui/button', () => ({
+  Button: ({ children, onClick, className, variant }: any) => (
+    <button 
+      onClick={onClick} 
+      className={className}
+      data-variant={variant}
+    >
+      {children}
+    </button>
+  ),
+}));
+
+jest.mock('@/components/ui/badge', () => ({
+  Badge: ({ children, variant }: any) => (
+    <span data-variant={variant}>{children}</span>
+  ),
+}));
+
+jest.mock('@/components/ui/card', () => ({
+  Card: ({ children }: any) => <div data-testid="card">{children}</div>,
+}));
+
+jest.mock('next/link', () => ({
+  __esModule: true,
+  default: ({ href, children, className }: any) => (
+    <a href={href} className={className} role="link">{children}</a>
+  ),
 }));
 
 const mockUseSession = useSession as jest.MockedFunction<typeof useSession>;
