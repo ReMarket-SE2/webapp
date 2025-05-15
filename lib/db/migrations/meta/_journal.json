@@ -50,6 +50,20 @@
       "when": 1745661295434,
       "tag": "0006_update-user-wishlist-relations-remove-name",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1746623645372,
+      "tag": "0007_add_seller_id_to_listings",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1746966809663,
+      "tag": "0008_order_items",
+      "breakpoints": true
     }
   ]
 }
