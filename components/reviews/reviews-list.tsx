@@ -16,23 +16,21 @@ export function ReviewsList({ reviews: initialReviews }: ReviewsListProps) {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const handleSort = (by: 'date' | 'score') => {
-    if (sortBy === by) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(by);
-      setSortOrder('desc');
-    }
+    const newSortOrder = sortBy === by ? (sortOrder === 'asc' ? 'desc' : 'asc') : 'desc';  
+    const newSortBy = by;  
 
-    const sorted = [...reviews].sort((a, b) => {
-      if (by === 'date') {
-        return sortOrder === 'asc'
-          ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      } else {
-        return sortOrder === 'asc' ? a.score - b.score : b.score - a.score;
-      }
-    });
+    const sorted = [...reviews].sort((a, b) => {  
+      if (newSortBy === 'date') {  
+        return newSortOrder === 'asc'  
+          ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()  
+          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();  
+      } else {  
+        return newSortOrder === 'asc' ? a.score - b.score : b.score - a.score;  
+      }  
+    });  
 
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
     setReviews(sorted);
   };
 
