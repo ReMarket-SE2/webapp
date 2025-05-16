@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, Tag, User, Package, Archive, Star } from "lucide-react";
+import { ShoppingCart, Heart, Tag, User, Package, Archive, Star, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { deleteListing } from '@/lib/listings/actions';
 import React from 'react';
 import Link from 'next/link';
@@ -21,10 +22,86 @@ import { mockReviewStats } from "@/lib/reviews/mock-data";
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
+  isSold?: boolean;
   sessionUserId?: number | null;
 }
 
-export default function ListingDetails({ listing, sessionUserId }: ListingDetailsProps) {
+interface ShippingLabelData {
+  sellerName: string;
+  sellerEmail: string;
+  buyerName: string;
+  buyerEmail: string;
+  shippingAddress: string;
+  barcode: string;
+}
+
+interface ShippingLabelProps {
+  data: ShippingLabelData;
+}
+
+function Barcode({ value }: { value: string }) {
+  // Simple barcode SVG generator (Code 128-like, not for production)
+  // For real barcodes, use a library like bwip-js or jsbarcode
+  function getBars(val: string) {
+    // Map chars to bar patterns (very simplified)
+    return val.split('').map((char, i) => {
+      const code = char.charCodeAt(0);
+      const width = 2 + (code % 3); // 2-4px
+      const height = 40;
+      const x = i * 5;
+      return (
+        <rect
+          key={i}
+          x={x}
+          y={0}
+          width={width}
+          height={height}
+          fill={i % 2 === 0 ? "#222" : "#888"}
+          rx={width / 3}
+        />
+      );
+    });
+  }
+  return (
+    <div className="flex flex-col items-center">
+      <svg width={value.length * 5} height={40} className="mb-1">
+        {getBars(value.replace(/[^A-Za-z0-9]/g, ""))}
+      </svg>
+      <span className="text-xs tracking-widest font-mono">{value}</span>
+    </div>
+  );
+}
+
+function ShippingLabel({ data }: ShippingLabelProps) {
+  return (
+    <div className="w-[350px] mx-auto bg-white text-black rounded-lg shadow-lg border p-6 print:p-0 print:shadow-none print:border-none print:bg-white">
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-lg font-bold tracking-wide">Shipping Label</div>
+        {/* Barcode SVG */}
+        <Barcode value={data.barcode} />
+      </div>
+      <div className="mb-3">
+        <div className="font-semibold text-sm text-gray-700">From (Seller):</div>
+        <div className="text-sm">{data.sellerName}</div>
+        <div className="text-xs text-gray-500">{data.sellerEmail}</div>
+      </div>
+      <div className="mb-3">
+        <div className="font-semibold text-sm text-gray-700">To (Buyer):</div>
+        <div className="text-sm">{data.buyerName}</div>
+        <div className="text-xs text-gray-500">{data.buyerEmail}</div>
+      </div>
+      <div className="mb-3">
+        <div className="font-semibold text-sm text-gray-700">Shipping Address:</div>
+        <div className="text-sm">{data.shippingAddress}</div>
+      </div>
+      <div className="mt-4 border-t pt-2 text-xs text-gray-500">
+        Please handle with care. Thank you for using ReMarket!
+      </div>
+    </div>
+  );
+}
+
+export default function ListingDetails({ listing, isSold, sessionUserId }: ListingDetailsProps) {
   const {
     id,
     title,
@@ -33,7 +110,7 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
     categoryName,
     status,
     createdAt,
-    seller
+    seller,
   } = listing;
   const session = useSession();
   const userId = session.data?.user?.id;
@@ -111,6 +188,43 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
     }
   }
 
+  // --- Shipping Label State ---
+  const [isLabelOpen, setIsLabelOpen] = useState(false);
+  const [isLabelLoading, setIsLabelLoading] = useState(false);
+  const [shippingLabelData, setShippingLabelData] = useState<ShippingLabelData | null>(null);
+
+  async function fetchShippingLabelData(): Promise<ShippingLabelData> {
+    // Replace this with actual API/data fetching logic
+    // Simulate network delay
+    await new Promise(res => setTimeout(res, 800));
+    // Example: fetch order, buyer, seller, shipping address from backend
+    return {
+      sellerName: seller ? seller.username : "Seller Name",
+      sellerEmail: "seller@email.com",
+      buyerName: "Buyer Name Surname", // TODO: fetch actual buyer
+      buyerEmail: "buyer@email.com",   // TODO: fetch actual buyer
+      shippingAddress: "123 Main St, City, Country", // TODO: fetch from order
+      barcode: `#${id.toString().padStart(10, "0")}`,
+    };
+  }
+
+  async function handlePrintShippingLabel() {
+    setIsLabelLoading(true);
+    try {
+      const data = await fetchShippingLabelData();
+      setShippingLabelData(data);
+      setIsLabelOpen(true);
+    } catch (e) {
+      console.error("Error fetching shipping label data:", e);
+      toast.error("Failed to load shipping label data.");
+    }
+    setIsLabelLoading(false);
+  }
+
+  function handlePrint() {
+    window.print();
+  }
+
   return (
     <motion.div
       className="space-y-6"
@@ -149,53 +263,115 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
 
       {/* Owner controls */}
       {sessionUserId && seller && sessionUserId === seller.id ? (
-        <motion.div variants={item}>
-          <div className="flex gap-3">
-            <Link href={`/listing/${listing.id}/edit`} className="flex-1">
-              <Button variant="outline" className="w-full">
-                Edit
+        isSold ? (
+          <motion.div variants={item}>
+            <div className="flex gap-3">
+              <Button
+                className="flex-1"
+                variant="outline"
+                onClick={handlePrintShippingLabel}
+                disabled={isLabelLoading}
+              >
+                {isLabelLoading ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    Loading...
+                  </>
+                ) : (
+                  <>Print Shipping Label</>
+                )}
               </Button>
-            </Link>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="flex-1" disabled={isDeleting}>
-                  Delete
+              <Dialog open={isLabelOpen} onOpenChange={setIsLabelOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Shipping Label</DialogTitle>
+                    <DialogDescription>
+                      Print and attach this label to your package.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col items-center py-2">
+                    {shippingLabelData ? (
+                      <ShippingLabel data={shippingLabelData} />
+                    ) : (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="animate-spin h-4 w-4" />
+                        Loading label...
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter className="print:hidden">
+                    <Button onClick={handlePrint} variant="secondary">
+                      Print
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Button
+                className="flex-1"
+                variant="outline"
+                disabled
+              >
+                Mark As Shipped
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div variants={item}>
+            <div className="flex gap-3">
+              <Link href={`/listing/${listing.id}/edit`} className="flex-1">
+                <Button variant="outline" className="w-full">
+                  Edit
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your listing.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-white hover:bg-destructive/90">
-                    {isDeleting ? 'Deleting...' : 'Delete'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </motion.div>
+              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="flex-1" disabled={isDeleting}>
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your listing.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-white hover:bg-destructive/90">
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </motion.div>
+        )
       ) : (
-        <motion.div variants={item}>
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={handleAddToCart}>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Add to Cart
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleWishlist}
-              className={isInWishlist ? "text-red-500" : ""}
-            >
-              <Heart className={`h-4 w-4 ${isInWishlist ? "fill-current" : ""}`} />
-            </Button>
-          </div>
-        </motion.div>
+        isSold ? (
+          <motion.div variants={item}>
+            <div className="w-full flex items-center justify-center bg-muted rounded-md p-4 text-muted-foreground font-semibold">
+              This item has already been sold.
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div variants={item}>
+            <div className="flex gap-3">
+              <Button className="flex-1" onClick={handleAddToCart}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Add to Cart
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleWishlist}
+                className={isInWishlist ? "text-red-500" : ""}
+              >
+                <Heart className={`h-4 w-4 ${isInWishlist ? "fill-current" : ""}`} />
+              </Button>
+            </div>
+          </motion.div>
+        )
       )}
 
       {/* Seller Information Card */}

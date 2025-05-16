@@ -5,6 +5,7 @@ import { listings, NewListing, ListingStatus } from '@/lib/db/schema/listings';
 import { categories } from '@/lib/db/schema/categories';
 import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
+import { orderItems } from '@/lib/db/schema/order_items';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { eq, inArray, asc, desc, sql, and } from 'drizzle-orm';
@@ -262,6 +263,20 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
   }
 }
 
+export async function getListingStatusById(id: number): Promise<boolean> {
+  try {
+    const [orderItem] = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.listingId, id))
+      .limit(1);
+    return !!orderItem;
+  } catch (error) {
+    console.error('Error fetching listing status:', error);
+    return false;
+  }
+}
+
 export async function getAllListings(options?: {
   page?: number;
   pageSize?: number;
@@ -289,6 +304,13 @@ export async function getAllListings(options?: {
     if (options?.categoryId !== undefined && options.categoryId !== null) {
       conditions.push(eq(listings.categoryId, options.categoryId));
     }
+
+    // Exclude listings that have been sold (i.e., have an entry in order_items)
+    conditions.push(
+      sql`NOT EXISTS (
+        SELECT 1 FROM order_items WHERE order_items.listing_id = ${listings.id}
+      )`
+    );
 
     /* ------------------------------ total count ------------------------------ */
     const countQuery = db.select().from(listings);
