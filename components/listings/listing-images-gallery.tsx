@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface ListingImagesGalleryProps {
@@ -115,6 +115,7 @@ export default function ListingImagesGallery({ images, title }: ListingImagesGal
       {/* Fullscreen dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-4xl w-[90vw] h-[90vh] p-0 overflow-hidden">
+          <DialogTitle className="sr-only">{title}</DialogTitle>
           <div className="relative w-full h-full flex items-center justify-center">
             <Image
               src={images[currentIndex]}

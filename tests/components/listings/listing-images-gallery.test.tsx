@@ -25,13 +25,20 @@ jest.mock('framer-motion', () => ({
   },
 }));
 
-// Mock the Dialog component
+// Mock the Dialog component with properly structured exports
 jest.mock('@/components/ui/dialog', () => ({
+  __esModule: true,
   Dialog: ({ children, open }: any) => open ? (
     <div data-testid="dialog-open">{children}</div>
   ) : null,
   DialogContent: ({ children }: any) => (
     <div data-testid="dialog-content">{children}</div>
+  ),
+  DialogTitle: ({ children }: any) => (
+    <div data-testid="dialog-title">{children}</div>
+  ),
+  DialogTrigger: ({ children }: any) => (
+    <div data-testid="dialog-trigger">{children}</div>
   ),
 }));
 
@@ -40,6 +47,21 @@ jest.mock('lucide-react', () => ({
   ChevronLeft: () => <div data-testid="chevron-left-icon" />,
   ChevronRight: () => <div data-testid="chevron-right-icon" />,
   Maximize2: () => <div data-testid="maximize-icon" />,
+}));
+
+// Mock the Button component
+jest.mock('@/components/ui/button', () => ({
+  Button: ({ children, onClick, className, size, variant }: any) => (
+    <button 
+      onClick={onClick} 
+      className={className}
+      data-size={size}
+      data-variant={variant}
+      data-testid="button"
+    >
+      {children}
+    </button>
+  ),
 }));
 
 describe('ListingImagesGallery', () => {
