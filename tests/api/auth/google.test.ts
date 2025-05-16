@@ -3,14 +3,18 @@
  */
 
 import { authOptions, GoogleProfile } from '@/lib/auth';
-import { findUserByEmail, createUser } from '@/lib/users/actions';
+import { findUserByEmail, createUser, findUserByUsername } from '@/lib/users/actions';
 import { db } from '@/lib/db';
 import { oauthAccounts } from '@/lib/db/schema/oauth_accounts';
 import type { User } from '@/lib/db/schema/users';
 import type { Account, Profile } from 'next-auth';
 
 // Mock the needed services and dependencies
-jest.mock('@/lib/users/actions');
+jest.mock('@/lib/users/actions', () => ({
+  findUserByEmail: jest.fn(),
+  createUser: jest.fn(),
+  findUserByUsername: jest.fn(),
+}));
 jest.mock('@/lib/db', () => ({
   db: {
     select: jest.fn(() => ({
@@ -229,11 +233,14 @@ describe('Google OAuth Authentication', () => {
     // Mock no existing user
     (findUserByEmail as jest.Mock).mockResolvedValueOnce(null);
 
+    // Mock no existing username
+    (findUserByUsername as jest.Mock).mockResolvedValueOnce(null);
+
     // Mock user creation
     (createUser as jest.Mock).mockResolvedValueOnce({
       id: 1,
       email: 'test@example.com',
-      username: 'testuser',
+      username: 'TestUser',
     } as User);
 
     // Mock fetch error
@@ -253,4 +260,4 @@ describe('Google OAuth Authentication', () => {
     }));
     expect(db.insert).toHaveBeenCalledWith(oauthAccounts);
   });
-}); 
+});
