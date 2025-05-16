@@ -1,6 +1,9 @@
+'use server';
+
 import { db } from '@/lib/db';
 import { NewOrder, Order, orders } from '@/lib/db/schema/orders';
 import { NewOrderItem, orderItems } from '@/lib/db/schema/order_items';
+import { listings } from '@/lib/db/schema/listings';
 import type Stripe from 'stripe';
 import { eq } from 'drizzle-orm';
 
@@ -114,4 +117,41 @@ export async function getOrdersByUserId(userId: number) {
   });
 
   return ordersWithTotals;
+}
+
+export async function getOrderByListingId(listingId: number) {
+  // Find the order item for this listing
+  const orderItem = await db.query.orderItems.findFirst({
+    where: eq(orderItems.listingId, listingId),
+    with: {
+      order: true,
+    },
+  });
+  return orderItem?.order || null;
+}
+
+export async function getSellerByListingId(listingId: number) {
+  // Get the listing and its seller
+  const listing = await db.query.listings.findFirst({
+    where: eq(listings.id, listingId),
+    with: {
+      seller: true,
+    },
+  });
+  return listing?.seller || null;
+}
+
+export async function getBuyerByListingId(listingId: number) {
+  // Get the order for this listing, then the user (buyer)
+  const orderItem = await db.query.orderItems.findFirst({
+    where: eq(orderItems.listingId, listingId),
+    with: {
+      order: {
+        with: {
+          user: true,
+        },
+      },
+    },
+  });
+  return orderItem?.order?.user || null;
 }
