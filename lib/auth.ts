@@ -1,7 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions, Profile } from "next-auth";
-import { findUserByEmail, createUser } from "@/lib/users/actions";
+import { findUserByEmail, createUser, findUserByUsername } from "@/lib/users/actions";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { oauthAccounts } from "./db/schema/oauth_accounts";
@@ -154,9 +154,16 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Create new user and OAuth account
+        // Check if the username already exists
+        const existingUsername = await findUserByUsername(profile?.name?.replace(/\s+/g, '') as string);
+        let uniqueSuffix = '';
+        if (existingUsername) {
+          uniqueSuffix = `_${Math.random().toString(36).substring(2, 8)}`; // so that users with the same first and last name can register
+        }
+
         const newUser = await createUser({
           email: profile?.email as string,
-          username: profile?.name?.replace(/\s+/g, '') as string,
+          username: `${profile?.name?.replace(/\s+/g, '')}${uniqueSuffix}` as string,
           passwordHash: null,
           role: 'user',
           profileImageId: photoId,
