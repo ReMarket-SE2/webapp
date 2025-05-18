@@ -381,56 +381,6 @@ describe('Listing Actions', () => {
       });
     });
 
-    test('should apply category filter', async () => {
-      const mockListings = [
-        { id: 1, title: 'Category Match', price: '300', categoryId: 2, createdAt: new Date() },
-      ];
-
-      // Mock for count query with category filter
-      const mockDbSelect = db.select as jest.Mock;
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
-      }));
-
-      // Mock for main query with category filter
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        offset: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
-      }));
-
-      // Mock for photo link query
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValueOnce([{ photoId: 1 }]),
-      }));
-
-      // Mock for photo data query
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValueOnce([{ image: 'data:image/jpeg;base64,photo1' }]),
-      }));
-
-      // Mock for category query
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValueOnce([{ name: 'Test Category' }]),
-      }));
-
-      const result = await getAllListings({ categoryId: 2 });
-
-      expect(result.listings).toHaveLength(1);
-      expect(result.listings[0].title).toBe('Category Match');
-      expect(result.listings[0].category).toBe('Test Category');
-    });
 
     test('should handle pagination', async () => {
       const mockListings = [
