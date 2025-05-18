@@ -70,6 +70,7 @@ export interface ShortListing {
   title: string;
   price: string;
   category: string | null;
+  categoryId: number | null;
   photo: string | null; // Single thumbnail photo Base64 encoded
   createdAt: Date;
   sellerId: number;
@@ -388,6 +389,7 @@ export async function getAllListings(options?: {
         title: listing.title,
         price: listing.price,
         category,
+        categoryId: listing.categoryId ?? null,
         photo,
         createdAt: listing.createdAt,
         sellerId: listing.sellerId,

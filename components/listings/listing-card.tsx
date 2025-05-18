@@ -48,7 +48,7 @@ export function ListingCard({ listing, categories = [] }: ListingCardProps) {
             <div className="flex items-center justify-between gap-2">
               <p className="text-lg font-bold text-primary">${listing.price}</p>
               <Badge variant="secondary">
-                {getCategoryPath(categories, (listing as any).categoryId ?? null) || listing.category || "Uncategorized"}
+                {getCategoryPath(categories, listing.categoryId ?? null) || listing.category || "Uncategorized"}
               </Badge>
             </div>
           </CardContent>
