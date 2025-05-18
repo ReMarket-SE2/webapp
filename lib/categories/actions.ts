@@ -183,3 +183,17 @@ export async function deleteCategory(id: number) {
     throw new Error('Failed to delete category');
   }
 }
+
+// Helper to get the full category path (from root to leaf) for a given categoryId
+export async function getCategoryPath(categoryId: number): Promise<{ id: number; name: string }[]> {
+  const allCategories = await db.select().from(categories);
+  const map = new Map<number, { id: number; name: string; parentId: number | null }>();
+  for (const cat of allCategories) map.set(cat.id, cat);
+  const path: { id: number; name: string }[] = [];
+  let current = map.get(categoryId);
+  while (current) {
+    path.unshift({ id: current.id, name: current.name });
+    current = current.parentId ? map.get(current.parentId) : undefined;
+  }
+  return path;
+}
