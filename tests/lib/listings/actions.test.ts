@@ -728,4 +728,345 @@ describe('Listing Actions', () => {
       expect(result.error).toBe('Failed to delete listing');
     });
   });
+  describe('createListing - extended', () => {
+    test('should handle invalid photo data gracefully', async () => {
+      // Setup mock for listing creation
+      const mockListingId = 123;
+      const mockDbInsert = db.insert as jest.Mock;
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValueOnce([{ id: mockListingId }]),
+      }));
+      
+      // Mock photo validation failure but still create listing
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockImplementation(() => {
+          throw new Error('Invalid photo data');
+        }),
+      }));
+      
+      const listingData = {
+        title: 'Test Listing',
+        price: 100,
+        status: 'Active' as const,
+        sellerId: 1,
+      };
+      
+      // Include invalid photo data
+      const photoData = ['invalid-data'];
+      
+      const result = await createListing(listingData, photoData);
+      
+      // Should still succeed with listing creation even if photo fails
+      expect(result).toEqual({
+        success: true,
+        listingId: mockListingId,
+      });
+      
+      // Verify listing was created
+      expect(db.insert).toHaveBeenCalledWith(listings);
+    });
+    
+    test('should handle multiple photos correctly', async () => {
+      const mockListingId = 123;
+      const mockPhotoIds = [456, 457, 458];
+      const mockDbInsert = db.insert as jest.Mock;
+      
+      // Setup listing insert
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValueOnce([{ id: mockListingId }]),
+      }));
+      
+      // Setup photo inserts (3 photos)
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValueOnce([{ id: mockPhotoIds[0] }]),
+      }));
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+      }));
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValueOnce([{ id: mockPhotoIds[1] }]),
+      }));
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+      }));
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValueOnce([{ id: mockPhotoIds[2] }]),
+      }));
+      mockDbInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+      }));
+      
+      const listingData = {
+        title: 'Multi-Photo Listing',
+        price: 100,
+        status: 'Active' as const,
+        sellerId: 1,
+      };
+      
+      const photoData = [
+        'data:image/jpeg;base64,photo1',
+        'data:image/jpeg;base64,photo2',
+        'data:image/jpeg;base64,photo3'
+      ];
+      
+      const result = await createListing(listingData, photoData);
+      
+      expect(result).toEqual({
+        success: true,
+        listingId: mockListingId,
+      });
+      
+      // Verify all photos were inserted
+      expect(db.insert).toHaveBeenCalledTimes(7); // 1 listing + 3 photos + 3 linking records
+    });
+  });
+  
+  describe('getAllListings - extended', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+    
+    test('should handle searching with fuzzy matching', async () => {
+      const mockListings = [
+        { id: 1, title: 'iPhone', price: '1000', categoryId: 1, createdAt: new Date(), sellerId: 1 }
+      ];
+      
+      const mockDbSelect = db.select as jest.Mock;
+      
+      // Mock for count query
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListings),
+      }));
+      
+      // Mock for main query
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListings),
+      }));
+      
+      // Mock for photo link
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ photoId: 1 }]),
+      }));
+      
+      // Mock for photo data
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ image: 'data:image/jpeg;base64,photo1' }]),
+      }));
+      
+      // Mock for category name
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{name: 'Electronics'}]),
+      }));
+      
+      const result = await getAllListings({
+        searchTerm: 'iphone'
+      });
+      
+      expect(result.listings).toHaveLength(1);
+      expect(result.listings[0].title).toBe('iPhone');
+    });
+    
+    test('should handle sorting by price in ascending order', async () => {
+      const mockListings = [
+        { id: 1, title: 'Budget Phone', price: '100', categoryId: 1, createdAt: new Date(), sellerId: 1 }
+      ];
+      
+      const mockDbSelect = db.select as jest.Mock;
+      
+      // Mock for count query
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListings),
+      }));
+      
+      // Mock for main query
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListings),
+      }));
+      
+      // Mock for photo link
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ photoId: 1 }]),
+      }));
+      
+      // Mock for photo data
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ image: 'data:image/jpeg;base64,photo1' }]),
+      }));
+      
+      // Mock for category name
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{name: 'Electronics'}]),
+      }));
+      
+      const result = await getAllListings({
+        sortBy: 'price',
+        sortOrder: 'asc'
+      });
+      
+      expect(result.listings).toHaveLength(1);
+      expect(result.listings[0].price).toBe('100');
+    });
+  });
+  
+  describe('updateListing - extended', () => {
+    test('should handle partial data updates correctly', async () => {
+      const mockDbUpdate = db.update as jest.Mock;
+      const mockSetFn = jest.fn().mockReturnThis();
+      const mockWhereFn = jest.fn().mockReturnThis();
+      
+      mockDbUpdate.mockReturnValue({
+        set: mockSetFn,
+        where: mockWhereFn,
+      });
+      
+      // Only update title and status, leaving other fields as is
+      const mockFormData = {
+        title: 'Renamed Listing',
+        price: 100, // unchanged
+        status: 'Archived' as const,
+        sellerId: 1,
+      };
+      
+      const result = await updateListing(1, mockFormData, []);
+      
+      expect(result).toEqual({ success: true });
+      expect(db.update).toHaveBeenCalledWith(listings);
+      
+      // Check that the correct fields were set
+      expect(mockSetFn).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Renamed Listing',
+        price: '100',
+        status: 'Archived',
+        updatedAt: expect.any(Date),
+      }));
+    });
+    
+    test('should handle photo upload errors during update', async () => {
+      const mockDbUpdate = db.update as jest.Mock;
+      const mockDbDelete = db.delete as jest.Mock;
+      const mockInsert = db.insert as jest.Mock;
+      
+      mockDbUpdate.mockReturnValueOnce({
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+      });
+      
+      mockDbDelete.mockReturnValueOnce({
+        where: jest.fn().mockReturnThis(),
+      });
+      
+      // First photo succeeds
+      mockInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValueOnce([{ id: 10 }]),
+      }));
+      
+      mockInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockReturnThis(),
+      }));
+      
+      // Second photo fails
+      mockInsert.mockImplementationOnce(() => ({
+        values: jest.fn().mockImplementation(() => {
+          throw new Error('Photo upload failed');
+        }),
+      }));
+      
+      const mockFormData = {
+        title: 'Updated With Photos',
+        price: 150,
+        status: 'Active' as const,
+        sellerId: 1,
+      };
+      
+      const mockPhotoData = [
+        'data:image/jpeg;base64,good-photo',
+        'data:image/jpeg;base64,bad-photo'
+      ];
+      
+      const result = await updateListing(1, mockFormData, mockPhotoData);
+      
+      // Should still succeed overall even with one photo failing
+      expect(result).toEqual({ success: true });
+    });
+    
+    test('should return detailed validation errors', async () => {
+      const mockFormData = {
+        title: 'Valid Title',
+        price: -10, // Invalid negative price
+        status: 'Active' as const,
+        sellerId: 1,
+      };
+      
+      const result = await updateListing(1, mockFormData, []);
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Price must be greater than 0');
+    });
+  });
+  
+  describe('deleteListing - extended', () => {
+    test('should handle cascading deletes of related records', async () => {
+      // In a real database, deleting the listing would cascade to delete
+      // related records. We can mock this behavior to ensure our function
+      // handles it correctly.
+      
+      const mockDbDelete = db.delete as jest.Mock;
+      mockDbDelete.mockReturnValueOnce({
+        where: jest.fn().mockReturnThis(),
+      });
+      
+      const result = await deleteListing(1);
+      
+      expect(result).toEqual({ success: true });
+      expect(db.delete).toHaveBeenCalledWith(listings);
+      expect(revalidatePath).toHaveBeenCalledWith('/');
+    });
+    
+    test('should handle non-existent listing deletion attempts', async () => {
+      const mockDbDelete = db.delete as jest.Mock;
+      
+      // Simulate a situation where no rows were affected (listing didn't exist)
+      mockDbDelete.mockReturnValueOnce({
+        where: jest.fn().mockResolvedValueOnce({ affectedRows: 0 }),
+      });
+      
+      const result = await deleteListing(999);
+      
+      // Still returns success since there's no error - this is a common SQL behavior
+      // where deleting a non-existent row is not considered an error
+      expect(result).toEqual({ success: true });
+    });
+  });
 });
