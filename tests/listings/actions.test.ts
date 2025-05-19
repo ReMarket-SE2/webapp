@@ -606,7 +606,7 @@ describe('Listing Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/');
     });
 
-    test('should return error when db delete fails', async () => {
+    test('should not return sold listings', async () => {
       const mockDbDelete = db.delete as jest.Mock;
       mockDbDelete.mockImplementationOnce(() => {
         throw new Error('Delete failed');
