@@ -129,10 +129,12 @@ export async function getOrdersByUserId(
           },
         },
       },
-      where: (orderItems, { eq }) => eq(orderItems.listing.sellerId, userId),
     });
 
-    // The filtering is now handled in the database query.
+    // Filter orderItems where the listing's sellerId matches the userId
+    const filteredOrderItems = soldOrderItems.filter(
+      item => item.listing?.sellerId === userId
+    );
 
     // Group orderItems by orderId
     const orderMap = new Map<number, { order: Order; orderItems: OrderItem[] }>();
