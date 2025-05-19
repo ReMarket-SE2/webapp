@@ -12,7 +12,7 @@ interface ListingCardProps {
   categories?: Category[];
 }
 
-function getCategoryPath(categories: Category[], categoryId: number | null): string {
+function getCategoryPathString(categories: Category[], categoryId: number | null): string {
   if (!categoryId || !categories.length) return '';
   const map = new Map<number, Category>();
   categories.forEach(cat => map.set(cat.id, cat));
@@ -48,7 +48,7 @@ export function ListingCard({ listing, categories = [] }: ListingCardProps) {
             <div className="flex items-center justify-between gap-2">
               <p className="text-lg font-bold text-primary">${listing.price}</p>
               <Badge variant="secondary">
-                {getCategoryPath(categories, listing.categoryId ?? null) || listing.category || "Uncategorized"}
+                {getCategoryPathString(categories, listing.categoryId ?? null) || listing.category || "Uncategorized"}
               </Badge>
             </div>
           </CardContent>

@@ -20,10 +20,10 @@ const paddingMap: Record<number, string> = {
   0: 'pl-0',
   1: 'pl-6',
   2: 'pl-12',
-  3: 'pl-18',
-  4: 'pl-24',
-  5: 'pl-30',
-  6: 'pl-36',
+  3: 'pl-16',
+  4: 'pl-20',
+  5: 'pl-24',
+  6: 'pl-28',
 };
 
 export function CategoryList({ categories, onEdit, onDelete, depth = 0 }: CategoryListProps) {
