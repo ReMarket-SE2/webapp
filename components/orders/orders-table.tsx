@@ -47,22 +47,23 @@ export default function OrdersTable({
   redirectURL,
 }: OrdersTableProps) {
   const [isLabelOpen, setIsLabelOpen] = useState(false);
-  const [isLabelLoading, setIsLabelLoading] = useState(false);
+  const [isLabelLoading, setIsLabelLoading] = useState<{ [orderId: number]: boolean }>({});
   const [shippingLabelData, setShippingLabelData] = useState<ShippingLabelData | null>(null);
 
   // Use local state for orders to allow UI updates without reload
   const [localOrders, setLocalOrders] = useState<OrdersTableOrder[]>(orders);
 
-  const [isShippedLoading, setIsShippedLoading] = useState(false);
+  const [isShippedLoading, setIsShippedLoading] = useState<{ [orderId: number]: boolean }>({});
 
   async function handlePrintShippingLabel(order: OrdersTableOrder) {
-    setIsLabelLoading(true);
+    setIsLabelLoading(prev => ({ ...prev, [order.id]: true }));
     try {
       const seller = await getSellerByOrderId(order.id);
       const buyer = await getBuyerByOrderId(order.id);
 
       if (!seller || !buyer || !order) {
         toast.error("Unable to fetch shipping label data.");
+        setIsLabelLoading(prev => ({ ...prev, [order.id]: false }));
         return;
       }
 
@@ -73,7 +74,7 @@ export default function OrdersTable({
       console.error("Error fetching shipping label data:", e);
       toast.error("Failed to load shipping label data.");
     }
-    setIsLabelLoading(false);
+    setIsLabelLoading(prev => ({ ...prev, [order.id]: false }));
   }
 
   function handlePrint() {
@@ -81,7 +82,7 @@ export default function OrdersTable({
   }
 
   async function handleShipped(order: OrdersTableOrder) {
-    setIsShippedLoading(true);
+    setIsShippedLoading(prev => ({ ...prev, [order.id]: true }));
     try {
       await markOrderAsShipped(order.id);
       // Update local state for the shipped order
@@ -95,7 +96,7 @@ export default function OrdersTable({
       console.error("Error marking order as shipped:", e);
       toast.error("Failed to mark order as shipped.");
     }
-    setIsShippedLoading(false);
+    setIsShippedLoading(prev => ({ ...prev, [order.id]: false }));
   }
 
   if (localOrders.length === 0)
@@ -155,9 +156,9 @@ export default function OrdersTable({
                   <Button
                     variant="outline"
                     onClick={() => handlePrintShippingLabel(order)}
-                    disabled={isLabelLoading}
+                    disabled={!!isLabelLoading[order.id]}
                   >
-                    {isLabelLoading ? (
+                    {isLabelLoading[order.id] ? (
                       <>
                         <Loader2 className="animate-spin mr-2 h-4 w-4" />
                         Loading...
@@ -196,9 +197,9 @@ export default function OrdersTable({
                   <Button
                     variant="outline"
                     onClick={() => handleShipped(order)}
-                    disabled={isShippedLoading}
+                    disabled={!!isShippedLoading[order.id]}
                   >
-                    {isShippedLoading ? (
+                    {isShippedLoading[order.id] ? (
                       <>
                         <Loader2 className="animate-spin mr-2 h-4 w-4" />
                         Marking...

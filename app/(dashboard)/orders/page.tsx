@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { getOrdersByUserId } from "@/lib/order/actions";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { redirect } from "next/navigation";
-import OrdersTable from "@/components/orders/orders-tabe";
+import OrdersTable from "@/components/orders/orders-table";
 
 export default async function OrdersPage() {
   const session = await getServerSession(authOptions);

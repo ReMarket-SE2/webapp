@@ -493,6 +493,34 @@ describe('Listing Actions', () => {
 
       expect(result).toEqual({ listings: [], totalCount: 0 });
     });
+
+    test('shoud not return sold lisitings', async () => {
+      const mockListingsData = [
+        { id: 1, title: 'Sold Listing', price: '500', categoryId: null, createdAt: new Date(), status: 'Sold' as const, sellerId: 1 },
+      ];
+
+      // Mock for count query with sold listings
+      const mockDbSelect = db.select as jest.Mock;
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+      }));
+
+      // Mock for main query with sold listings
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+      }));
+
+      const result = await getAllListings();
+
+      expect(result.listings).toHaveLength(0);
+    });
   });
 
   describe('updateListing', () => {
