@@ -7,7 +7,7 @@ export async function fetchShippingLabelData(seller: User, buyer: User, order: O
     // Example: fetch order, buyer, seller, shipping address from backend
     return {
       sellerName: seller ? seller.username : "Seller Name",
-      sellerEmail: seller ? seller.email : " Seller Email",
+      sellerEmail: seller ? seller.email : "Seller Email",
       buyerName: buyer ? buyer.username : "Buyer Name",
       buyerEmail: buyer ? buyer.email : "Buyer Email",
       shippingAddress: order.shippingAddress || "123 Main St, City, Country",
