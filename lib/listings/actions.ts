@@ -305,11 +305,9 @@ export async function getAllListings(options?: {
       conditions.push(eq(listings.categoryId, options.categoryId));
     }
 
-    // Exclude listings that have been sold (i.e., have an entry in order_items)
+    // Exclude listings that have been sold
     conditions.push(
-      sql`NOT EXISTS (
-        SELECT 1 FROM order_items WHERE order_items.listing_id = ${listings.id}
-      )`
+      sql`${listings.status} != 'Sold'`
     );
 
     /* ------------------------------ total count ------------------------------ */
@@ -461,5 +459,19 @@ export async function updateListing(
       return { success: false, error: error.errors[0].message };
     }
     return { success: false, error: 'Failed to update listing' };
+  }
+}
+
+export async function setListingStatus(
+  id: number,
+  status: ListingStatus
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await db.update(listings).set({ status }).where(eq(listings.id, id));
+    revalidatePath(`/listing/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating listing status:', error);
+    return { success: false, error: 'Failed to update listing status' };
   }
 }

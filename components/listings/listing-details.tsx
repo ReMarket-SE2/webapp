@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, Tag, User, Package, Archive, Star, Loader2 } from "lucide-react";
+import { ShoppingCart, Heart, Tag, User, Package, Archive, Star } from "lucide-react";
 import { toast } from "sonner";
 import { ListingWithPhotos } from "@/lib/listings/actions";
 import { formatPrice } from "@/lib/utils";
@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { deleteListing } from '@/lib/listings/actions';
 import React from 'react';
 import Link from 'next/link';
@@ -19,18 +18,14 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useWishlistContext } from "@/components/contexts/wishlist-provider";
 import { mockReviewStats } from "@/lib/reviews/mock-data";
-import { ShippingLabel } from "@/components/shipping-label/shipping-label";
-import { ShippingLabelData } from "@/components/shipping-label/shipping-label";
-import { fetchShippingLabelData } from "@/lib/shipping-label/actions";
-import { getBuyerByListingId, getOrderByListingId, getSellerByListingId } from "@/lib/order/actions";
+
 
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
-  isSold?: boolean;
   sessionUserId?: number | null;
 }
 
-export default function ListingDetails({ listing, isSold, sessionUserId }: ListingDetailsProps) {
+export default function ListingDetails({ listing, sessionUserId }: ListingDetailsProps) {
   const {
     id,
     title,
@@ -117,36 +112,6 @@ export default function ListingDetails({ listing, isSold, sessionUserId }: Listi
     }
   }
 
-  // --- Shipping Label State ---
-  const [isLabelOpen, setIsLabelOpen] = useState(false);
-  const [isLabelLoading, setIsLabelLoading] = useState(false);
-  const [shippingLabelData, setShippingLabelData] = useState<ShippingLabelData | null>(null);
-
-  async function handlePrintShippingLabel() {
-    setIsLabelLoading(true);
-    try {
-      const seller = await getSellerByListingId(listing.id);
-      const buyer = await getBuyerByListingId(listing.id);
-      const order = await getOrderByListingId(listing.id);
-
-      if (!seller || !buyer || !order) {
-        toast.error("Unable to fetch shipping label data.");
-        return;
-      }
-
-      const data = await fetchShippingLabelData(seller, buyer, order);
-      setShippingLabelData(data);
-      setIsLabelOpen(true);
-    } catch (e) {
-      console.error("Error fetching shipping label data:", e);
-      toast.error("Failed to load shipping label data.");
-    }
-    setIsLabelLoading(false);
-  }
-
-  function handlePrint() {
-    window.print();
-  }
 
   return (
     <motion.div
@@ -186,56 +151,10 @@ export default function ListingDetails({ listing, isSold, sessionUserId }: Listi
 
       {/* Owner controls */}
       {sessionUserId && seller && sessionUserId === seller.id ? (
-        isSold ? (
+        listing.status == 'Sold' ? (
           <motion.div variants={item}>
-            <div className="flex gap-3">
-              <Button
-                className="flex-1"
-                variant="outline"
-                onClick={handlePrintShippingLabel}
-                disabled={isLabelLoading}
-              >
-                {isLabelLoading ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    Loading...
-                  </>
-                ) : (
-                  <>Print Shipping Label</>
-                )}
-              </Button>
-              <Dialog open={isLabelOpen} onOpenChange={setIsLabelOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Shipping Label</DialogTitle>
-                    <DialogDescription>
-                      Print and attach this label to your package.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex flex-col items-center py-2">
-                    {shippingLabelData ? (
-                      <ShippingLabel data={shippingLabelData} />
-                    ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="animate-spin h-4 w-4" />
-                        Loading label...
-                      </div>
-                    )}
-                  </div>
-                  <DialogFooter className="print:hidden">
-                    <Button onClick={handlePrint} variant="secondary">
-                      Print
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <Button
-                className="flex-1"
-                variant="outline"
-                disabled
-              >
-                Mark As Shipped
-              </Button>
+            <div className="w-full flex items-center justify-center bg-muted rounded-md p-4 text-muted-foreground font-semibold">
+              This item has already been sold.
             </div>
           </motion.div>
         ) : (
@@ -271,7 +190,7 @@ export default function ListingDetails({ listing, isSold, sessionUserId }: Listi
           </motion.div>
         )
       ) : (
-        isSold ? (
+        listing.status == 'Sold' ? (
           <motion.div variants={item}>
             <div className="w-full flex items-center justify-center bg-muted rounded-md p-4 text-muted-foreground font-semibold">
               This item has already been sold.

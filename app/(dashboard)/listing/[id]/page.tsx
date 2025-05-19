@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { getListingById, getListingStatusById } from '@/lib/listings/actions';
+import { getListingById } from '@/lib/listings/actions';
 import ListingDetails from '@/components/listings/listing-details';
 import ListingImagesGallery from '@/components/listings/listing-images-gallery';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,7 +24,6 @@ export default async function ListingPage({ params }: ListingPageProps) {
   }
 
   const listing = await getListingById(parseInt(id));
-  const isSold = await getListingStatusById(parseInt(id));
 
   if (!listing) {
     return notFound();
@@ -66,7 +65,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-10 w-full" />
         </div>}>
-          <ListingDetails listing={listing} isSold={isSold} sessionUserId={sessionUserId} />
+          <ListingDetails listing={listing} sessionUserId={sessionUserId} />
         </Suspense>
       </div>
 

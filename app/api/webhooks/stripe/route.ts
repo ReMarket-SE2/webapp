@@ -4,6 +4,8 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { clearWishlist } from '@/lib/wishlist/actions';
 import { createOrder } from '@/lib/order/actions';
+import { setListingStatus } from '@/lib/listings/actions';
+import { toast } from 'sonner';
 
 export const config = {
   api: {
@@ -98,6 +100,15 @@ export async function POST(req: Request) {
             paymentId,
             paymentStatus || 'incomplete'
           );
+
+          // Update the sold listing status
+          for (const item of itemsToOrder) {
+            const res = await setListingStatus(item.listingId, 'Sold');
+            if (!res.success) {
+              toast.error("Failed to update listing");
+              console.error(`Failed to update listing ${item.listingId}: ${res.error}`);
+            }
+          }
 
           // Clear the user's wishlist
           await clearWishlist(userId);

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."listing_status" ADD VALUE 'Sold';

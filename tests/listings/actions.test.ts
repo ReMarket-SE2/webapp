@@ -10,7 +10,6 @@ import { listings } from '@/lib/db/schema/listings';
 import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
-import { eq, inArray } from 'drizzle-orm';
 
 // Mock the database and revalidatePath
 jest.mock('@/lib/db', () => {
@@ -299,8 +298,8 @@ describe('Listing Actions', () => {
 
     test('should return all listings with default pagination', async () => {
       const mockListings = [
-        { id: 1, title: 'Listing 1', price: '100', categoryId: null, createdAt: new Date() },
-        { id: 2, title: 'Listing 2', price: '200', categoryId: 1, createdAt: new Date() },
+        { id: 1, title: 'Listing 1', price: '100', categoryId: null, createdAt: new Date()},
+        { id: 2, title: 'Listing 2', price: '200', categoryId: 1, createdAt: new Date()},
       ];
 
       // Mock for the count query
