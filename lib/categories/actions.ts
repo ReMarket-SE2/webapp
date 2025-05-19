@@ -124,6 +124,13 @@ export async function updateCategory(id: number, data: z.infer<typeof categorySc
     return result[0];
   } catch (error) {
     console.error('Error updating category:', error);
+    // If the error is one of the specific errors we've thrown, re-throw it.
+    if (error instanceof Error && 
+        (error.message === 'A category cannot be its own parent' || 
+         error.message === 'Category not found')) {
+      throw error;
+    }
+    // Handle PostgreSQL unique constraint violation
     if ((error as pg.PostgresError).code === '23505') {
       throw new Error('A category with this name already exists');
     }
