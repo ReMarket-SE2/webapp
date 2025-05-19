@@ -4,14 +4,14 @@ import { useCallback } from 'react';
 import { ListingsGrid } from '@/components/listings/listings-grid';
 import { ListingFilters } from '@/components/listings/listing-filters';
 import { Category } from '@/lib/db/schema/categories';
+import { ShortListing } from '@/lib/listings/actions';
 
 interface ListingsPageClientProps {
   categories: Category[];
   initialCategoryId: number | null;
   initialSearch: string;
   initialSortOrder: 'asc' | 'desc';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  listings: any[];
+  listings: ShortListing[];
 }
 
 export function ListingsPageClient({ categories, initialCategoryId, initialSearch, initialSortOrder, listings }: ListingsPageClientProps) {

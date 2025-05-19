@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ListingCard } from "@/components/listings/listing-card";
 import { Category } from "@/lib/db/schema/categories";
+import { ShortListing } from "@/lib/listings/actions";
 
 const container = {
   hidden: { opacity: 0 },
@@ -23,8 +24,7 @@ const item = {
 
 interface ListingsGridProps {
   categories: Category[];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  listings: any[];
+  listings: ShortListing[];
 }
 
 export function ListingsGrid({ categories, listings }: ListingsGridProps) {
