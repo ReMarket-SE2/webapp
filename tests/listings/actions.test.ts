@@ -46,6 +46,7 @@ jest.mock('next/cache', () => ({
 
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn(),
+  sql: jest.fn(),
   inArray: jest.fn(),
   relations: jest.fn(),
 }));
@@ -293,13 +294,17 @@ describe('Listing Actions', () => {
 
   describe('getAllListings', () => {
     beforeEach(() => {
-      jest.resetAllMocks();
+      // jest.resetAllMocks(); // Resets mocks to jest.fn(). Clears all instances and calls to constructor and all methods.
+      jest.clearAllMocks(); // Clears all instances and calls to constructor and all methods. Does not reset implementations.
+                           // This is often preferred if mocks are set up outside tests and meant to persist.
+                           // Given the mocks are top-level, clearAllMocks is fine.
+                           // If db.select().execute was stateful, resetAllMocks might be safer or manual reset of mockImplementationOnce.
     });
 
     test('should return all listings with default pagination', async () => {
-      const mockListings = [
-        { id: 1, title: 'Listing 1', price: '100', categoryId: null, createdAt: new Date()},
-        { id: 2, title: 'Listing 2', price: '200', categoryId: 1, createdAt: new Date()},
+      const mockListingsData = [
+        { id: 1, title: 'Listing 1', price: '100', categoryId: null, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
+        { id: 2, title: 'Listing 2', price: '200', categoryId: 1, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
       ];
 
       // Mock for the count query
@@ -307,7 +312,7 @@ describe('Listing Actions', () => {
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for the main listings query
@@ -317,7 +322,7 @@ describe('Listing Actions', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         offset: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for the first listing's photo link query
@@ -365,6 +370,7 @@ describe('Listing Actions', () => {
             price: '100',
             category: null,
             photo: 'data:image/jpeg;base64,photo1',
+            sellerId: 1,
             createdAt: expect.any(Date),
           },
           {
@@ -373,6 +379,7 @@ describe('Listing Actions', () => {
             price: '200',
             category: 'Category 1',
             photo: 'data:image/jpeg;base64,photo1',
+            sellerId: 1,
             createdAt: expect.any(Date),
           },
         ],
@@ -381,8 +388,8 @@ describe('Listing Actions', () => {
     });
 
     test('should apply category filter', async () => {
-      const mockListings = [
-        { id: 1, title: 'Category Match', price: '300', categoryId: 2, createdAt: new Date() },
+      const mockListingsData = [
+        { id: 1, title: 'Category Match', price: '300', categoryId: 2, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
       ];
 
       // Mock for count query with category filter
@@ -390,7 +397,7 @@ describe('Listing Actions', () => {
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for main query with category filter
@@ -400,7 +407,7 @@ describe('Listing Actions', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         offset: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for photo link query
@@ -432,8 +439,8 @@ describe('Listing Actions', () => {
     });
 
     test('should handle pagination', async () => {
-      const mockListings = [
-        { id: 1, title: 'Page 1 Listing', price: '400', categoryId: null, createdAt: new Date() },
+      const mockListingsData = [
+        { id: 1, title: 'Page 1 Listing', price: '400', categoryId: null, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
       ];
 
       // Mock for count query with pagination
@@ -441,7 +448,7 @@ describe('Listing Actions', () => {
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for main query with pagination
@@ -451,7 +458,7 @@ describe('Listing Actions', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         offset: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for photo link query
