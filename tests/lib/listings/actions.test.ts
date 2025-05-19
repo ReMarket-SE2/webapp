@@ -10,7 +10,7 @@ import { listings } from '@/lib/db/schema/listings';
 import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray, relations, sql } from 'drizzle-orm';
 
 // Mock the database and revalidatePath
 jest.mock('@/lib/db', () => {
@@ -67,6 +67,30 @@ jest.mock('drizzle-orm', () => {
         _strings: strings,
         _values: values,
         toString: () => `mockSql(${strings.join('')}, ${values.join(', ')})`,
+      };
+    }),
+
+    limit: jest.fn((count) => {
+      return {
+        _operator: 'limit',
+        _count: count,
+        toString: () => `mockLimit(${count})`,
+      };
+    }),
+
+    offset: jest.fn((count) => {
+      return {
+        _operator: 'offset',
+        _count: count,
+        toString: () => `mockOffset(${count})`,
+      };
+    }),
+
+    relations: jest.fn((table, relation) => {
+      return {
+        _table: table,
+        _relation: relation,
+        toString: () => `mockRelations(${table?.name || String(table)}, ${relation})`,
       };
     }),
   };
@@ -589,12 +613,24 @@ describe('Listing Actions', () => {
     });
 
     test('should apply category filter', async () => {
+      // Mock categories for getDescendantCategoryIds
+      const mockDbSelect = db.select as jest.Mock;
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockImplementation((table) => {
+          if (table && table.name === 'categories') {
+            return Promise.resolve([
+              { id: 2, parentId: null, name: 'Test Category' },
+            ]);
+          }
+          return Promise.resolve([]);
+        }),
+      }));
+
       const mockListingsData = [
         { id: 1, title: 'Category Match', price: '300', categoryId: 2, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
       ];
 
       // Mock for count query with category filter
-      const mockDbSelect = db.select as jest.Mock;
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
