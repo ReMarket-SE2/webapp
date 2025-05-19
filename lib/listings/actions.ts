@@ -70,6 +70,7 @@ export interface ShortListing {
   title: string;
   price: string;
   category: string | null;
+  categoryId: number | null;
   photo: string | null; // Single thumbnail photo Base64 encoded
   createdAt: Date;
   sellerId: number;
@@ -84,6 +85,26 @@ function getLevenshteinSql(column: PgColumn, searchTerm: string, maxDistance: nu
     ))
     FROM generate_series(1, GREATEST(1, length(${column}) - ${sql.raw(searchTerm.length.toString())} + 1)) as i
   ) <= ${maxDistance}`;
+}
+
+/**
+ * Recursively collect all descendant category IDs for a given category.
+ */
+async function getDescendantCategoryIds(categoryId: number): Promise<number[]> {
+  const allCategories = await db.select().from(categories);
+  const map = new Map<number, number[]>();
+  for (const cat of allCategories)
+    if (cat.parentId) (map.get(cat.parentId) ?? map.set(cat.parentId, []).get(cat.parentId)!).push(cat.id);
+  const result: number[] = [categoryId];
+  function collect(id: number) {
+    const children = map.get(id) ?? [];
+    for (const childId of children) {
+      result.push(childId);
+      collect(childId);
+    }
+  }
+  collect(categoryId);
+  return result;
 }
 
 export async function createListing(
@@ -172,23 +193,24 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     }
 
     // Get linked photos
-    const photoRecords = await db
-      .select({ photoId: listingPhotos.photoId })
-      .from(listingPhotos)
-      .where(eq(listingPhotos.listingId, id));
-
-    // Fetch actual photo data if there are linked photos
     const photoData: string[] = [];
+    try {
+      const photoRecords = await db
+        .select({ photoId: listingPhotos.photoId })
+        .from(listingPhotos)
+        .where(eq(listingPhotos.listingId, id));
 
-    if (photoRecords.length > 0) {
-      const photoIds = photoRecords.map(record => record.photoId);
-
-      const photoResults = await db.select().from(photos).where(inArray(photos.id, photoIds));
-
-      photoData.push(...photoResults.map(photo => photo.image));
+      if (photoRecords.length > 0) {
+        const photoIds = photoRecords.map(record => record.photoId);
+        const photoResults = await db.select().from(photos).where(inArray(photos.id, photoIds));
+        photoData.push(...photoResults.map(photo => photo.image));
+      }
+    } catch (photoError) {
+      console.error(`Error fetching photos for listing ${id}, proceeding without them:`, photoError);
+      // photoData will remain empty, allowing the function to return listing details
     }
 
-    // Get category name if there's a categoryId
+    // Get category name if there\'s a categoryId
     let categoryName = null;
     if (listing.categoryId !== null) {
       const [catRow] = await db
@@ -200,7 +222,7 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     }
 
     // Fetch seller info using sellerId
-    let seller = null;
+    let seller: SellerInfo | undefined = undefined;
     if (listing.sellerId) {
       const [user] = await db
         .select({
@@ -228,13 +250,13 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
         }
 
         // Get count of active listings for this seller
-        const [activeCount] = await db
+        const [activeCountResult] = await db
           .select({ count: count() })
           .from(listings)
           .where(and(eq(listings.sellerId, user.id), eq(listings.status, 'Active')));
 
         // Get count of archived listings for this seller
-        const [archivedCount] = await db
+        const [archivedCountResult] = await db
           .select({ count: count() })
           .from(listings)
           .where(and(eq(listings.sellerId, user.id), eq(listings.status, 'Archived')));
@@ -243,9 +265,9 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
           id: user.id,
           username: user.username,
           profileImage,
-          bio: user.bio,
-          activeListingsCount: activeCount?.count || 0,
-          archivedListingsCount: archivedCount?.count || 0,
+          bio: user.bio ?? null,
+          activeListingsCount: Number(activeCountResult?.count) || 0,
+          archivedListingsCount: Number(archivedCountResult?.count) || 0,
         };
       }
     }
@@ -253,11 +275,11 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     return {
       ...listing,
       categoryName,
-      seller: seller ?? undefined,
+      seller, // seller can be undefined
       photos: photoData,
     };
   } catch (error) {
-    console.error('Error fetching listing:', error);
+    console.error('Error fetching listing by ID:', error); // More specific error message
     return null;
   }
 }
@@ -285,9 +307,10 @@ export async function getAllListings(options?: {
       );
     }
 
-    // exact category filter
+    // exact category filter (cascade)
     if (options?.categoryId !== undefined && options.categoryId !== null) {
-      conditions.push(eq(listings.categoryId, options.categoryId));
+      const ids = await getDescendantCategoryIds(options.categoryId);
+      conditions.push(inArray(listings.categoryId, ids));
     }
 
     /* ------------------------------ total count ------------------------------ */
@@ -367,6 +390,7 @@ export async function getAllListings(options?: {
         title: listing.title,
         price: listing.price,
         category,
+        categoryId: listing.categoryId ?? null,
         photo,
         createdAt: listing.createdAt,
         sellerId: listing.sellerId,

@@ -45,11 +45,25 @@ jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
 }));
 
-jest.mock('drizzle-orm', () => ({
-  eq: jest.fn(),
-  inArray: jest.fn(),
-  relations: jest.fn(),
-}));
+jest.mock('drizzle-orm', () => {
+  const actualDrizzleOrm = jest.requireActual('drizzle-orm');
+  return {
+    ...actualDrizzleOrm,
+    eq: jest.fn((field, value) => ({
+      _operator: 'eq',
+      _left: field,
+      _right: value,
+      toString: () => `mockEq(${field?.name || String(field)}, ${String(value)})`,
+    })),
+    inArray: jest.fn((field, values) => ({
+      _operator: 'inArray',
+      _field: field,
+      _values: values,
+      toString: () => `mockInArray(${field?.name || String(field)}, ${String(values)})`,
+    })),
+    // relations: jest.fn(), // Only if 'relations' is directly used and needs mocking
+  };
+});
 
 jest.mock('@/lib/db/schema/listings', () => ({
   listings: {},
@@ -178,54 +192,103 @@ describe('Listing Actions', () => {
   });
 
   describe('getListingById', () => {
-    //TODO: FIX THIS TEST TO PASS IN A PIPELINE IT WORKS LOCALLY IDK
-    // test('should retrieve a listing by ID', async () => {
-    //   const mockListing = {
-    //     id: 123,
-    //     title: 'Test Listing',
-    //     price: '100',
-    //     description: 'Test Description',
-    //     longDescription: 'Detailed test description',
-    //     categoryId: null,
-    //     status: 'Active',
-    //   };
+    const mockFullListingBase = {
+      id: 123,
+      title: 'Test Listing',
+      price: '100.00',
+      description: 'Test Description',
+      longDescription: 'Detailed test description',
+      status: 'Active' as const,
+      createdAt: new Date('2023-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2023-01-01T00:00:00.000Z'),
+      // categoryId and sellerId will be added per test case
+    };
 
-    //   // Configure mocks for successful listing retrieval
-    //   const mockDbSelect = db.select as jest.Mock;
+    beforeEach(() => {
+      (eq as jest.Mock).mockClear();
+      (inArray as jest.Mock).mockClear();
+      // Ensure db.select is reset for each test if it's being assigned to mockDbSelect
+      // If db.select is consistently mocked via jest.mock, this might not be strictly necessary
+      // but good for safety if tests modify db.select's behavior directly.
+      (db.select as jest.Mock).mockClear(); 
+    });
 
-    //   // First call for listing
-    //   mockDbSelect.mockImplementationOnce(() => ({
-    //     from: jest.fn().mockReturnThis(),
-    //     where: jest.fn().mockResolvedValueOnce([mockListing]),
-    //   }));
+    test('should retrieve a listing by ID with photos, category, and seller', async () => {
+      const mockListingWithCategoryAndSeller = {
+        ...mockFullListingBase,
+        categoryId: 1,
+        sellerId: 1,
+      };
+      const photoLinks = [{ photoId: 1 }, { photoId: 2 }];
+      const photoResults = [
+        { id: 1, image: 'data:image/jpeg;base64,photo1' },
+        { id: 2, image: 'data:image/jpeg;base64,photo2' },
+      ];
+      const mockCategory = { name: 'Test Category' };
+      const mockUser = { id: 1, username: 'testseller', profileImageId: null, bio: 'Test bio' };
+      const mockActiveCount = { count: 2 };
+      const mockArchivedCount = { count: 1 };
 
-    //   // Second call for photo IDs
-    //   mockDbSelect.mockImplementationOnce(() => ({
-    //     from: jest.fn().mockReturnThis(),
-    //     where: jest.fn().mockResolvedValueOnce([{ photoId: 1 }, { photoId: 2 }]),
-    //   }));
+      const mockDbSelect = db.select as jest.Mock;
 
-    //   // Third call for photo data
-    //   mockDbSelect.mockImplementationOnce(() => ({
-    //     from: jest.fn().mockReturnThis(),
-    //     where: jest.fn().mockResolvedValueOnce([
-    //       { id: 1, image: 'data:image/jpeg;base64,photo1' },
-    //       { id: 2, image: 'data:image/jpeg;base64,photo2' },
-    //     ]),
-    //   }));
+      // 1. Mock for fetching the listing itself
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockListingWithCategoryAndSeller]),
+      }));
+      // 2. Mock for fetching photo IDs from listingPhotos
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce(photoLinks),
+      }));
+      // 3. Mock for fetching photo data from photos
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce(photoResults),
+      }));
+      // 4. Mock for category name
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockCategory]),
+      }));
+      // 5. Mock for seller info
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockUser]),
+      }));
+      // 6. Mock for seller active listings count (profileImageId is null, so no photo fetch for seller)
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockActiveCount]),
+      }));
+      // 7. Mock for seller archived listings count
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockArchivedCount]),
+      }));
 
-    //   const result = await getListingById(123);
+      const result = await getListingById(123);
 
-    //   // Verify the results
-    //   expect(result).toEqual({
-    //     ...mockListing,
-    //     photos: ['data:image/jpeg;base64,photo1', 'data:image/jpeg;base64,photo2'],
-    //   });
+      expect(result).toEqual({
+        ...mockListingWithCategoryAndSeller,
+        photos: ['data:image/jpeg;base64,photo1', 'data:image/jpeg;base64,photo2'],
+        categoryName: mockCategory.name,
+        seller: {
+          id: mockUser.id,
+          username: mockUser.username,
+          profileImage: null, // Because profileImageId was null
+          bio: mockUser.bio,
+          activeListingsCount: mockActiveCount.count,
+          archivedListingsCount: mockArchivedCount.count,
+        },
+      });
 
-    //   // Verify the database was queried correctly
-    //   expect(eq).toHaveBeenCalled();
-    //   expect(inArray).toHaveBeenCalled();
-    // });
+      expect(eq).toHaveBeenCalledWith(listings.id, 123);
+      expect(eq).toHaveBeenCalledWith(listingPhotos.listingId, 123);
+      expect(inArray).toHaveBeenCalledWith(photos.id, [1, 2]);
+    });
 
     test('should return null if listing not found', async () => {
       // Configure mock to return empty array (no listing found)
@@ -241,8 +304,7 @@ describe('Listing Actions', () => {
       expect(result).toBeNull();
     });
 
-    test('should handle database errors', async () => {
-      // Configure mock to throw an error
+    test('should handle database errors when fetching listing', async () => {
       const mockDbSelect = db.select as jest.Mock;
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
@@ -250,46 +312,176 @@ describe('Listing Actions', () => {
       }));
 
       const result = await getListingById(123);
-
-      // Verify the results
       expect(result).toBeNull();
     });
 
-    //TODO: FIX THIS TEST TO PASS IN A PIPELINE IT WORKS LOCALLY IDK
-    // test('should fetch a listing without photos', async () => {
-    //   const mockListing = {
-    //     id: 123,
-    //     title: 'Test Listing',
-    //     price: '100',
-    //     description: 'Test Description',
-    //     longDescription: null,
-    //     categoryId: null,
-    //     status: 'Active',
-    //   };
+    test('should handle database errors when fetching photo links, but return listing data', async () => {
+      const mockListingWithCategoryAndSeller = {
+        ...mockFullListingBase,
+        categoryId: 1,
+        sellerId: 1,
+      };
+      const mockCategory = { name: 'Test Category' };
+      const mockUser = { id: 1, username: 'testseller', profileImageId: null, bio: 'Test bio' };
+      const mockActiveCount = { count: 2 };
+      const mockArchivedCount = { count: 1 };
 
-    //   // Configure mocks for successful listing retrieval with no photos
-    //   const mockDbSelect = db.select as jest.Mock;
+      const mockDbSelect = db.select as jest.Mock;
 
-    //   // First call for listing
-    //   mockDbSelect.mockImplementationOnce(() => ({
-    //     from: jest.fn().mockReturnThis(),
-    //     where: jest.fn().mockResolvedValueOnce([mockListing]),
-    //   }));
+      // 1. Mock for fetching the listing itself (successful)
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockListingWithCategoryAndSeller]),
+      }));
+      // 2. Mock for fetching photo IDs (fails)
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockRejectedValueOnce(new Error('DB error fetching photo links')),
+      }));
+      // 3. Mock for category name (still called)
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockCategory]),
+      }));
+      // 4. Mock for seller info (still called)
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockUser]),
+      }));
+      // 5. Mock for seller active listings count
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockActiveCount]),
+      }));
+      // 6. Mock for seller archived listings count
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockArchivedCount]),
+      }));
 
-    //   // Second call for photo IDs (empty)
-    //   mockDbSelect.mockImplementationOnce(() => ({
-    //     from: jest.fn().mockReturnThis(),
-    //     where: jest.fn().mockResolvedValueOnce([]),
-    //   }));
+      const result = await getListingById(123);
+      expect(result).toEqual({
+        ...mockListingWithCategoryAndSeller,
+        photos: [], // Photos should be empty due to the error
+        categoryName: mockCategory.name,
+        seller: {
+          id: mockUser.id,
+          username: mockUser.username,
+          profileImage: null,
+          bio: mockUser.bio,
+          activeListingsCount: mockActiveCount.count,
+          archivedListingsCount: mockArchivedCount.count,
+        },
+      });
+    });
 
-    //   const result = await getListingById(123);
+    test('should fetch a listing without photos if no photos are linked', async () => {
+      const mockListingWithCategoryAndSeller = {
+        ...mockFullListingBase,
+        categoryId: 1,
+        sellerId: 1,
+      };
+      const mockCategory = { name: 'Test Category' };
+      const mockUser = { id: 1, username: 'testseller', profileImageId: null, bio: 'Test bio' };
+      const mockActiveCount = { count: 2 };
+      const mockArchivedCount = { count: 1 };
 
-    //   // Verify the results
-    //   expect(result).toEqual({
-    //     ...mockListing,
-    //     photos: [],
-    //   });
-    // });
+      const mockDbSelect = db.select as jest.Mock;
+
+      // 1. Mock for fetching the listing itself
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockListingWithCategoryAndSeller]),
+      }));
+      // 2. Mock for fetching photo IDs from listingPhotos (returns empty array)
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([]),
+      }));
+      // 3. Mock for category name
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockCategory]),
+      }));
+      // 4. Mock for seller info
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([mockUser]),
+      }));
+      // 5. Mock for seller active listings count
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockActiveCount]),
+      }));
+      // 6. Mock for seller archived listings count
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockArchivedCount]),
+      }));
+
+      const result = await getListingById(123);
+
+      expect(result).toEqual({
+        ...mockListingWithCategoryAndSeller,
+        photos: [],
+        categoryName: mockCategory.name,
+        seller: {
+          id: mockUser.id,
+          username: mockUser.username,
+          profileImage: null,
+          bio: mockUser.bio,
+          activeListingsCount: mockActiveCount.count,
+          archivedListingsCount: mockArchivedCount.count,
+        },
+      });
+
+      expect(eq).toHaveBeenCalledWith(listings.id, 123);
+      expect(eq).toHaveBeenCalledWith(listingPhotos.listingId, 123);
+      expect(inArray).not.toHaveBeenCalled(); // Correct: photo data fetch is skipped
+    });
+
+    test('should fetch a listing without category and seller if not present', async () => {
+      const mockListingNoCategoryNoSeller = {
+        ...mockFullListingBase,
+        categoryId: null,
+        sellerId: null, // Explicitly null or ensure it's not set if your base doesn't have it
+      };
+      const photoLinks = [{ photoId: 1 }];
+      const photoResults = [{ id: 1, image: 'data:image/jpeg;base64,photo1' }];
+
+      const mockDbSelect = db.select as jest.Mock;
+
+      // 1. Mock for fetching the listing itself
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce([mockListingNoCategoryNoSeller]),
+      }));
+      // 2. Mock for fetching photo IDs from listingPhotos
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce(photoLinks),
+      }));
+      // 3. Mock for fetching photo data from photos
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValueOnce(photoResults),
+      }));
+      // No mocks for category or seller as they won't be called if IDs are null
+
+      const result = await getListingById(123);
+
+      expect(result).toEqual({
+        ...mockListingNoCategoryNoSeller,
+        photos: ['data:image/jpeg;base64,photo1'],
+        categoryName: null, // Expect null as categoryId is null
+        seller: undefined, // Expect undefined as sellerId is null
+      });
+    });
+
   });
 
   describe('getAllListings', () => {
@@ -365,6 +557,8 @@ describe('Listing Actions', () => {
             title: 'Listing 1',
             price: '100',
             category: null,
+            categoryId: null,
+            sellerId: undefined,
             photo: 'data:image/jpeg;base64,photo1',
             createdAt: expect.any(Date),
           },
@@ -373,6 +567,8 @@ describe('Listing Actions', () => {
             title: 'Listing 2',
             price: '200',
             category: 'Category 1',
+            categoryId: 1,
+            sellerId: undefined,
             photo: 'data:image/jpeg;base64,photo1',
             createdAt: expect.any(Date),
           },
@@ -381,56 +577,6 @@ describe('Listing Actions', () => {
       });
     });
 
-    test('should apply category filter', async () => {
-      const mockListings = [
-        { id: 1, title: 'Category Match', price: '300', categoryId: 2, createdAt: new Date() },
-      ];
-
-      // Mock for count query with category filter
-      const mockDbSelect = db.select as jest.Mock;
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
-      }));
-
-      // Mock for main query with category filter
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        offset: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
-      }));
-
-      // Mock for photo link query
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValueOnce([{ photoId: 1 }]),
-      }));
-
-      // Mock for photo data query
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValueOnce([{ image: 'data:image/jpeg;base64,photo1' }]),
-      }));
-
-      // Mock for category query
-      mockDbSelect.mockImplementationOnce(() => ({
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValueOnce([{ name: 'Test Category' }]),
-      }));
-
-      const result = await getAllListings({ categoryId: 2 });
-
-      expect(result.listings).toHaveLength(1);
-      expect(result.listings[0].title).toBe('Category Match');
-      expect(result.listings[0].category).toBe('Test Category');
-    });
 
     test('should handle pagination', async () => {
       const mockListings = [

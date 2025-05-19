@@ -97,6 +97,7 @@ export async function findUserById(
       id: listings.id,
       title: listings.title,
       price: listings.price,
+      categoryId: listings.categoryId,
       category: categories.name,
       createdAt: listings.createdAt,
       sellerId: listings.sellerId,
@@ -143,6 +144,7 @@ export async function findUserById(
     const photo = photoLink ? photoMap.get(photoLink.photoId) ?? null : null;
     return {
       ...listing,
+      categoryId: listing.categoryId,
       sellerId: listing.sellerId,
       photo,
     };
