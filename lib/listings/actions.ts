@@ -193,23 +193,24 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     }
 
     // Get linked photos
-    const photoRecords = await db
-      .select({ photoId: listingPhotos.photoId })
-      .from(listingPhotos)
-      .where(eq(listingPhotos.listingId, id));
-
-    // Fetch actual photo data if there are linked photos
     const photoData: string[] = [];
+    try {
+      const photoRecords = await db
+        .select({ photoId: listingPhotos.photoId })
+        .from(listingPhotos)
+        .where(eq(listingPhotos.listingId, id));
 
-    if (photoRecords.length > 0) {
-      const photoIds = photoRecords.map(record => record.photoId);
-
-      const photoResults = await db.select().from(photos).where(inArray(photos.id, photoIds));
-
-      photoData.push(...photoResults.map(photo => photo.image));
+      if (photoRecords.length > 0) {
+        const photoIds = photoRecords.map(record => record.photoId);
+        const photoResults = await db.select().from(photos).where(inArray(photos.id, photoIds));
+        photoData.push(...photoResults.map(photo => photo.image));
+      }
+    } catch (photoError) {
+      console.error(`Error fetching photos for listing ${id}, proceeding without them:`, photoError);
+      // photoData will remain empty, allowing the function to return listing details
     }
 
-    // Get category name if there's a categoryId
+    // Get category name if there\'s a categoryId
     let categoryName = null;
     if (listing.categoryId !== null) {
       const [catRow] = await db
@@ -221,7 +222,7 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     }
 
     // Fetch seller info using sellerId
-    let seller = null;
+    let seller: SellerInfo | undefined = undefined;
     if (listing.sellerId) {
       const [user] = await db
         .select({
@@ -249,13 +250,13 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
         }
 
         // Get count of active listings for this seller
-        const [activeCount] = await db
+        const [activeCountResult] = await db
           .select({ count: count() })
           .from(listings)
           .where(and(eq(listings.sellerId, user.id), eq(listings.status, 'Active')));
 
         // Get count of archived listings for this seller
-        const [archivedCount] = await db
+        const [archivedCountResult] = await db
           .select({ count: count() })
           .from(listings)
           .where(and(eq(listings.sellerId, user.id), eq(listings.status, 'Archived')));
@@ -264,9 +265,9 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
           id: user.id,
           username: user.username,
           profileImage,
-          bio: user.bio,
-          activeListingsCount: activeCount?.count || 0,
-          archivedListingsCount: archivedCount?.count || 0,
+          bio: user.bio ?? null,
+          activeListingsCount: Number(activeCountResult?.count) || 0,
+          archivedListingsCount: Number(archivedCountResult?.count) || 0,
         };
       }
     }
@@ -274,11 +275,11 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
     return {
       ...listing,
       categoryName,
-      seller: seller ?? undefined,
+      seller, // seller can be undefined
       photos: photoData,
     };
   } catch (error) {
-    console.error('Error fetching listing:', error);
+    console.error('Error fetching listing by ID:', error); // More specific error message
     return null;
   }
 }
