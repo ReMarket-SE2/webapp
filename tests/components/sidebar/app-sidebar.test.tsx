@@ -173,4 +173,19 @@ describe("AppSidebar", () => {
     expect(screen.getByText("test@example.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /sign in/i })).not.toBeInTheDocument();
   });
+
+  it('renders my orders button', () => {
+    const session = {
+      user: {
+        name: "Test User",
+        email: "test@example.com",
+        image: "/test-avatar.png",
+        role: "user",
+      },
+    };
+    renderWithSession(session);
+    const myOrdersLink = screen.getByRole("link", { name: /My Orders/i });
+    expect(myOrdersLink).toBeInTheDocument();
+    expect(myOrdersLink).toHaveAttribute("href", "/orders");
+});
 });
