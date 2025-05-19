@@ -124,6 +124,13 @@ export async function updateCategory(id: number, data: z.infer<typeof categorySc
     return result[0];
   } catch (error) {
     console.error('Error updating category:', error);
+    // If the error is one of the specific errors we've thrown, re-throw it.
+    if (error instanceof Error && 
+        (error.message === 'A category cannot be its own parent' || 
+         error.message === 'Category not found')) {
+      throw error;
+    }
+    // Handle PostgreSQL unique constraint violation
     if ((error as pg.PostgresError).code === '23505') {
       throw new Error('A category with this name already exists');
     }
@@ -182,4 +189,18 @@ export async function deleteCategory(id: number) {
     }
     throw new Error('Failed to delete category');
   }
+}
+
+// Helper to get the full category path (from root to leaf) for a given categoryId
+export async function getCategoryPath(categoryId: number): Promise<{ id: number; name: string }[]> {
+  const allCategories = await db.select().from(categories);
+  const map = new Map<number, { id: number; name: string; parentId: number | null }>();
+  for (const cat of allCategories) map.set(cat.id, cat);
+  const path: { id: number; name: string }[] = [];
+  let current = map.get(categoryId);
+  while (current) {
+    path.unshift({ id: current.id, name: current.name });
+    current = current.parentId ? map.get(current.parentId) : undefined;
+  }
+  return path;
 }

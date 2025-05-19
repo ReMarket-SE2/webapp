@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getListingById } from '@/lib/listings/actions';
 import ListingDetails from '@/components/listings/listing-details';
@@ -9,6 +8,8 @@ import Link from 'next/link';
 import { DetailedDescription } from '@/components/listings/detailed-description';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { getCategoryPath } from '@/lib/categories/actions';
+import { Suspense } from 'react';
 
 interface ListingPageProps {
   params: Promise<{
@@ -29,6 +30,12 @@ export default async function ListingPage({ params }: ListingPageProps) {
     return notFound();
   }
 
+  // Get the full category path for the breadcrumb
+  let categoryPath: { id: number; name: string }[] = [];
+  if (listing.categoryId) {
+    categoryPath = await getCategoryPath(listing.categoryId);
+  }
+
   const session = await getServerSession(authOptions);
   const sessionUserId = session?.user?.id ? parseInt(session.user.id) : null;
 
@@ -47,6 +54,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
               <Link href="/listings">Listings</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
+          {/* Category cascade breadcrumb */}
+          {categoryPath.map((cat) => (
+            <div key={cat.id} className="inline-flex items-center gap-1.5">
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={`/listings?category=${cat.id}`} className='ml-2'>{cat.name}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+            </div>
+          ))}
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <span className="text-muted-foreground truncate max-w-[200px]">{listing.title}</span>

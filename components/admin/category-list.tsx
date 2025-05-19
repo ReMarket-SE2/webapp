@@ -16,8 +16,20 @@ interface CategoryListProps {
   depth?: number;
 }
 
+const paddingMap: Record<number, string> = {
+  0: 'pl-0',
+  1: 'pl-6',
+  2: 'pl-12',
+  3: 'pl-16',
+  4: 'pl-20',
+  5: 'pl-24',
+  6: 'pl-28',
+};
+
 export function CategoryList({ categories, onEdit, onDelete, depth = 0 }: CategoryListProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({});
+
+  const paddingClass = paddingMap[depth] ?? 'pl-0'
 
   const toggleExpand = (categoryId: number) => {
     setExpandedCategories(prev => ({
@@ -31,7 +43,7 @@ export function CategoryList({ categories, onEdit, onDelete, depth = 0 }: Catego
       {categories.map((category) => (
         <div key={category.id} className="w-full">
           <div 
-            className={`flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 transition-colors ml-${depth * 6}`}
+            className={`flex items-center justify-between py-2 rounded-md hover:bg-muted/50 transition-colors ${paddingClass}`}
           >
             <div className="flex items-center gap-2">
               {category.children.length > 0 ? (

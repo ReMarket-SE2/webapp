@@ -1,5 +1,7 @@
 # ReMarket - Web Application [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReMarket-SE2/webapp)
 
+![](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/wiki/ReMarket-SE2/webapp/coverage-comment-badge.json)
+
 A modern e-commerce marketplace web application built with Next.js, React, and TypeScript.
 
 [![NextJS](https://img.shields.io/badge/NextJS-15.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
