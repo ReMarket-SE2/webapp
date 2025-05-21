@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from '@/lib/db/schema';
 import { UserRole, UserStatus } from '@/lib/db/schema/users'; 
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { UserForm } from './user-form'; // To be created
+import { UserForm } from './user-form';
 
 interface UserManagementProps {
   initialUsers: User[];
@@ -67,26 +67,15 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
     setCurrentPage(1); // Reset to first page on sort change
   };
 
-  const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
     setIsSubmitting(true);
     try {
-      const params = new URLSearchParams();
-      params.set('page', currentPage.toString());
-      params.set('pageSize', pageSize.toString());
-      if (searchTerm) params.set('searchTerm', searchTerm);
-      params.set('sortOrder', sortOrder);
-      params.set('sortBy', sortBy);
-      if (filterRole) params.set('role', filterRole);
-      if (filterStatus) params.set('status', filterStatus);
-
-      router.replace(`${pathname}?${params.toString()}`);
-
       const result = await getAllUsersForAdmin({
         page: currentPage,
         pageSize,
         searchTerm: searchTerm || undefined,
         sortOrder,
-        sortBy: sortBy as any, // Cast because AdminUserListOptions sortBy is more specific
+        sortBy: sortBy as "id" | "username" | "status" | "email" | "role" | "createdAt" | undefined,
         role: filterRole || undefined,
         status: filterStatus || undefined,
       });
@@ -97,11 +86,11 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [currentPage, pageSize, searchTerm, sortOrder, sortBy, filterRole, filterStatus, router, pathname]);
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, pageSize, searchTerm, sortOrder, sortBy, filterRole, filterStatus]);
+  }, [fetchUsers]);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -127,7 +116,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
     try {
       await adminUpdateUser(user.id, { status });
       toast.success(`User "${user.username}" ${actionVerb} successfully`);
-      fetchUsers(); // Refresh the list
+      fetchUsers();
     } catch (error) {
       toast.error(`Failed to ${actionVerb.toLowerCase()} user: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -230,9 +219,6 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
               ))}
             </SelectContent>
           </Select>
-          <Button type="submit" variant="outline" disabled={isSubmitting}>
-            <Search className="mr-2 h-4 w-4" /> Search
-          </Button>
         </form>
 
         {isSubmitting && users.length === 0 ? (
@@ -381,6 +367,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
         <UserForm
           userToEdit={isEditingUser}
           onClose={() => {
+            console.log('Closing edit user modal');
             setIsEditingUser(null);
             fetchUsers(); // Refresh list after edit
           }}

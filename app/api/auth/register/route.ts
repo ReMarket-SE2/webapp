@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       email,
       passwordHash: hashedPassword,
       username: username,
+      status: 'active',
       profileImageId: null,
       bio: null,
       role: 'user',

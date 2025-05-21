@@ -92,7 +92,7 @@ export function UserForm({ userToEdit, onClose }: UserFormProps) {
         <SheetHeader>
           <SheetTitle>Edit User</SheetTitle>
           <SheetDescription>
-            <p>Update the user&rsquo;s username and role.</p>
+            Update the user&rsquo;s username and role.
           </SheetDescription>
         </SheetHeader>
 
