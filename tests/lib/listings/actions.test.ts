@@ -10,7 +10,7 @@ import { listings } from '@/lib/db/schema/listings';
 import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, relations, sql } from 'drizzle-orm';
 
 // Mock the database and revalidatePath
 jest.mock('@/lib/db', () => {
@@ -62,6 +62,37 @@ jest.mock('drizzle-orm', () => {
       toString: () => `mockInArray(${field?.name || String(field)}, ${String(values)})`,
     })),
     // relations: jest.fn(), // Only if 'relations' is directly used and needs mocking
+    sql: jest.fn((strings, ...values) => {
+      return {
+        _strings: strings,
+        _values: values,
+        toString: () => `mockSql(${strings.join('')}, ${values.join(', ')})`,
+      };
+    }),
+
+    limit: jest.fn((count) => {
+      return {
+        _operator: 'limit',
+        _count: count,
+        toString: () => `mockLimit(${count})`,
+      };
+    }),
+
+    offset: jest.fn((count) => {
+      return {
+        _operator: 'offset',
+        _count: count,
+        toString: () => `mockOffset(${count})`,
+      };
+    }),
+
+    relations: jest.fn((table, relation) => {
+      return {
+        _table: table,
+        _relation: relation,
+        toString: () => `mockRelations(${table?.name || String(table)}, ${relation})`,
+      };
+    }),
   };
 });
 
@@ -486,13 +517,17 @@ describe('Listing Actions', () => {
 
   describe('getAllListings', () => {
     beforeEach(() => {
-      jest.resetAllMocks();
+      // jest.resetAllMocks(); // Resets mocks to jest.fn(). Clears all instances and calls to constructor and all methods.
+      jest.clearAllMocks(); // Clears all instances and calls to constructor and all methods. Does not reset implementations.
+                           // This is often preferred if mocks are set up outside tests and meant to persist.
+                           // Given the mocks are top-level, clearAllMocks is fine.
+                           // If db.select().execute was stateful, resetAllMocks might be safer or manual reset of mockImplementationOnce.
     });
 
     test('should return all listings with default pagination', async () => {
-      const mockListings = [
-        { id: 1, title: 'Listing 1', price: '100', categoryId: null, createdAt: new Date() },
-        { id: 2, title: 'Listing 2', price: '200', categoryId: 1, createdAt: new Date() },
+      const mockListingsData = [
+        { id: 1, title: 'Listing 1', price: '100', categoryId: null, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
+        { id: 2, title: 'Listing 2', price: '200', categoryId: 1, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
       ];
 
       // Mock for the count query
@@ -500,7 +535,7 @@ describe('Listing Actions', () => {
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for the main listings query
@@ -510,7 +545,7 @@ describe('Listing Actions', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         offset: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for the first listing's photo link query
@@ -558,7 +593,7 @@ describe('Listing Actions', () => {
             price: '100',
             category: null,
             categoryId: null,
-            sellerId: undefined,
+            sellerId: 1,
             photo: 'data:image/jpeg;base64,photo1',
             createdAt: expect.any(Date),
           },
@@ -568,7 +603,7 @@ describe('Listing Actions', () => {
             price: '200',
             category: 'Category 1',
             categoryId: 1,
-            sellerId: undefined,
+            sellerId: 1,
             photo: 'data:image/jpeg;base64,photo1',
             createdAt: expect.any(Date),
           },
@@ -577,10 +612,72 @@ describe('Listing Actions', () => {
       });
     });
 
+    test('should apply category filter', async () => {
+      // Mock categories for getDescendantCategoryIds
+      const mockDbSelect = db.select as jest.Mock;
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockImplementation((table) => {
+          if (table && table.name === 'categories') {
+            return Promise.resolve([
+              { id: 2, parentId: null, name: 'Test Category' },
+            ]);
+          }
+          return Promise.resolve([]);
+        }),
+      }));
+
+      const mockListingsData = [
+        { id: 1, title: 'Category Match', price: '300', categoryId: 2, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
+      ];
+
+      // Mock for count query with category filter
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+      }));
+
+      // Mock for main query with category filter
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+      }));
+
+      // Mock for photo link query
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ photoId: 1 }]),
+      }));
+
+      // Mock for photo data query
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ image: 'data:image/jpeg;base64,photo1' }]),
+      }));
+
+      // Mock for category query
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ name: 'Test Category' }]),
+      }));
+
+      const result = await getAllListings({ categoryId: 2 });
+
+      expect(result.listings).toHaveLength(1);
+      expect(result.listings[0].title).toBe('Category Match');
+      expect(result.listings[0].category).toBe('Test Category');
+    });
 
     test('should handle pagination', async () => {
-      const mockListings = [
-        { id: 1, title: 'Page 1 Listing', price: '400', categoryId: null, createdAt: new Date() },
+      const mockListingsData = [
+        { id: 1, title: 'Page 1 Listing', price: '400', categoryId: null, createdAt: new Date(), status: 'Active' as const, sellerId: 1 },
       ];
 
       // Mock for count query with pagination
@@ -588,7 +685,7 @@ describe('Listing Actions', () => {
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for main query with pagination
@@ -598,7 +695,7 @@ describe('Listing Actions', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         offset: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListings),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
       }));
 
       // Mock for photo link query
@@ -632,6 +729,34 @@ describe('Listing Actions', () => {
       const result = await getAllListings();
 
       expect(result).toEqual({ listings: [], totalCount: 0 });
+    });
+
+    test('should not return sold listings', async () => {
+      const mockListingsData = [
+        { id: 1, title: 'Sold Listing', price: '500', categoryId: null, createdAt: new Date(), status: 'Sold' as const, sellerId: 1 },
+      ];
+
+      // Mock for count query with sold listings
+      const mockDbSelect = db.select as jest.Mock;
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+      }));
+
+      // Mock for main query with sold listings
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+      }));
+
+      const result = await getAllListings();
+
+      expect(result.listings).toHaveLength(0);
     });
   });
 
@@ -718,7 +843,7 @@ describe('Listing Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/');
     });
 
-    test('should return error when db delete fails', async () => {
+    test('should not return sold listings', async () => {
       const mockDbDelete = db.delete as jest.Mock;
       mockDbDelete.mockImplementationOnce(() => {
         throw new Error('Delete failed');

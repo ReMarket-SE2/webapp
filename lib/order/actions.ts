@@ -1,6 +1,8 @@
+'use server';
+
 import { db } from '@/lib/db';
 import { NewOrder, Order, orders } from '@/lib/db/schema/orders';
-import { NewOrderItem, orderItems } from '@/lib/db/schema/order_items';
+import { NewOrderItem, OrderItem, orderItems } from '@/lib/db/schema/order_items';
 import type Stripe from 'stripe';
 import { eq } from 'drizzle-orm';
 
@@ -79,7 +81,94 @@ export async function createOrder(
   return createdOrder;
 }
 
-export async function getOrdersByUserId(userId: number) {
+export async function getOrdersByUserId(
+  userId: number,
+  options: { bought?: boolean; sold?: boolean } = {}
+) {
+  // Bought orders: user is the buyer (orders.userId === userId)
+  if (options.bought && !options.sold) {
+    const boughtOrders = await db.query.orders.findMany({
+      where: eq(orders.userId, userId),
+      with: {
+        orderItems: {
+          with: {
+            listing: {
+              columns: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+    });
+
+    if (!boughtOrders) return [];
+
+    return boughtOrders.map(order => ({
+      ...order,
+      totalAmount: order.orderItems.reduce(
+        (acc, item) => acc + Number(item.priceAtPurchase) * item.quantity,
+        0
+      ),
+    }));
+  }
+
+  // Sold orders: user is the seller (any order containing a listing where listings.sellerId === userId)
+  if (options.sold && !options.bought) {
+    // Find all orderItems where the listing's sellerId is the user
+    const soldOrderItems = await db.query.orderItems.findMany({
+      with: {
+        order: true,
+        listing: {
+          columns: {
+            id: true,
+            title: true,
+            sellerId: true,
+          },
+        },
+      },
+    });
+
+    // Filter orderItems where the listing's sellerId matches the userId
+    const filteredOrderItems = soldOrderItems.filter(
+      item => item.listing?.sellerId === userId
+    );
+
+    // Group orderItems by orderId
+    const orderMap = new Map<number, { order: Order; orderItems: OrderItem[] }>();
+    for (const item of filteredOrderItems) {
+      if (!item.order) continue;
+      if (!orderMap.has(item.order.id))
+        orderMap.set(item.order.id, { order: item.order, orderItems: [] });
+      orderMap.get(item.order.id)!.orderItems.push(item);
+    }
+
+    // Compose orders with totals
+    const ordersWithTotals = Array.from(orderMap.values()).map(({ order, orderItems }) => ({
+      ...order,
+      orderItems,
+      totalAmount: orderItems.reduce(
+        (acc, item) => acc + Number(item.priceAtPurchase) * item.quantity,
+        0
+      ),
+    }));
+
+    // Sort: "Shipping" status first, then by createdAt descending
+    ordersWithTotals.sort((a, b) => {
+      if (a.status === b.status) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      if (a.status === "Shipping") return -1;
+      if (b.status === "Shipping") return 1;
+      return 0;
+    });
+
+    return ordersWithTotals;
+  }
+
+  // Default: return all orders where user is the buyer (legacy behavior)
   const userOrders = await db.query.orders.findMany({
     where: eq(orders.userId, userId),
     with: {
@@ -89,7 +178,6 @@ export async function getOrdersByUserId(userId: number) {
             columns: {
               id: true,
               title: true,
-              // Potentially add other listing fields needed for display, like an image URL
             },
           },
         },
@@ -98,20 +186,54 @@ export async function getOrdersByUserId(userId: number) {
     orderBy: (orders, { desc }) => [desc(orders.createdAt)],
   });
 
-  if (!userOrders) {
-    return [];
-  }
+  if (!userOrders) return [];
 
-  // Calculate total amount for each order and map to a more usable structure
-  const ordersWithTotals = userOrders.map(order => {
-    const totalAmount = order.orderItems.reduce((acc, item) => {
-      return acc + Number(item.priceAtPurchase) * item.quantity;
-    }, 0);
-    return {
-      ...order,
-      totalAmount,
-    };
+  return userOrders.map(order => ({
+    ...order,
+    totalAmount: order.orderItems.reduce(
+      (acc, item) => acc + Number(item.priceAtPurchase) * item.quantity,
+      0
+    ),
+  }));
+}
+
+export async function getSellerByOrderId(orderId: number) {
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+    with: {
+      orderItems: {
+        with: {
+          listing: {
+            with: {
+              seller: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  return order?.orderItems[0]?.listing?.seller || null;
+}
+
+export async function getBuyerByOrderId(orderId: number) {
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+    with: {
+      user: true,
+    },
+  });
+  return order?.user || null;
+}
+
+export async function markOrderAsShipped(orderId: number) {
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
   });
 
-  return ordersWithTotals;
+  if (!order) {
+    throw new Error('Order not found');
+  }
+
+  // Update the order status to "Shipped"
+  await db.update(orders).set({ status: 'Shipped' }).where(eq(orders.id, orderId));
 }

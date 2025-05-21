@@ -19,6 +19,7 @@ import { useSession } from "next-auth/react";
 import { useWishlistContext } from "@/components/contexts/wishlist-provider";
 import { mockReviewStats } from "@/lib/reviews/mock-data";
 
+
 interface ListingDetailsProps {
   listing: ListingWithPhotos;
   sessionUserId?: number | null;
@@ -33,7 +34,7 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
     categoryName,
     status,
     createdAt,
-    seller
+    seller,
   } = listing;
   const session = useSession();
   const userId = session.data?.user?.id;
@@ -111,6 +112,7 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
     }
   }
 
+
   return (
     <motion.div
       className="space-y-6"
@@ -149,53 +151,69 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
 
       {/* Owner controls */}
       {sessionUserId && seller && sessionUserId === seller.id ? (
-        <motion.div variants={item}>
-          <div className="flex gap-3">
-            <Link href={`/listing/${listing.id}/edit`} className="flex-1">
-              <Button variant="outline" className="w-full">
-                Edit
-              </Button>
-            </Link>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="flex-1" disabled={isDeleting}>
-                  Delete
+        listing.status == 'Sold' ? (
+          <motion.div variants={item}>
+            <div className="w-full flex items-center justify-center bg-muted rounded-md p-4 text-muted-foreground font-semibold">
+              This item has already been sold.
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div variants={item}>
+            <div className="flex gap-3">
+              <Link href={`/listing/${listing.id}/edit`} className="flex-1">
+                <Button variant="outline" className="w-full">
+                  Edit
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your listing.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-white hover:bg-destructive/90">
-                    {isDeleting ? 'Deleting...' : 'Delete'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </motion.div>
+              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="flex-1" disabled={isDeleting}>
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your listing.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-white hover:bg-destructive/90">
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </motion.div>
+        )
       ) : (
-        <motion.div variants={item}>
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={handleAddToCart}>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Add to Cart
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleWishlist}
-              className={isInWishlist ? "text-red-500" : ""}
-            >
-              <Heart className={`h-4 w-4 ${isInWishlist ? "fill-current" : ""}`} />
-            </Button>
-          </div>
-        </motion.div>
+        listing.status == 'Sold' ? (
+          <motion.div variants={item}>
+            <div className="w-full flex items-center justify-center bg-muted rounded-md p-4 text-muted-foreground font-semibold">
+              This item has already been sold.
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div variants={item}>
+            <div className="flex gap-3">
+              <Button className="flex-1" onClick={handleAddToCart}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Add to Cart
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleWishlist}
+                className={isInWishlist ? "text-red-500" : ""}
+              >
+                <Heart className={`h-4 w-4 ${isInWishlist ? "fill-current" : ""}`} />
+              </Button>
+            </div>
+          </motion.div>
+        )
       )}
 
       {/* Seller Information Card */}

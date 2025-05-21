@@ -17,7 +17,7 @@ import { orders } from './orders';
 import { users } from './users';
 
 // Create an enum for listing status
-export const listingStatusEnum = pgEnum('listing_status', ['Active', 'Archived', 'Draft']);
+export const listingStatusEnum = pgEnum('listing_status', ['Active', 'Archived', 'Draft', 'Sold']);
 
 export const listings = pgTable('listings', {
   id: serial('id').primaryKey(),
@@ -53,4 +53,4 @@ export const listingsRelations = relations(listings, ({ one, many }) => ({
 // Types for TypeScript
 export type Listing = typeof listings.$inferSelect;
 export type NewListing = typeof listings.$inferInsert;
-export type ListingStatus = 'Active' | 'Archived' | 'Draft';
+export type ListingStatus = 'Active' | 'Archived' | 'Draft' | 'Sold';

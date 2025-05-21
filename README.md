@@ -1,4 +1,4 @@
-# ReMarket - Web Application [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReMarket-SE2/webapp) 
+# ReMarket - Web Application [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReMarket-SE2/webapp)
 
 ![](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/wiki/ReMarket-SE2/webapp/coverage-comment-badge.json)
 

@@ -35,6 +35,7 @@ export async function userExists(id: number): Promise<boolean> {
 export interface UserWithListingCounts extends User {
   activeListingsCount: number;
   archivedListingsCount: number;
+  soldListingsCount: number;
   activeListings: ShortListing[];
   totalListings: number;
   categories: { id: number; name: string }[];
@@ -75,6 +76,12 @@ export async function findUserById(
     .select({ count: count() })
     .from(listings)
     .where(eq(listings.status, 'Archived'));
+
+  // Get count of sold listings
+  const [soldCount] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(eq(listings.status, 'Sold'));
 
   // Get all categories
   const allCategories = await db
@@ -154,6 +161,7 @@ export async function findUserById(
     ...user,
     activeListingsCount: activeCount?.count || 0,
     archivedListingsCount: archivedCount?.count || 0,
+    soldListingsCount: soldCount?.count || 0,
     activeListings: listingsWithPhotos,
     totalListings: totalCount?.count || 0,
     categories: allCategories,

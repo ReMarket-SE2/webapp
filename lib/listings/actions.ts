@@ -5,6 +5,7 @@ import { listings, NewListing, ListingStatus } from '@/lib/db/schema/listings';
 import { categories } from '@/lib/db/schema/categories';
 import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
+import { orderItems } from '@/lib/db/schema/order_items';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { eq, inArray, asc, desc, sql, and } from 'drizzle-orm';
@@ -284,6 +285,20 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
   }
 }
 
+export async function getListingStatusById(id: number): Promise<boolean> {
+  try {
+    const [orderItem] = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.listingId, id))
+      .limit(1);
+    return !!orderItem;
+  } catch (error) {
+    console.error('Error fetching listing status:', error);
+    return false;
+  }
+}
+
 export async function getAllListings(options?: {
   page?: number;
   pageSize?: number;
@@ -312,6 +327,11 @@ export async function getAllListings(options?: {
       const ids = await getDescendantCategoryIds(options.categoryId);
       conditions.push(inArray(listings.categoryId, ids));
     }
+
+    // Exclude listings that have been sold
+    conditions.push(
+      sql`${listings.status} != 'Sold'`
+    );
 
     /* ------------------------------ total count ------------------------------ */
     const countQuery = db.select().from(listings);
@@ -463,5 +483,19 @@ export async function updateListing(
       return { success: false, error: error.errors[0].message };
     }
     return { success: false, error: 'Failed to update listing' };
+  }
+}
+
+export async function setListingStatus(
+  id: number,
+  status: ListingStatus
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await db.update(listings).set({ status }).where(eq(listings.id, id));
+    revalidatePath(`/listing/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating listing status:', error);
+    return { success: false, error: 'Failed to update listing status' };
   }
 }
