@@ -333,7 +333,7 @@ export async function getAllListings(options?: {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     /* ------------------------------ total count ------------------------------ */
-    const countQuery = db.select({ value: count() }).from(users);
+    const countQuery = db.select({ value: count() }).from(listings);
 
     if (whereClause) {
       countQuery.where(whereClause);
