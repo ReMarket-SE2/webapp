@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '@/lib/db/schema';
 import { UserRole, UserStatus } from '@/lib/db/schema/users'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Search, Edit3, Trash2, Ban } from 'lucide-react';
+import { Search, Edit3, Trash2, Ban, ArrowUpDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { adminUpdateUser, getAllUsersForAdmin } from '@/lib/users/actions';
 import { toast } from 'sonner';
@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { UserForm } from './user-form'; // To be created
 
 interface UserManagementProps {
@@ -34,6 +34,9 @@ const USER_ROLE_MAP: Record<UserRole, string> = {
   user: 'User',
 };
 
+const ALL_ROLES_ITEM_VALUE = "__ALL_ROLES__";
+const ALL_STATUSES_ITEM_VALUE = "__ALL_STATUSES__";
+
 export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: UserManagementProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -42,16 +45,27 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [totalUsers, setTotalUsers] = useState(initialTotalUsers);
   const [isEditingUser, setIsEditingUser] = useState<User | null>(null);
-  const [isDeletingUser, setIsDeletingUser] = useState<User | null>(null); // For 'inactive' status
-  const [isSuspendingUser, setIsSuspendingUser] = useState<User | null>(null); // For 'suspended' status
+  const [isDeletingUser, setIsDeletingUser] = useState<User | null>(null);
+  const [isSuspendingUser, setIsSuspendingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10));
   const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10', 10));
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc');
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'createdAt');
+  const [filterRole, setFilterRole] = useState<UserRole | ''>(searchParams.get('role') as UserRole | '' || '');
+  const [filterStatus, setFilterStatus] = useState<UserStatus | ''>(searchParams.get('status') as UserStatus | '' || '');
 
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1); // Reset to first page on sort change
+  };
 
   const fetchUsers = async () => {
     setIsSubmitting(true);
@@ -62,15 +76,19 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
       if (searchTerm) params.set('searchTerm', searchTerm);
       params.set('sortOrder', sortOrder);
       params.set('sortBy', sortBy);
-      
+      if (filterRole) params.set('role', filterRole);
+      if (filterStatus) params.set('status', filterStatus);
+
       router.replace(`${pathname}?${params.toString()}`);
 
-      const result = await getAllUsersForAdmin({ 
-        page: currentPage, 
-        pageSize, 
+      const result = await getAllUsersForAdmin({
+        page: currentPage,
+        pageSize,
         searchTerm: searchTerm || undefined,
         sortOrder,
         sortBy: sortBy as any, // Cast because AdminUserListOptions sortBy is more specific
+        role: filterRole || undefined,
+        status: filterStatus || undefined,
       });
       setUsers(result.users);
       setTotalUsers(result.totalUsers);
@@ -83,23 +101,28 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, pageSize, searchTerm, sortOrder, sortBy]);
+  }, [currentPage, pageSize, searchTerm, sortOrder, sortBy, filterRole, filterStatus]);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCurrentPage(1); // Reset to first page on new search
     fetchUsers();
   };
-  
+
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+  };
+
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(parseInt(newPageSize, 10));
+    setCurrentPage(1); // Reset to first page on page size change
   };
 
   const totalPages = Math.ceil(totalUsers / pageSize);
 
   const handleUpdateStatus = async (user: User, status: UserStatus, actionVerb: string) => {
     if (!user) return;
-    
+
     setIsSubmitting(true);
     try {
       await adminUpdateUser(user.id, { status });
@@ -125,7 +148,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
       handleUpdateStatus(isSuspendingUser, 'suspended', 'suspended');
     }
   };
-  
+
   const getStatusBadgeVariant = (status: UserStatus) => {
     switch (status) {
       case 'active':
@@ -147,22 +170,73 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
           <CardDescription>Manage user accounts, roles, and statuses.</CardDescription>
         </div>
       </CardHeader>
-      
+
       <CardContent>
-        <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
-          <Input 
+        <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4 flex-wrap">
+          <Input
             placeholder="Search by ID, Username, or Email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="max-w-sm flex-grow"
           />
+          <Select 
+            value={filterRole} 
+            onValueChange={(selectedValue) => { 
+              const newRole = selectedValue === ALL_ROLES_ITEM_VALUE ? '' : selectedValue as UserRole;
+              setFilterRole(newRole); 
+              setCurrentPage(1); 
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_ROLES_ITEM_VALUE}>All Roles</SelectItem>
+              {Object.entries(USER_ROLE_MAP).map(([key, value]) => (
+                <SelectItem key={key} value={key}>{value}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select 
+            value={filterStatus} 
+            onValueChange={(selectedValue) => { 
+              const newStatus = selectedValue === ALL_STATUSES_ITEM_VALUE ? '' : selectedValue as UserStatus;
+              setFilterStatus(newStatus); 
+              setCurrentPage(1); 
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_STATUSES_ITEM_VALUE}>All Statuses</SelectItem>
+              {Object.entries(USER_STATUS_MAP).map(([key, value]) => (
+                <SelectItem key={key} value={key}>{value}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={handlePageSizeChange}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Page size" />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 25, 50, 100].map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size} / page
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button type="submit" variant="outline" disabled={isSubmitting}>
             <Search className="mr-2 h-4 w-4" /> Search
           </Button>
         </form>
 
         {isSubmitting && users.length === 0 ? (
-           <div className="text-center py-8 text-muted-foreground">Loading users...</div>
+          <div className="text-center py-8 text-muted-foreground">Loading users...</div>
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <p className="text-muted-foreground mb-4">No users found matching your criteria.</p>
@@ -172,12 +246,42 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('id')}>
+                      ID
+                      {sortBy === 'id' && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('username')}>
+                      Username
+                      {sortBy === 'username' && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('email')}>
+                      Email
+                      {sortBy === 'email' && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('role')}>
+                      Role
+                      {sortBy === 'role' && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('status')}>
+                      Status
+                      {sortBy === 'status' && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('createdAt')}>
+                      Joined
+                      {sortBy === 'createdAt' && <ArrowUpDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -197,7 +301,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
                         {USER_STATUS_MAP[user.status]}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -215,7 +319,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
                               <Ban className="mr-2 h-4 w-4" /> Suspend
                             </DropdownMenuItem>
                           )}
-                           {user.status === 'suspended' && (
+                          {user.status === 'suspended' && (
                             <DropdownMenuItem onClick={() => handleUpdateStatus(user, 'active', 'unsuspended')}>
                               <Ban className="mr-2 h-4 w-4" /> Unsuspend
                             </DropdownMenuItem>
@@ -225,7 +329,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
                               <Trash2 className="mr-2 h-4 w-4" /> Deactivate
                             </DropdownMenuItem>
                           )}
-                           {user.status === 'inactive' && (
+                          {user.status === 'inactive' && (
                             <DropdownMenuItem onClick={() => handleUpdateStatus(user, 'active', 'reactivated')}>
                               <Trash2 className="mr-2 h-4 w-4" /> Reactivate
                             </DropdownMenuItem>
@@ -241,15 +345,15 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
               <Pagination className="mt-4">
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious 
-                      href="#" 
+                    <PaginationPrevious
+                      href="#"
                       onClick={(e) => { e.preventDefault(); if (currentPage > 1) handlePageChange(currentPage - 1); }}
                       className={currentPage === 1 ? 'pointer-events-none opacity-50' : undefined}
                     />
                   </PaginationItem>
                   {Array.from({ length: totalPages }, (_, i) => (
                     <PaginationItem key={i}>
-                      <PaginationLink 
+                      <PaginationLink
                         href="#"
                         onClick={(e) => { e.preventDefault(); handlePageChange(i + 1); }}
                         isActive={currentPage === i + 1}
@@ -259,7 +363,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
                     </PaginationItem>
                   ))}
                   <PaginationItem>
-                    <PaginationNext 
+                    <PaginationNext
                       href="#"
                       onClick={(e) => { e.preventDefault(); if (currentPage < totalPages) handlePageChange(currentPage + 1); }}
                       className={currentPage === totalPages ? 'pointer-events-none opacity-50' : undefined}
@@ -294,7 +398,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDelete}
               disabled={isSubmitting}
               className="bg-destructive hover:bg-destructive/90"
@@ -316,7 +420,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleSuspend}
               disabled={isSubmitting}
               className="bg-destructive hover:bg-destructive/90"
