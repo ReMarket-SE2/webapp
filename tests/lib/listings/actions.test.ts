@@ -731,7 +731,7 @@ describe('Listing Actions', () => {
       expect(result).toEqual({ listings: [], totalCount: 0 });
     });
 
-    test('shoud not return sold lisitings', async () => {
+    test('should not return sold listings', async () => {
       const mockListingsData = [
         { id: 1, title: 'Sold Listing', price: '500', categoryId: null, createdAt: new Date(), status: 'Sold' as const, sellerId: 1 },
       ];
