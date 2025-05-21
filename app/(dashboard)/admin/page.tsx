@@ -3,6 +3,9 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { CategoryManagement } from "@/components/admin/category-management"
 import { getCategories } from "@/lib/categories/actions"
+import { UserManagement } from "@/components/admin/user-management";
+import { getAllUsersForAdmin } from "@/lib/users/actions";
+import { User } from "@/lib/db/schema/users";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions)
@@ -11,8 +14,25 @@ export default async function AdminPage() {
     redirect("/not-authorized")
   }
   
-  // Fetch all categories for the admin page
-  const categories = await getCategories();
+  const categoriesData = await getCategories();
+  const { users: fetchedUsers } = await getAllUsersForAdmin({ pageSize: 1000 }); 
+
+  // Cast the fetched users to the User[] type.
+  // This assumes that the structure returned by getAllUsersForAdmin matches the User schema.
+  const allUsers: User[] = fetchedUsers.map(u => ({
+    id: u.id,
+    username: u.username,
+    passwordHash: u.passwordHash,
+    status: u.status,
+    email: u.email,
+    profileImageId: u.profileImageId,
+    bio: u.bio,
+    role: u.role,
+    password_reset_token: u.password_reset_token,
+    password_reset_expires: u.password_reset_expires,
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt,
+  }));
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4">
@@ -25,7 +45,7 @@ export default async function AdminPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl bg-primary/10 p-6 text-center">
-          <div className="text-2xl font-bold">{categories.length}</div>
+          <div className="text-2xl font-bold">{categoriesData.length}</div>
           <div className="text-muted-foreground text-sm">Categories</div>
         </div>
         <div className="rounded-xl bg-primary/10 p-6 text-center">
@@ -33,7 +53,7 @@ export default async function AdminPage() {
           <div className="text-muted-foreground text-sm">Listings</div>
         </div>
         <div className="rounded-xl bg-primary/10 p-6 text-center">
-          <div className="text-2xl font-bold">--</div>
+          <div className="text-2xl font-bold">{allUsers.length}</div> {/* Display user count */}
           <div className="text-muted-foreground text-sm">Users</div>
         </div>
         <div className="rounded-xl bg-primary/10 p-6 text-center">
@@ -43,7 +63,12 @@ export default async function AdminPage() {
       </div>
 
       <div>
-        <CategoryManagement categories={categories} />
+        <CategoryManagement categories={categoriesData} />
+      </div>
+
+      {/* User Management Section */}
+      <div>
+        <UserManagement initialUsers={allUsers} totalUsers={allUsers.length} />
       </div>
 
       <div className="rounded-xl bg-muted/50 p-4 space-y-2">
