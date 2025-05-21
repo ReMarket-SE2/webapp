@@ -29,6 +29,7 @@ export default async function OrdersPage() {
             emptyMessage="You haven't placed any orders yet."
             redirectMessage="Browse Listings"
             redirectURL="/listings"
+            isSoldTable={false}
           />
         </TabsContent>
         <TabsContent value="sold">
@@ -37,6 +38,7 @@ export default async function OrdersPage() {
             emptyMessage="You haven't sold any items yet."
             redirectMessage="Sell Items"
             redirectURL="/create-listing"
+            isSoldTable={true}
           />
         </TabsContent>
       </Tabs>

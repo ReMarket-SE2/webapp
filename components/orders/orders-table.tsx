@@ -38,6 +38,7 @@ interface OrdersTableProps {
   emptyMessage: string;
   redirectMessage: string;
   redirectURL: string;
+  isSoldTable?: boolean;
 }
 
 export default function OrdersTable({
@@ -45,6 +46,7 @@ export default function OrdersTable({
   emptyMessage,
   redirectMessage,
   redirectURL,
+  isSoldTable = false,
 }: OrdersTableProps) {
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isLabelLoading, setIsLabelLoading] = useState<{ [orderId: number]: boolean }>({});
@@ -152,7 +154,7 @@ export default function OrdersTable({
             </TableCell>
             <TableCell>
               <div className="flex flex-col gap-2">
-                {order.status !== "Shipped" && (
+                {isSoldTable && order.status !== "Shipped" && (
                   <Button
                     variant="outline"
                     onClick={() => handlePrintShippingLabel(order)}
@@ -168,32 +170,34 @@ export default function OrdersTable({
                     )}
                   </Button>
                 )}
-                <Dialog open={isLabelOpen} onOpenChange={setIsLabelOpen}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Shipping Label</DialogTitle>
-                      <DialogDescription>
-                        Print and attach this label to your package.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex flex-col items-center py-2">
-                      {shippingLabelData ? (
-                        <ShippingLabel data={shippingLabelData} />
-                      ) : (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="animate-spin h-4 w-4" />
-                          Loading label...
-                        </div>
-                      )}
-                    </div>
-                    <DialogFooter className="print:hidden">
-                      <Button onClick={handlePrint} variant="secondary">
-                        Print
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                {order.status !== "Shipped" && (
+                {isSoldTable && (
+                  <Dialog open={isLabelOpen} onOpenChange={setIsLabelOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Shipping Label</DialogTitle>
+                        <DialogDescription>
+                          Print and attach this label to your package.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex flex-col items-center py-2">
+                        {shippingLabelData ? (
+                          <ShippingLabel data={shippingLabelData} />
+                        ) : (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Loader2 className="animate-spin h-4 w-4" />
+                            Loading label...
+                          </div>
+                        )}
+                      </div>
+                      <DialogFooter className="print:hidden">
+                        <Button onClick={handlePrint} variant="secondary">
+                          Print
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                {isSoldTable && order.status !== "Shipped" && (
                   <Button
                     variant="outline"
                     onClick={() => handleShipped(order)}
