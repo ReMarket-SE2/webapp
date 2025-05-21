@@ -8,7 +8,7 @@ import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { orderItems } from '@/lib/db/schema/order_items';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { eq, inArray, asc, desc, sql, and } from 'drizzle-orm';
+import { eq, inArray, asc, desc, sql, and, not } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import { users } from '@/lib/db/schema/users';
 import { count } from 'drizzle-orm';
@@ -328,26 +328,24 @@ export async function getAllListings(options?: {
       conditions.push(inArray(listings.categoryId, ids));
     }
 
-    // Exclude listings that have been sold
-    conditions.push(
-      sql`${listings.status} != 'Sold'`
-    );
+    conditions.push(not(eq(listings.status, 'Sold')));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     /* ------------------------------ total count ------------------------------ */
-    const countQuery = db.select().from(listings);
-    if (conditions.length) {
-      for (const condition of conditions) {
-        countQuery.where(condition);
-      }
+    const countQuery = db.select({ value: count() }).from(listings);
+
+    if (whereClause) {
+      countQuery.where(whereClause);
     }
-    const totalCount = (await countQuery.execute()).length;
+
+    const [countResult] = await countQuery.execute();
+    const totalCount = countResult?.value ?? 0;
 
     /* ---------------------------- main list query ---------------------------- */
     const query = db.select().from(listings);
-    if (conditions.length) {
-      for (const condition of conditions) {
-        query.where(condition);
-      }
+    if (whereClause) {
+      query.where(whereClause);
     }
 
     // sorting

@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import AdminPage from "@/app/(dashboard)/admin/page"
 import { getCategories } from "@/lib/categories/actions"
+import { getAllUsersForAdmin } from "@/lib/users/actions"
 
 // Mock necessary Next.js modules
 jest.mock("next-auth", () => ({
@@ -19,6 +20,11 @@ jest.mock("next/navigation", () => ({
 // Mock the getCategories function
 jest.mock("@/lib/categories/actions", () => ({
   getCategories: jest.fn(),
+}))
+
+// Mock the user actions
+jest.mock("@/lib/users/actions", () => ({
+  getAllUsersForAdmin: jest.fn(() => ({ users: [], totalUsers: 0 })),
 }))
 
 beforeEach(() => {
@@ -36,8 +42,26 @@ describe("AdminPage", () => {
         parentId: null;
     }[] = [];
     
+    const mockUsers = [
+      { 
+        id: 1, 
+        username: "user1", 
+        email: "user1@example.com", 
+        role: "user", 
+        status: "active",
+        passwordHash: "hashed_password",
+        profileImageId: null,
+        bio: null,
+        password_reset_token: null,
+        password_reset_expires: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
     (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession);
     (getCategories as jest.Mock).mockResolvedValueOnce(mockCategories);
+    (getAllUsersForAdmin as jest.Mock).mockResolvedValueOnce({ users: mockUsers, totalUsers: mockUsers.length });
 
     await AdminPage()
 
@@ -53,8 +77,40 @@ describe("AdminPage", () => {
       { id: 2, name: "Category 2", parentId: null },
     ];
     
+    const mockUsers = [
+      { 
+        id: 1, 
+        username: "user1", 
+        email: "user1@example.com", 
+        role: "user", 
+        status: "active",
+        passwordHash: "hashed_password",
+        profileImageId: null,
+        bio: null,
+        password_reset_token: null,
+        password_reset_expires: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      { 
+        id: 2, 
+        username: "admin1", 
+        email: "admin@example.com", 
+        role: "admin", 
+        status: "active",
+        passwordHash: "hashed_password",
+        profileImageId: null,
+        bio: null,
+        password_reset_token: null,
+        password_reset_expires: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
     (getServerSession as jest.Mock).mockResolvedValueOnce(mockSession);
     (getCategories as jest.Mock).mockResolvedValueOnce(mockCategories);
+    (getAllUsersForAdmin as jest.Mock).mockResolvedValueOnce({ users: mockUsers, totalUsers: mockUsers.length });
 
     await AdminPage()
 

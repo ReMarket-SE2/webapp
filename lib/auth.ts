@@ -166,6 +166,7 @@ export const authOptions: NextAuthOptions = {
           username: `${profile?.name?.replace(/\s+/g, '')}${uniqueSuffix}` as string,
           passwordHash: null,
           role: 'user',
+          status: 'active',
           profileImageId: photoId,
           bio: null,
           password_reset_token: null,
