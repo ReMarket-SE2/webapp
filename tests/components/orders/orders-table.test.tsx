@@ -45,6 +45,7 @@ describe("OrdersTable", () => {
         emptyMessage="No orders"
         redirectMessage="Go"
         redirectURL="/"
+        isSoldTable={true}
       />
     );
     expect(screen.getByText(/Order ID/i)).toBeInTheDocument();
@@ -61,6 +62,7 @@ describe("OrdersTable", () => {
         emptyMessage="No orders"
         redirectMessage="Go"
         redirectURL="/"
+        isSoldTable={true}
       />
     );
     expect(screen.getByText("No orders")).toBeInTheDocument();
@@ -74,6 +76,7 @@ describe("OrdersTable", () => {
         emptyMessage="No orders"
         redirectMessage="Go"
         redirectURL="/"
+        isSoldTable={true}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /Print Shipping Label/i }));
@@ -88,6 +91,7 @@ describe("OrdersTable", () => {
         emptyMessage="No orders"
         redirectMessage="Go"
         redirectURL="/"
+        isSoldTable={true}
       />
     );
     fireEvent.click(getByRole("button", { name: /Mark As Shipped/i }));
@@ -103,9 +107,24 @@ describe("OrdersTable", () => {
         emptyMessage="No orders"
         redirectMessage="Go"
         redirectURL="/"
+        isSoldTable={true}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /Print Shipping Label/i }));
     expect(screen.getByRole("button", { name: /Loading.../i })).toBeDisabled();
+  });
+
+  it("does not render shipping label and shipped actions for bought table", () => {
+    render(
+      <OrdersTable
+        orders={orders as any}
+        emptyMessage="No orders"
+        redirectMessage="Go"
+        redirectURL="/"
+        isSoldTable={false}
+      />
+    );
+    expect(screen.queryByRole("button", { name: /Print Shipping Label/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Mark As Shipped/i })).toBeNull();
   });
 });
