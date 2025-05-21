@@ -5,7 +5,7 @@ import { User } from '@/lib/db/schema';
 import { UserRole, UserStatus } from '@/lib/db/schema/users'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Edit3, Trash2, Ban, ArrowUpDown } from 'lucide-react';
+import { Edit3, Trash2, Ban, ArrowUpDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { adminUpdateUser, getAllUsersForAdmin } from '@/lib/users/actions';
 import { toast } from 'sonner';
@@ -14,7 +14,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { UserForm } from './user-form';
 
@@ -38,10 +37,6 @@ const ALL_ROLES_ITEM_VALUE = "__ALL_ROLES__";
 const ALL_STATUSES_ITEM_VALUE = "__ALL_STATUSES__";
 
 export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: UserManagementProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [totalUsers, setTotalUsers] = useState(initialTotalUsers);
   const [isEditingUser, setIsEditingUser] = useState<User | null>(null);
@@ -49,13 +44,13 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
   const [isSuspendingUser, setIsSuspendingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10));
-  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10', 10));
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc');
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'createdAt');
-  const [filterRole, setFilterRole] = useState<UserRole | ''>(searchParams.get('role') as UserRole | '' || '');
-  const [filterStatus, setFilterStatus] = useState<UserStatus | ''>(searchParams.get('status') as UserStatus | '' || '');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [filterRole, setFilterRole] = useState<UserRole | ''>('');
+  const [filterStatus, setFilterStatus] = useState<UserStatus | ''>('');
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -86,7 +81,7 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentPage, pageSize, searchTerm, sortOrder, sortBy, filterRole, filterStatus, router, pathname]);
+  }, [currentPage, pageSize, searchTerm, sortOrder, sortBy, filterRole, filterStatus]);
 
   useEffect(() => {
     fetchUsers();
