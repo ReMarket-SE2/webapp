@@ -333,16 +333,14 @@ export async function getAllListings(options?: {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     /* ------------------------------ total count ------------------------------ */
-    const countQuery = db
-      .select({ count: sql<number>`COUNT(*)::int` }) // Use ::int or CAST for specific type
-      .from(listings);
+    const countQuery = db.select({ value: count() }).from(users);
 
     if (whereClause) {
       countQuery.where(whereClause);
     }
 
     const [countResult] = await countQuery.execute();
-    const totalCount = countResult?.count ?? 0;
+    const totalCount = countResult?.value ?? 0;
 
     /* ---------------------------- main list query ---------------------------- */
     const query = db.select().from(listings);

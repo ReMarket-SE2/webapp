@@ -535,7 +535,7 @@ describe('Listing Actions', () => {
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+        execute: jest.fn().mockResolvedValueOnce([{ value: 2 }]),
       }));
 
       // Mock for the main listings query
@@ -685,7 +685,7 @@ describe('Listing Actions', () => {
       mockDbSelect.mockImplementationOnce(() => ({
         from: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValueOnce(mockListingsData),
+        execute: jest.fn().mockResolvedValueOnce([{ value: 1 }]),
       }));
 
       // Mock for main query with pagination

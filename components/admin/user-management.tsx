@@ -296,22 +296,35 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
                             <Edit3 className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
                           {user.status !== 'suspended' && (
-                            <DropdownMenuItem onClick={() => setIsSuspendingUser(user)}>
-                              <Ban className="mr-2 h-4 w-4" /> Suspend
+                            <DropdownMenuItem 
+                              onClick={() => setIsSuspendingUser(user)} 
+                              data-testid="suspend-user-button"
+                            >
+                              <Ban className="mr-2 h-4 w-4" /> Suspend Account
                             </DropdownMenuItem>
                           )}
                           {user.status === 'suspended' && (
-                            <DropdownMenuItem onClick={() => handleUpdateStatus(user, 'active', 'unsuspended')}>
-                              <Ban className="mr-2 h-4 w-4" /> Unsuspend
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateStatus(user, 'active', 'unsuspended')}
+                              data-testid="unsuspend-user-button"
+                            >
+                              <Ban className="mr-2 h-4 w-4" /> Remove Suspension
                             </DropdownMenuItem>
                           )}
                           {user.status !== 'inactive' && (
-                            <DropdownMenuItem onClick={() => setIsDeletingUser(user)} className="text-destructive">
+                            <DropdownMenuItem 
+                              onClick={() => setIsDeletingUser(user)} 
+                              className="text-destructive"
+                              data-testid="deactivate-user-button"
+                            >
                               <Trash2 className="mr-2 h-4 w-4" /> Deactivate
                             </DropdownMenuItem>
                           )}
                           {user.status === 'inactive' && (
-                            <DropdownMenuItem onClick={() => handleUpdateStatus(user, 'active', 'reactivated')}>
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateStatus(user, 'active', 'reactivated')}
+                              data-testid="reactivate-user-button"
+                            >
                               <Trash2 className="mr-2 h-4 w-4" /> Reactivate
                             </DropdownMenuItem>
                           )}
@@ -406,8 +419,9 @@ export function UserManagement({ initialUsers, totalUsers: initialTotalUsers }: 
               onClick={handleSuspend}
               disabled={isSubmitting}
               className="bg-destructive hover:bg-destructive/90"
+              data-testid="confirm-suspend-button"
             >
-              {isSubmitting ? 'Suspending...' : 'Suspend'}
+              {isSubmitting ? 'Processing...' : 'Suspend User'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
