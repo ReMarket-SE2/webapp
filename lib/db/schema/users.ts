@@ -8,11 +8,13 @@ import { oauthAccounts } from './oauth_accounts';
 
 // Create an enum for user roles
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
+export const userStatusEnum = pgEnum('user_status', ['active', 'inactive', 'suspended']);
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   username: varchar('username', { length: 50 }).notNull().unique(),
   passwordHash: text('password_hash'),  // Make password optional for OAuth users
+  status: userStatusEnum('status').notNull().default('active'),
   email: varchar('email', { length: 255 }).notNull().unique(),
   profileImageId: integer('profile_image_id').references(() => photos.id),
   bio: text('bio'),
@@ -42,3 +44,4 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserRole = 'user' | 'admin';
+export type UserStatus = 'active' | 'inactive' | 'suspended';

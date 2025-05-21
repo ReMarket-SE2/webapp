@@ -78,6 +78,13 @@
       "when": 1747645253979,
       "tag": "0010_add_listing_sold_status",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1747843586741,
+      "tag": "0011_add_user_status",
+      "breakpoints": true
     }
   ]
 }
