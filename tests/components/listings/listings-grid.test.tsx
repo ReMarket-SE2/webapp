@@ -3,6 +3,7 @@ import "@testing-library/jest-dom";
 import { ListingsGrid } from "@/components/listings/listings-grid";
 import { ListingCard as ActualListingCard } from "@/components/listings/listing-card"; // To get the type for the mock
 import { Category } from "@/lib/db/schema/categories";
+import { ShortListing } from "@/lib/listings/actions";
 
 /**
  * @jest-environment jsdom
@@ -48,6 +49,12 @@ const mockCategories: Category[] = [
   { id: 2, name: "Furniture", parentId: null },
 ];
 
+// Mock useListingsContext to return categories
+
+jest.mock('@/components/contexts/listings-context', () => ({
+  useListingsContext: () => ({ categories: mockCategories }),
+}));
+
 interface MockListing {
   id: number;
   title: string;
@@ -55,10 +62,12 @@ interface MockListing {
   [key: string]: any; // To match the 'any[]' type for listings
 }
 
-const mockListingsData: MockListing[] = [
-  { id: 101, title: "Smartphone X" },
-  { id: 102, title: "Comfy Sofa" },
-];
+const mockListingsData = (
+  [
+    { id: 101, title: "Smartphone X", price: "0", category: "", categoryId: null, photo: "", createdAt: new Date() },
+    { id: 102, title: "Comfy Sofa", price: "0", category: "", categoryId: null, photo: "", createdAt: new Date() },
+  ] as unknown
+) as ShortListing[];
 
 describe("ListingsGrid", () => {
   beforeEach(() => {
@@ -67,7 +76,7 @@ describe("ListingsGrid", () => {
   });
 
   it('should render "No listings found" message when listings array is empty', () => {
-    render(<ListingsGrid categories={mockCategories} listings={[]} />);
+    render(<ListingsGrid listings={[]} />);
 
     expect(screen.getByText("No listings found 🫠")).toBeInTheDocument();
     expect(screen.getByText("Be the first to create a listing!")).toBeInTheDocument();
@@ -75,10 +84,10 @@ describe("ListingsGrid", () => {
   });
 
   it("should render listing cards when listings array is not empty", () => {
-    render(<ListingsGrid categories={mockCategories} listings={mockListingsData} />);
+    render(<ListingsGrid listings={mockListingsData} />);
 
     expect(screen.queryByText("No listings found 🫠")).not.toBeInTheDocument();
-    
+
     const listingCards = screen.getAllByTestId("listing-card");
     expect(listingCards).toHaveLength(mockListingsData.length);
 
@@ -93,7 +102,7 @@ describe("ListingsGrid", () => {
   });
 
   it("should pass correct props to each ListingCard", () => {
-    render(<ListingsGrid categories={mockCategories} listings={mockListingsData} />);
+    render(<ListingsGrid listings={mockListingsData} />);
 
     expect(mockListingCard).toHaveBeenCalledTimes(mockListingsData.length);
 
@@ -109,10 +118,10 @@ describe("ListingsGrid", () => {
   });
 
   it("should render the grid container and items", () => {
-    render(<ListingsGrid categories={mockCategories} listings={mockListingsData} />);
-    
+    render(<ListingsGrid listings={mockListingsData} />);
+
     const motionDivMock = jest.requireMock("framer-motion").motion.div as jest.Mock;
-    
+
     expect(motionDivMock).toHaveBeenCalledTimes(1 + mockListingsData.length); // 1 container + N items
 
     // Check container (first call to motion.div)
@@ -121,7 +130,7 @@ describe("ListingsGrid", () => {
     if (!containerCall) return; // Type guard
 
     // Check item calls (the rest of the calls)
-     const itemCalls = motionDivMock.mock.calls.filter(call => !call[0].className); // Items don't have a className prop from ListingsGrid
-     expect(itemCalls).toHaveLength(mockListingsData.length);
+    const itemCalls = motionDivMock.mock.calls.filter(call => !call[0].className); // Items don't have a className prop from ListingsGrid
+    expect(itemCalls).toHaveLength(mockListingsData.length);
   });
 });

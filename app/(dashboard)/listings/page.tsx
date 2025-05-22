@@ -1,22 +1,32 @@
-import { getCategories } from '@/lib/categories/actions';
 import React from 'react';
-import { getAllListings } from '@/lib/listings/actions';
+// import { getCategories } from '@/lib/categories/actions'; // Handled by ListingsContext
+// import { getAllListings } from '@/lib/listings/actions'; // Handled by ListingsContext via useListings hook
 import { ListingsPageClient } from './page-client';
 
-export default async function ListingsPage({ searchParams }: { searchParams: Promise<{ category?: string; search?: string; sort?: string }> }) {
-  const params = await searchParams;
-  const categories = await getCategories();
+// Reverted searchParams type to Promise as indicated by runtime errors
+export default async function ListingsPage({ searchParams }: {
+  searchParams: Promise<{ // Type is a Promise
+    category?: string;
+    search?: string;
+    sort?: string;
+    page?: string;
+  }>
+}) {
+  const params = await searchParams; // Await the searchParams Promise
+
   const selectedCategoryId = params.category ? Number(params.category) : null;
   const search = params.search || '';
   const sortOrder = params.sort === 'asc' ? 'asc' : 'desc';
-  const { listings } = await getAllListings({ categoryId: selectedCategoryId ?? undefined, searchTerm: search, sortOrder });
+  // The initial page from URL will be handled by the context synchronization if needed,
+  // or by the pagination component setting it. For filter-related props, we pass these:
+
   return (
     <ListingsPageClient
-      categories={categories}
       initialCategoryId={selectedCategoryId}
       initialSearch={search}
       initialSortOrder={sortOrder}
-      listings={listings}
+    // listings prop is removed as client will use context
+    // categories prop was already removed
     />
   );
 }

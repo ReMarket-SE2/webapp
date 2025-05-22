@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ReMarket",
+  title: "ReMarket | Your Secure Marketplace",
   description: "Modern e-commerce marketplace for your used items.",
 };
 
