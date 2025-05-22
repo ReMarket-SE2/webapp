@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Order } from "@/lib/db/schema";
+import { useRouter } from "next/navigation";
 
 interface OrdersTableOrderItem {
   id: number;
@@ -48,13 +49,10 @@ export default function OrdersTable({
   redirectURL,
   isSoldTable = false,
 }: OrdersTableProps) {
+  const router = useRouter();
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isLabelLoading, setIsLabelLoading] = useState<{ [orderId: number]: boolean }>({});
   const [shippingLabelData, setShippingLabelData] = useState<ShippingLabelData | null>(null);
-
-  // Use local state for orders to allow UI updates without reload
-  const [localOrders, setLocalOrders] = useState<OrdersTableOrder[]>(orders);
-
   const [isShippedLoading, setIsShippedLoading] = useState<{ [orderId: number]: boolean }>({});
 
   async function handlePrintShippingLabel(order: OrdersTableOrder) {
@@ -87,13 +85,8 @@ export default function OrdersTable({
     setIsShippedLoading(prev => ({ ...prev, [order.id]: true }));
     try {
       await markOrderAsShipped(order.id);
-      // Update local state for the shipped order
-      setLocalOrders(prevOrders =>
-        prevOrders.map(o =>
-          o.id === order.id ? { ...o, status: "Shipped" } : o
-        )
-      );
       toast.success("Order marked as shipped.");
+      router.refresh();
     } catch (e) {
       console.error("Error marking order as shipped:", e);
       toast.error("Failed to mark order as shipped.");
@@ -101,7 +94,7 @@ export default function OrdersTable({
     setIsShippedLoading(prev => ({ ...prev, [order.id]: false }));
   }
 
-  if (localOrders.length === 0)
+  if (orders.length === 0)
     return (
       <div className="text-center py-12">
         <p className="text-xl text-muted-foreground mb-4">{emptyMessage}</p>
@@ -125,7 +118,7 @@ export default function OrdersTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {localOrders.map(order => (
+        {orders.map(order => (
           <TableRow key={order.id}>
             <TableCell className="font-medium">
               #{order.id.toString().padStart(6, "0")}
