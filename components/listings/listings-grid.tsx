@@ -33,7 +33,7 @@ export function ListingsGrid({ listings }: ListingsGridProps) { // Removed categ
   if (!listings.length)
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
+        <div className="text-center mt-16">
           <h3 className="text-lg font-semibold text-gray-900">No listings found 🫠</h3>
           <p className="mt-1 text-sm text-gray-500">Be the first to create a listing!</p>
         </div>

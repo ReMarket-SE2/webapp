@@ -94,10 +94,20 @@ export function useListings(initialOptions: UseListingsOptions = {}) {
     if (options.categoryId) params.set('category', String(options.categoryId));
 
     const query = params.toString();
-    const url = query ? `${pathname}?${query}` : pathname;
+    const targetPath = '/listings';
+    const url = query ? `${targetPath}?${query}` : targetPath;
 
-    // Replace rather than push to avoid stacking history for each filter change
-    router.replace(url, { scroll: false });
+    const currentPath = pathname;
+
+    const hasSearch = options.searchTerm?.trim().length ?? 0;
+
+    if (currentPath === targetPath) {
+      // Already on /listings → always replace to sync query params
+      router.replace(url, { scroll: false });
+    } else if (hasSearch) {
+      // Only redirect to /listings if user is performing a search
+      router.push(url, { scroll: false });
+    }
   }, [options, pathname, router]);
 
   return { listings, loading, options, metadata, updateOptions };
