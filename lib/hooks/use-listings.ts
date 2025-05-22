@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { getAllListings, ShortListing } from '@/lib/listings/actions';
 
 export interface UseListingsOptions {
@@ -26,13 +27,30 @@ export interface ListingsResponse {
 }
 
 export function useListings(initialOptions: UseListingsOptions = {}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [listings, setListings] = useState<ShortListing[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [options, setOptions] = useState<UseListingsOptions>({
-    page: 1,
-    pageSize: 20,
-    ...initialOptions,
+
+  // Initialize options from URL search params if available, otherwise use initialOptions or defaults
+  const [options, setOptions] = useState<UseListingsOptions>(() => {
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    return {
+      page: params.get('page') ? parseInt(params.get('page')!, 10) : initialOptions.page || 1,
+      pageSize: initialOptions.pageSize || 20,
+      sortBy:
+        (params.get('sortBy') as 'price' | 'date' | undefined) || initialOptions.sortBy || 'date',
+      sortOrder:
+        (params.get('sort') as 'asc' | 'desc' | undefined) || initialOptions.sortOrder || 'desc',
+      searchTerm: params.get('search') || initialOptions.searchTerm || '',
+      categoryId: params.get('category')
+        ? parseInt(params.get('category')!, 10)
+        : initialOptions.categoryId,
+    };
   });
+
   const [metadata, setMetadata] = useState<ListingsPaginationMetadata>({
     totalCount: 0,
     totalPages: 1,
@@ -62,10 +80,25 @@ export function useListings(initialOptions: UseListingsOptions = {}) {
     fetchListings();
   }, [options]);
 
-  // Function to update options (e.g., for pagination or sorting)
-  function updateOptions(newOptions: Partial<UseListingsOptions>) {
+  const updateOptions = useCallback((newOptions: Partial<UseListingsOptions>) => {
     setOptions(prevOptions => ({ ...prevOptions, ...newOptions }));
-  }
+  }, []);
+
+  // Sync URL with options after render
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (options.page && options.page !== 1) params.set('page', String(options.page));
+    if (options.sortOrder && options.sortOrder !== 'desc') params.set('sort', options.sortOrder);
+    if (options.searchTerm) params.set('search', options.searchTerm);
+    if (options.categoryId) params.set('category', String(options.categoryId));
+
+    const query = params.toString();
+    const url = query ? `${pathname}?${query}` : pathname;
+
+    // Replace rather than push to avoid stacking history for each filter change
+    router.replace(url, { scroll: false });
+  }, [options, pathname, router]);
 
   return { listings, loading, options, metadata, updateOptions };
 }

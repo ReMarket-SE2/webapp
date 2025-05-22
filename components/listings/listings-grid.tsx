@@ -2,8 +2,9 @@
 
 import { motion } from "framer-motion";
 import { ListingCard } from "@/components/listings/listing-card";
-import { Category } from "@/lib/db/schema/categories";
+// import { Category } from "@/lib/db/schema/categories"; // No longer needed
 import { ShortListing } from "@/lib/listings/actions";
+import { useListingsContext } from "../contexts/listings-context"; // Import context
 
 const container = {
   hidden: { opacity: 0 },
@@ -23,11 +24,12 @@ const item = {
 };
 
 interface ListingsGridProps {
-  categories: Category[];
+  // categories: Category[]; // No longer needed
   listings: ShortListing[];
 }
 
-export function ListingsGrid({ categories, listings }: ListingsGridProps) {
+export function ListingsGrid({ listings }: ListingsGridProps) { // Removed categories from props
+  const { categories } = useListingsContext(); // Get categories from context
   if (!listings.length)
     return (
       <div className="flex items-center justify-center h-full">
