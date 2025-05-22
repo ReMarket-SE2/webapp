@@ -4,6 +4,7 @@ import { getOrdersByUserId } from "@/lib/order/actions";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { redirect } from "next/navigation";
 import OrdersTable from "@/components/orders/orders-table";
+import React from "react";
 
 export default async function OrdersPage() {
   const session = await getServerSession(authOptions);
@@ -18,30 +19,32 @@ export default async function OrdersPage() {
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">Your Orders</h1>
-      <Tabs defaultValue="bought" className="w-full">
-        <TabsList>
-          <TabsTrigger value="bought">Bought</TabsTrigger>
-          <TabsTrigger value="sold">Sold</TabsTrigger>
-        </TabsList>
-        <TabsContent value="bought">
-          <OrdersTable
-            orders={boughtOrders}
-            emptyMessage="You haven't placed any orders yet."
-            redirectMessage="Browse Listings"
-            redirectURL="/listings"
-            isSoldTable={false}
-          />
-        </TabsContent>
-        <TabsContent value="sold">
-          <OrdersTable
-            orders={soldOrders}
-            emptyMessage="You haven't sold any items yet."
-            redirectMessage="Sell Items"
-            redirectURL="/create-listing"
-            isSoldTable={true}
-          />
-        </TabsContent>
-      </Tabs>
+      <React.Suspense fallback={<div>Loading...</div>}>
+        <Tabs defaultValue="bought" className="w-full">
+          <TabsList>
+            <TabsTrigger value="bought">Bought</TabsTrigger>
+            <TabsTrigger value="sold">Sold</TabsTrigger>
+          </TabsList>
+          <TabsContent value="bought">
+            <OrdersTable
+              orders={boughtOrders}
+              emptyMessage="You haven't placed any orders yet."
+              redirectMessage="Browse Listings"
+              redirectURL="/listings"
+              isSoldTable={false}
+            />
+          </TabsContent>
+          <TabsContent value="sold">
+            <OrdersTable
+              orders={soldOrders}
+              emptyMessage="You haven't sold any items yet."
+              redirectMessage="Sell Items"
+              redirectURL="/create-listing"
+              isSoldTable={true}
+            />
+          </TabsContent>
+        </Tabs>
+      </React.Suspense>
     </div>
   );
 }
