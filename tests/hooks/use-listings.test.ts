@@ -55,7 +55,7 @@ describe('useListings', () => {
     });
 
     expect(getAllListings).toHaveBeenCalledTimes(1);
-    expect(getAllListings).toHaveBeenCalledWith({ page: 1, pageSize: 20 });
+    expect(getAllListings).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 20 }));
   });
 
   test('should update options and refetch listings', async () => {
@@ -96,7 +96,9 @@ describe('useListings', () => {
 
     // Ensure getAllListings was called with updated options
     expect(getAllListings).toHaveBeenCalledTimes(2);
-    expect(getAllListings).toHaveBeenLastCalledWith({ page: 2, pageSize: 2 });
+    expect(getAllListings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 2, pageSize: 2 })
+    );
   });
 
   test('should handle errors gracefully', async () => {

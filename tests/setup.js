@@ -108,3 +108,17 @@ global.Request = class Request {
     this.init = init;
   }
 };
+
+// Mock next/navigation hooks
+jest.mock('next/navigation', () => {
+  const router = {
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  };
+  return {
+    useRouter: () => router,
+    usePathname: () => '/listings',
+    useSearchParams: () => new URLSearchParams(),
+  };
+});
