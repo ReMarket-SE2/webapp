@@ -15,7 +15,7 @@ import Link from "next/link";
 import { ShippingLabel } from "@/components/shipping-label/shipping-label";
 import { fetchShippingLabelData } from "@/lib/shipping-label/actions";
 import { getSellerByOrderId, getBuyerByOrderId, markOrderAsShipped } from "@/lib/order/actions";
-import { getReviewByOrderId, addReview } from "@/lib/reviews/actions";
+import { addReview, getReviewExistenceByOrderIds } from "@/lib/reviews/actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ShippingLabelData } from "@/components/shipping-label/shipping-label";
 import { toast } from "sonner";
@@ -58,18 +58,17 @@ export default function OrdersTable({
   const [isShippedLoading, setIsShippedLoading] = useState<{ [orderId: number]: boolean }>({});
   const [isReviewLoading, setIsReviewLoading] = useState<{ [orderId: number]: boolean }>({});
   const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [reviewsExist, setReviewsExist] = useState<boolean[]>([]);
+  const [reviewsExist, setReviewsExist] = useState<Record<number, boolean>>({});
   const [activeReviewOrderId, setActiveReviewOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isSoldTable) {
       const checkReviews = async () => {
-        const reviews = await Promise.all(
-          orders.map(order => getReviewByOrderId(order.id))
-        );
-        setReviewsExist(reviews.map(review => !!review));
+        const orderIds = orders.map(order => order.id);
+        const reviewsMap = await getReviewExistenceByOrderIds(orderIds);
+        setReviewsExist(reviewsMap);
       };
-    checkReviews();
+      checkReviews();
     }
   }, [orders, isSoldTable]);
    
@@ -140,12 +139,7 @@ export default function OrdersTable({
         setIsReviewLoading(prev => ({ ...prev, [order.id]: false }))
         return
       }
-      setReviewsExist(prev => {
-        const updated = [...prev]
-        const idx = orders.findIndex(o => o.id === order.id)
-        if (idx !== -1) updated[idx] = true
-        return updated
-      })
+      setReviewsExist(prev => ({ ...prev, [order.id]: true }));
       setIsReviewOpen(false)
       setActiveReviewOrderId(null)
       toast.success("Review submitted!")
@@ -180,7 +174,7 @@ export default function OrdersTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {orders.map((order, index) => (
+        {orders.map((order) => (
           <TableRow key={order.id}>
             <TableCell className="font-medium">
               #{order.id.toString().padStart(6, "0")}
@@ -268,7 +262,7 @@ export default function OrdersTable({
                     )}
                   </Button>
                 )}
-                {!isSoldTable && order.status == "Shipped" && !reviewsExist[index] && (
+                {!isSoldTable && order.status == "Shipped" && !reviewsExist[order.id] && (
                   <>
                     <Button variant="outline" onClick={() => handleAddReview(order)} disabled={isReviewLoading[order.id]}>
                       {isReviewLoading[order.id] ? (

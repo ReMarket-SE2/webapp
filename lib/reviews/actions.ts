@@ -3,7 +3,7 @@
 import { db } from '@/lib/db'
 import { reviews } from '@/lib/db/schema/reviews'
 import { NewReview } from '@/lib/db/schema/reviews'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 const reviewSchema = z.object({
@@ -45,4 +45,13 @@ export async function getReviewStatsByUserId(userId: number): Promise<ReviewStat
   const totalReviews = rows.length;
   const averageScore = rows.reduce((sum, r) => sum + r.score, 0) / totalReviews;
   return { averageScore, totalReviews };
+}
+
+export async function getReviewExistenceByOrderIds(orderIds: number[]): Promise<Record<number, boolean>> {
+  if (!orderIds.length) return {};
+  const rows = await db.select({ orderId: reviews.orderId }).from(reviews).where(inArray(reviews.orderId, orderIds));
+  const found = new Set(rows.map(r => r.orderId));
+  const result: Record<number, boolean> = {};
+  for (const id of orderIds) result[id] = found.has(id);
+  return result;
 }

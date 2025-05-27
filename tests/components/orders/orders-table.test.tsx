@@ -4,7 +4,12 @@ import OrdersTable from "@/components/orders/orders-table";
 import { ShippingLabelData } from "@/components/shipping-label/shipping-label";
 
 // Mock dependencies
-let getReviewByOrderIdMock = jest.fn();
+let getReviewExistenceByOrderIdsMock = jest.fn((orderIds: number[]) => {
+  // By default, return false for all orderIds
+  const result: Record<number, boolean> = {};
+  for (const id of orderIds) result[id] = false;
+  return Promise.resolve(result);
+});
 let addReviewMock = jest.fn();
 
 jest.mock("next/link", () => ({ children, ...props }: any) => <a {...props}>{children}</a>);
@@ -27,10 +32,12 @@ jest.mock("@/lib/order/actions", () => ({
   getBuyerByOrderId: jest.fn(() => Promise.resolve({ id: 2 })),
   markOrderAsShipped: jest.fn(() => Promise.resolve())
 }));
-jest.mock("@/lib/reviews/actions", () => ({
-  getReviewByOrderId: (...args: any[]) => getReviewByOrderIdMock(...args),
-  addReview: (...args: any[]) => addReviewMock(...args),
-}));
+jest.mock("@/lib/reviews/actions", () => {
+  return {
+    getReviewExistenceByOrderIds: (orderIds: number[]) => getReviewExistenceByOrderIdsMock(orderIds),
+    addReview: (...args: any[]) => addReviewMock(...args),
+  };
+});
 
 const orders = [
   {
@@ -45,6 +52,19 @@ const orders = [
 ];
 
 describe("OrdersTable", () => {
+  beforeEach(() => {
+    getReviewExistenceByOrderIdsMock.mockReset();
+    addReviewMock.mockReset();
+    // Default: always return all order ids as false
+    getReviewExistenceByOrderIdsMock.mockImplementation((orderIds: number[]) => {
+      const result: Record<number, boolean> = {};
+      if (Array.isArray(orderIds)) {
+        for (const id of orderIds) result[id] = false;
+      }
+      return Promise.resolve(result);
+    });
+  });
+
   it("renders orders table with orders", () => {
     render(
       <OrdersTable
@@ -145,7 +165,10 @@ describe("OrdersTable", () => {
       ],
       totalAmount: 50,
     }];
-    getReviewByOrderIdMock.mockResolvedValueOnce(null);
+    // Patch: always return all order ids as false
+    getReviewExistenceByOrderIdsMock.mockResolvedValueOnce(
+      Object.fromEntries(shippedOrder.map(o => [o.id, false]))
+    );
     render(
       <OrdersTable
         orders={shippedOrder as any}
@@ -168,7 +191,9 @@ describe("OrdersTable", () => {
       ],
       totalAmount: 75,
     }];
-    getReviewByOrderIdMock.mockResolvedValueOnce(null);
+    getReviewExistenceByOrderIdsMock.mockResolvedValueOnce(
+      Object.fromEntries(shippedOrder.map(o => [o.id, false]))
+    );
     render(
       <OrdersTable
         orders={shippedOrder as any}
@@ -194,7 +219,9 @@ describe("OrdersTable", () => {
       ],
       totalAmount: 80,
     }];
-    getReviewByOrderIdMock.mockResolvedValueOnce(null);
+    getReviewExistenceByOrderIdsMock.mockResolvedValueOnce(
+      Object.fromEntries(shippedOrder.map(o => [o.id, false]))
+    );
     require("@/lib/order/actions").getSellerByOrderId.mockResolvedValue({ id: 10 });
     addReviewMock.mockResolvedValue({ success: true });
     render(
@@ -229,7 +256,9 @@ describe("OrdersTable", () => {
       totalAmount: 90,
     }];
     let reviewExists = false;
-    getReviewByOrderIdMock.mockImplementation(() => Promise.resolve(reviewExists ? { id: 1 } : null));
+    getReviewExistenceByOrderIdsMock.mockResolvedValueOnce(
+      Object.fromEntries(shippedOrder.map(o => [o.id, false]))
+    );
     require("@/lib/order/actions").getSellerByOrderId.mockResolvedValue({ id: 11 });
     addReviewMock.mockImplementation(() => { reviewExists = true; return Promise.resolve({ success: true }); });
     render(
