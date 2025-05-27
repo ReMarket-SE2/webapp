@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import { UserListings } from '@/components/listings/user-listings';
 import { ReviewsList } from '@/components/reviews/reviews-list';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockReviews } from '@/lib/reviews/mock-data';
 import { UserWithListingCounts } from '@/lib/users/actions';
+import { Review } from '@/lib/db/schema/reviews';
 
 // Animation variants
 const containerVariants = {
@@ -33,11 +33,13 @@ const itemVariants = {
 interface UserInteractiveContentProps {
   user: UserWithListingCounts;
   userId: number;
+  reviews: Review[];
 }
 
 export function UserInteractiveContent({ 
   user, 
   userId, 
+  reviews,
 }: UserInteractiveContentProps) {
   return (
     <motion.div
@@ -84,9 +86,9 @@ export function UserInteractiveContent({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <ReviewsList reviews={mockReviews} />
+          <ReviewsList reviews={reviews} />
         </motion.div>
       </Suspense>
     </motion.div>
   );
-} 
+}

@@ -17,7 +17,7 @@ import Link from 'next/link';
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useWishlistContext } from "@/components/contexts/wishlist-provider";
-import { mockReviewStats } from "@/lib/reviews/mock-data";
+import { getReviewStatsByUserId } from '@/lib/reviews/actions';
 
 
 interface ListingDetailsProps {
@@ -40,10 +40,23 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
   const userId = session.data?.user?.id;
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [reviewStats, setReviewStats] = useState<{ averageScore: number; totalReviews: number } | null>(null);
+  const [isLoadingReviewStats, setIsLoadingReviewStats] = useState(false);
 
   useEffect(() => {
     setIsInWishlist(wishlist.some(item => item.id === id));
   }, [wishlist, id]);
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (!seller?.id) return;
+      setIsLoadingReviewStats(true);
+      const stats = await getReviewStatsByUserId(seller.id);
+      setReviewStats(stats);
+      setIsLoadingReviewStats(false);
+    }
+    fetchStats();
+  }, [seller?.id]);
 
   const toggleWishlist = async () => {
     if (!userId) {
@@ -255,24 +268,32 @@ export default function ListingDetails({ listing, sessionUserId }: ListingDetail
 
             {/* Seller Rating */}
             <div className="mt-3 flex items-center gap-2">
-              <div className="flex items-center">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${
-                      i < Math.round(mockReviewStats.averageScore)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-muted-foreground"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm font-medium">
-                {mockReviewStats.averageScore.toFixed(1)}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                ({mockReviewStats.totalReviews} reviews)
-              </span>
+              {isLoadingReviewStats ? (
+                <span className="text-sm text-muted-foreground">Loading reviews...</span>
+              ) : reviewStats && reviewStats.totalReviews > 0 ? (
+                <>
+                  <div className="flex items-center">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < Math.round(reviewStats.averageScore)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-muted-foreground'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium">
+                    {reviewStats.averageScore.toFixed(1)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    ({reviewStats.totalReviews} reviews)
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm text-muted-foreground">No reviews yet</span>
+              )}
             </div>
             
             <div className="mt-3 space-y-2">

@@ -5,6 +5,7 @@ import { SessionProvider, useSession } from 'next-auth/react';
 import { useWishlistContext } from '@/components/contexts/wishlist-provider';
 import { ListingStatus } from '@/lib/db/schema/listings';
 import { deleteListing } from '@/lib/listings/actions';
+import { getReviewStatsByUserId } from '@/lib/reviews/actions';
 
 // Remove the mock implementation that's causing issues
 // Instead, we'll mock the necessary dependencies
@@ -54,6 +55,10 @@ jest.mock("@/components/contexts/wishlist-provider", () => ({
 
 jest.mock('@/lib/listings/actions', () => ({
   deleteListing: jest.fn(),
+}));
+
+jest.mock('@/lib/reviews/actions', () => ({
+  getReviewStatsByUserId: jest.fn(() => Promise.resolve({ averageScore: 4.2, totalReviews: 5 })),
 }));
 
 // Mock the UI components
@@ -144,6 +149,7 @@ describe('ListingDetails', () => {
       removeFromWishlist: jest.fn(),
       clearUserWishlist: jest.fn(),
     });
+    (getReviewStatsByUserId as jest.Mock).mockResolvedValue({ averageScore: 4.2, totalReviews: 5 });
   });
 
   it('renders the listing title and price', () => {
@@ -341,6 +347,52 @@ describe('ListingDetails', () => {
       expect(deleteListing).toHaveBeenCalledWith(1);
       expect(toast.success).toHaveBeenCalledWith('Listing deleted');
       expect(mockPush).toHaveBeenCalledWith('/listings');
+    });
+  });
+
+  it('renders seller review stats (average score and total reviews)', async () => {
+    render(
+      <SessionProvider session={null}>
+        <ListingDetails listing={mockListing} />
+      </SessionProvider>
+    );
+    // Wait for review stats to load
+    await waitFor(() => {
+      expect(screen.getByText('4.2')).toBeInTheDocument();
+      expect(screen.getByText('(5 reviews)')).toBeInTheDocument();
+    });
+    // Check that stars are rendered
+    const stars = screen.getAllByTestId('star-icon');
+    expect(stars.length).toBe(5);
+  });
+
+  it('shows "No reviews yet" if seller has no reviews', async () => {
+    (getReviewStatsByUserId as jest.Mock).mockResolvedValueOnce({ averageScore: 0, totalReviews: 0 });
+    render(
+      <SessionProvider session={null}>
+        <ListingDetails listing={mockListing} />
+      </SessionProvider>
+    );
+    await waitFor(() => {
+      expect(screen.getByText('No reviews yet')).toBeInTheDocument();
+    });
+  });
+
+  it('shows "Loading reviews..." while fetching review stats', async () => {
+    let resolveStats: (value: any) => void;
+    (getReviewStatsByUserId as jest.Mock).mockImplementationOnce(
+      () => new Promise(res => { resolveStats = res; })
+    );
+    render(
+      <SessionProvider session={null}>
+        <ListingDetails listing={mockListing} />
+      </SessionProvider>
+    );
+    expect(screen.getByText('Loading reviews...')).toBeInTheDocument();
+    // Resolve the promise to finish loading
+    resolveStats!({ averageScore: 4.2, totalReviews: 5 });
+    await waitFor(() => {
+      expect(screen.getByText('4.2')).toBeInTheDocument();
     });
   });
 });
