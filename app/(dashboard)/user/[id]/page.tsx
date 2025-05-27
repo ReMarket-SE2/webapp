@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserInteractiveContent } from '@/components/user/user-interactive-content';
 import { UserProfileCards } from '@/components/user/user-profile-cards';
+import { getReviewsByUserId } from '@/lib/reviews/actions';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -37,6 +38,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   }
   
   const profileImage = await getProfileImage(user!.profileImageId);
+  const reviews = await getReviewsByUserId(userId);
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,6 +89,7 @@ export default async function UserProfilePage({ params }: PageProps) {
           <UserInteractiveContent 
             user={user} 
             userId={userId} 
+            reviews={reviews}
           />
         </div>
       </div>

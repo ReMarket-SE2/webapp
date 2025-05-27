@@ -4,6 +4,9 @@ import OrdersTable from "@/components/orders/orders-table";
 import { ShippingLabelData } from "@/components/shipping-label/shipping-label";
 
 // Mock dependencies
+let getReviewByOrderIdMock = jest.fn();
+let addReviewMock = jest.fn();
+
 jest.mock("next/link", () => ({ children, ...props }: any) => <a {...props}>{children}</a>);
 jest.mock("sonner", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 jest.mock("@/components/shipping-label/shipping-label", () => ({
@@ -23,6 +26,10 @@ jest.mock("@/lib/order/actions", () => ({
   getSellerByOrderId: jest.fn(() => Promise.resolve({ id: 1 })),
   getBuyerByOrderId: jest.fn(() => Promise.resolve({ id: 2 })),
   markOrderAsShipped: jest.fn(() => Promise.resolve())
+}));
+jest.mock("@/lib/reviews/actions", () => ({
+  getReviewByOrderId: (...args: any[]) => getReviewByOrderIdMock(...args),
+  addReview: (...args: any[]) => addReviewMock(...args),
 }));
 
 const orders = [
@@ -126,5 +133,122 @@ describe("OrdersTable", () => {
     );
     expect(screen.queryByRole("button", { name: /Print Shipping Label/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Mark As Shipped/i })).toBeNull();
+  });
+
+  it("shows Add Review button for shipped bought orders with no review", async () => {
+    const shippedOrder = [{
+      id: 2,
+      createdAt: new Date().toISOString(),
+      status: "Shipped",
+      orderItems: [
+        { id: 2, listing: { id: 2, title: "Shipped Item", status: "Active" }, quantity: 1 }
+      ],
+      totalAmount: 50,
+    }];
+    getReviewByOrderIdMock.mockResolvedValueOnce(null);
+    render(
+      <OrdersTable
+        orders={shippedOrder as any}
+        emptyMessage="No orders"
+        redirectMessage="Go"
+        redirectURL="/"
+        isSoldTable={false}
+      />
+    );
+    await waitFor(() => expect(screen.getByRole("button", { name: /Add Review/i })).toBeInTheDocument());
+  });
+
+  it("opens Add Review dialog on button click", async () => {
+    const shippedOrder = [{
+      id: 3,
+      createdAt: new Date().toISOString(),
+      status: "Shipped",
+      orderItems: [
+        { id: 3, listing: { id: 3, title: "Review Item", status: "Active" }, quantity: 1 }
+      ],
+      totalAmount: 75,
+    }];
+    getReviewByOrderIdMock.mockResolvedValueOnce(null);
+    render(
+      <OrdersTable
+        orders={shippedOrder as any}
+        emptyMessage="No orders"
+        redirectMessage="Go"
+        redirectURL="/"
+        isSoldTable={false}
+      />
+    );
+    await waitFor(() => expect(screen.getByRole("button", { name: /Add Review/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Add Review/i }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Add Review/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Share your experience/i })).toBeInTheDocument();
+  });
+
+  it("submits review form and disables button while submitting", async () => {
+    const shippedOrder = [{
+      id: 4,
+      createdAt: new Date().toISOString(),
+      status: "Shipped",
+      orderItems: [
+        { id: 4, listing: { id: 4, title: "Review Submit Item", status: "Active" }, quantity: 1 }
+      ],
+      totalAmount: 80,
+    }];
+    getReviewByOrderIdMock.mockResolvedValueOnce(null);
+    require("@/lib/order/actions").getSellerByOrderId.mockResolvedValue({ id: 10 });
+    addReviewMock.mockResolvedValue({ success: true });
+    render(
+      <OrdersTable
+        orders={shippedOrder as any}
+        emptyMessage="No orders"
+        redirectMessage="Go"
+        redirectURL="/"
+        isSoldTable={false}
+      />
+    );
+    await waitFor(() => expect(screen.getByRole("button", { name: /Add Review/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Add Review/i }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Add Review/i })).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/Title/i), { target: { value: "Great!" } });
+    fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: "Awesome experience." } });
+    fireEvent.click(screen.getAllByRole("button", { name: /Rate 5 stars?/i })[0]);
+    const submitBtn = screen.getByRole("button", { name: /Post Review/i });
+    fireEvent.click(submitBtn);
+    expect(submitBtn).toBeDisabled();
+    await waitFor(() => expect(addReviewMock).toHaveBeenCalled());
+  });
+
+  it("closes dialog and hides Add Review after submit", async () => {
+    const shippedOrder = [{
+      id: 5,
+      createdAt: new Date().toISOString(),
+      status: "Shipped",
+      orderItems: [
+        { id: 5, listing: { id: 5, title: "Review Hide Item", status: "Active" }, quantity: 1 }
+      ],
+      totalAmount: 90,
+    }];
+    let reviewExists = false;
+    getReviewByOrderIdMock.mockImplementation(() => Promise.resolve(reviewExists ? { id: 1 } : null));
+    require("@/lib/order/actions").getSellerByOrderId.mockResolvedValue({ id: 11 });
+    addReviewMock.mockImplementation(() => { reviewExists = true; return Promise.resolve({ success: true }); });
+    render(
+      <OrdersTable
+        orders={shippedOrder as any}
+        emptyMessage="No orders"
+        redirectMessage="Go"
+        redirectURL="/"
+        isSoldTable={false}
+      />
+    );
+    await waitFor(() => expect(screen.getByRole("button", { name: /Add Review/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Add Review/i }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Add Review/i })).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/Title/i), { target: { value: "Nice" } });
+    fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: "Very good." } });
+    fireEvent.click(screen.getAllByRole("button", { name: /Rate 5 stars?/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Post Review/i }));
+    await waitFor(() => expect(screen.queryByRole("heading", { name: /Add Review/i })).toBeNull());
+    expect(screen.queryByRole("button", { name: /Add Review/i })).toBeNull();
   });
 });
