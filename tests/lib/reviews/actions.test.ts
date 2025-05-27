@@ -1,4 +1,4 @@
-import { addReview, getReviewsByUserId, getReviewByOrderId } from '@/lib/reviews/actions'
+import { addReview, getReviewsByUserId, getReviewByOrderId, getReviewStatsByUserId } from '@/lib/reviews/actions'
 import { db } from '@/lib/db'
 
 jest.mock('@/lib/db', () => ({
@@ -44,4 +44,34 @@ describe('getReviewByOrderId', () => {
     await getReviewByOrderId(orderId)
     expect(db.select).toHaveBeenCalled()
   })
+})
+
+describe('getReviewStatsByUserId', () => {
+  it('returns 0 average and 0 total if no reviews', async () => {
+    (db.select as jest.Mock).mockReturnValueOnce({
+      from: jest.fn(() => ({ where: jest.fn(() => []) }))
+    });
+    const stats = await getReviewStatsByUserId(1);
+    expect(stats).toEqual({ averageScore: 0, totalReviews: 0 });
+  });
+
+  it('returns correct average and total for one review', async () => {
+    (db.select as jest.Mock).mockReturnValueOnce({
+      from: jest.fn(() => ({ where: jest.fn(() => [{ score: 4 }]) }))
+    });
+    const stats = await getReviewStatsByUserId(1);
+    expect(stats).toEqual({ averageScore: 4, totalReviews: 1 });
+  });
+
+  it('returns correct average and total for multiple reviews', async () => {
+    (db.select as jest.Mock).mockReturnValueOnce({
+      from: jest.fn(() => ({ where: jest.fn(() => [
+        { score: 5 },
+        { score: 3 },
+        { score: 4 },
+      ]) }))
+    });
+    const stats = await getReviewStatsByUserId(1);
+    expect(stats).toEqual({ averageScore: 4, totalReviews: 3 });
+  });
 })

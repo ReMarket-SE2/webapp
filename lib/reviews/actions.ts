@@ -33,3 +33,16 @@ export async function getReviewsByUserId(userId: number) {
 export async function getReviewByOrderId(orderId: number) {
   return db.select().from(reviews).where(eq(reviews.orderId, orderId)).limit(1).then(rows => rows[0])
 }
+
+export interface ReviewStats {
+  averageScore: number;
+  totalReviews: number;
+}
+
+export async function getReviewStatsByUserId(userId: number): Promise<ReviewStats> {
+  const rows = await db.select({ score: reviews.score }).from(reviews).where(eq(reviews.userId, userId));
+  if (!rows.length) return { averageScore: 0, totalReviews: 0 };
+  const totalReviews = rows.length;
+  const averageScore = rows.reduce((sum, r) => sum + r.score, 0) / totalReviews;
+  return { averageScore, totalReviews };
+}
