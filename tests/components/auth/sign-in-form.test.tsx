@@ -94,7 +94,7 @@ describe("SignInForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Login with Google" }))
 
     await waitFor(() => {
-      expect(signIn).toHaveBeenCalledWith("google", { callbackUrl: "/" })
+      expect(signIn).toHaveBeenCalledWith("google", { callbackUrl: "/", redirect: false})
     })
   })
 

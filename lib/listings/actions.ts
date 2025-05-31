@@ -231,10 +231,16 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
           username: users.username,
           profileImageId: users.profileImageId,
           bio: users.bio,
+          status: users.status,
         })
         .from(users)
         .where(eq(users.id, listing.sellerId))
         .limit(1);
+
+      // If seller is suspended, return null to hide the listing
+      if (user?.status === 'suspended') {
+        return null;
+      }
 
       if (user) {
         // Get profile image if exists
@@ -329,6 +335,13 @@ export async function getAllListings(options?: {
     }
 
     conditions.push(not(eq(listings.status, 'Sold')));
+    
+    // Exclude listings from suspended users
+    conditions.push(sql`EXISTS (
+      SELECT 1 FROM ${users} 
+      WHERE ${users.id} = ${listings.sellerId} 
+      AND ${users.status} != 'suspended'
+    )`);
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 

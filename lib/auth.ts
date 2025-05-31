@@ -47,11 +47,17 @@ const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProv
       const passwordsMatch = await bcrypt.compare(password, user.passwordHash)
       if (!passwordsMatch) return null
 
+      // Check if user is suspended
+      if (user.status === 'suspended') {
+        throw new Error('ACCOUNT_SUSPENDED')
+      }
+
       return {
         id: String(user.id),
         email: user.email,
         name: user.username,
         role: user.role,
+        status: user.status,
       }
     }
   }),
@@ -104,11 +110,17 @@ export const authOptions: NextAuthOptions = {
           .then(rows => rows[0]);
 
         if (existingOAuth) {
+          // Check if user is suspended
+          if (existingOAuth.users.status === 'suspended') {
+            throw new Error('ACCOUNT_SUSPENDED')
+          }
+          
           // User already exists, update their session
           user.id = String(existingOAuth.users.id);
           user.email = existingOAuth.users.email;
           user.name = existingOAuth.users.username;
           user.role = existingOAuth.users.role;
+          user.status = existingOAuth.users.status;
           return true;
         }
 
@@ -132,6 +144,11 @@ export const authOptions: NextAuthOptions = {
         const existingUser = await findUserByEmail(profile?.email as string);
         
         if (existingUser) {
+          // Check if user is suspended
+          if (existingUser.status === 'suspended') {
+            throw new Error('ACCOUNT_SUSPENDED')
+          }
+          
           // Update existing user's profile image if provided
           if (photoId) {
             await db.update(users)
@@ -150,6 +167,7 @@ export const authOptions: NextAuthOptions = {
           user.email = existingUser.email;
           user.name = existingUser.username;
           user.role = existingUser.role;
+          user.status = existingUser.status;
           return true;
         }
 
@@ -185,6 +203,7 @@ export const authOptions: NextAuthOptions = {
         user.email = newUser.email;
         user.name = newUser.username;
         user.role = newUser.role;
+        user.status = newUser.status;
         return true;
       } catch (error) {
         console.error('Error in signIn callback:', error);
@@ -195,6 +214,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.status = user.status;
       }
       return token;
     },
@@ -205,6 +225,7 @@ export const authOptions: NextAuthOptions = {
            username: users.username,
            email: users.email,
            role: users.role,
+           status: users.status,
            image: photos.image,
          })
          .from(users)
@@ -217,6 +238,7 @@ export const authOptions: NextAuthOptions = {
          session.user.name  = dbUser.username;
          session.user.email = dbUser.email;
          session.user.role  = dbUser.role;
+         session.user.status = dbUser.status;
          session.user.image = dbUser.image ?? undefined;
        }
       return session;

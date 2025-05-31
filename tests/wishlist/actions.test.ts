@@ -5,7 +5,13 @@ jest.mock('@/lib/db', () => {
   return { db: { select, insert, delete: del } }
 })
 
+// Mock next-auth
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn(),
+}));
+
 import { db } from '@/lib/db'
+import { getServerSession } from 'next-auth'
 import * as actions from '@/lib/wishlist/actions'
 import { wishlists } from '@/lib/db/schema/wishlists'
 import { wishlistListings } from '@/lib/db/schema/wishlist_listings'
@@ -16,8 +22,14 @@ const selectMock = db.select as jest.Mock
 const insertMock = db.insert as jest.Mock
 const deleteMock = db.delete as jest.Mock
 
+// Mock session constants
+const mockAuthenticatedSession = { user: { id: '1', role: 'user', status: 'active' } };
+const mockSuspendedSession = { user: { id: '1', role: 'user', status: 'suspended' } };
+
 describe('wishlist actions', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks();
+  })
 
   it('getWishlistListingsByUserId returns joined listings', async () => {
     const fakeWishlist = { id: 1, userId: 42 }
@@ -46,6 +58,9 @@ describe('wishlist actions', () => {
   })
 
   it('addListingToWishlist inserts one entry', async () => {
+    // Mock authenticated session
+    (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+    
     const fakeWishlist = { id: 2, userId: 1 }
     const selectBuilder = {
       from: jest.fn().mockReturnThis(),
@@ -68,6 +83,9 @@ describe('wishlist actions', () => {
   })
 
   it('removeListingFromWishlist deletes the right record', async () => {
+    // Mock authenticated session
+    (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+    
     const fakeWishlist = { id: 3, userId: 5 }
     const selectBuilder = {
       from: jest.fn().mockReturnThis(),
@@ -87,6 +105,9 @@ describe('wishlist actions', () => {
   })
 
   it('clearWishlist removes all entries', async () => {
+    // Mock authenticated session
+    (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+    
     const fakeWishlist = { id: 7, userId: 9 }
     const selectBuilder = {
       from: jest.fn().mockReturnThis(),
@@ -106,6 +127,9 @@ describe('wishlist actions', () => {
   })
 
   it('createWishlist inserts a new wishlist', async () => {
+    // Mock authenticated session
+    (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+    
     const insertBuilder = { 
       values: jest.fn().mockReturnThis(),
       returning: jest.fn().mockResolvedValue([{ id: 11 }])
@@ -120,6 +144,9 @@ describe('wishlist actions', () => {
   })
 
   it('deleteWishlist removes the wishlist record', async () => {
+    // Mock authenticated session
+    (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+    
     const deleteBuilder = { where: jest.fn().mockResolvedValue({ success: true }) }
     deleteMock.mockReturnValue(deleteBuilder)
 
@@ -131,6 +158,9 @@ describe('wishlist actions', () => {
   })
 
   it('creates a new wishlist if none is found', async () => {
+    // Mock authenticated session for the createWishlist call
+    (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+    
     const insertBuilder = { 
       values: jest.fn().mockReturnThis(),
       returning: jest.fn().mockResolvedValue([{ id: 15 }])
@@ -142,10 +172,10 @@ describe('wishlist actions', () => {
       innerJoin: jest.fn().mockReturnThis(),
     }
 
-    selectMock.mockImplementationOnce(() => selectBuilder)
-    insertMock.mockReturnValue(insertBuilder)
+    selectMock.mockImplementationOnce(() => selectBuilder) // getWishlistByUserId returns empty
+    insertMock.mockReturnValue(insertBuilder) // createWishlist
 
-    selectMock.mockImplementationOnce(() => selectBuilder)
+    selectMock.mockImplementationOnce(() => selectBuilder) // final query
     await actions.getWishlistListingsByUserId(99)
 
     expect(selectMock).toHaveBeenCalledWith()

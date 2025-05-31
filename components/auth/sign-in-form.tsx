@@ -55,7 +55,12 @@ export function SignInForm({
       })
 
       if (result?.error) {
-        toast.error("Invalid email or password")
+        if (result.error === 'ACCOUNT_SUSPENDED') {
+          toast.error("Your account has been suspended. Contact support for assistance.")
+          router.push("/suspended")
+        } else {
+          toast.error("Invalid email or password")
+        }
       } else {
         toast.success("Successfully logged in!")
         router.push(result?.url || "/")
@@ -73,7 +78,21 @@ export function SignInForm({
 
     setIsLoading(true)
 
-    signIn("google", { callbackUrl: returnTo }).catch((error) => {
+    signIn("google", { 
+      callbackUrl: returnTo,
+      redirect: false 
+    }).then((result) => {
+      if (result?.error) {
+        if (result.error === 'ACCOUNT_SUSPENDED') {
+          toast.error("Your account has been suspended. Contact support for assistance.")
+          router.push("/suspended")
+        } else {
+          toast.error("Failed to login with Google")
+        }
+      } else if (result?.url) {
+        router.push(result.url)
+      }
+    }).catch((error) => {
       console.error('Google login error:', error)
       toast.error("Failed to login with Google")
     }).finally(() => {
