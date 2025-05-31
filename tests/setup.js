@@ -36,7 +36,7 @@ require('@testing-library/jest-dom');
 jest.mock('@/lib/users/actions', () => ({
   createUser: jest.fn(),
   findUserByEmail: jest.fn(),
-  findUserById: jest.fn(),
+  getUserById: jest.fn(),
   updateUser: jest.fn(),
   deleteUser: jest.fn(),
   updatePassword: jest.fn(),

@@ -3,14 +3,14 @@
  */
 
 import { POST } from '@/app/api/auth/reset-password/route';
-import { validateResetToken, updateUser, findUserById } from '@/lib/users/actions';
+import { validateResetToken, updateUser, getUserById } from '@/lib/users/actions';
 import { checkPasswordStrength } from '@/lib/validators/password-strength';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
 
 const mockValidateResetToken = validateResetToken as jest.Mock;
 const mockUpdateUser = updateUser as jest.Mock;
-const mockFindUserById = findUserById as jest.Mock;
+const mockGetUserById = getUserById as jest.Mock;
 const mockJwtVerify = jwtVerify as jest.Mock;
 const mockPasswordValidator = checkPasswordStrength as jest.Mock;
 const mockBcryptHash = bcrypt.hash as jest.Mock;
@@ -28,7 +28,7 @@ jest.mock('next/server', () => ({
 jest.mock('@/lib/users/actions', () => ({
   validateResetToken: jest.fn(),
   updateUser: jest.fn(),
-  findUserById: jest.fn(),
+  getUserById: jest.fn(),
 }));
 
 describe('POST /api/auth/reset-password', () => {
@@ -54,8 +54,8 @@ describe('POST /api/auth/reset-password', () => {
     // Ensure bcrypt hash returns a consistent value
     mockBcryptHash.mockResolvedValue('hashed-password');
 
-    // Mock findUserById to return a valid user
-    mockFindUserById.mockResolvedValue({
+    // Mock getUserById to return a valid user
+    mockGetUserById.mockResolvedValue({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -94,7 +94,7 @@ describe('POST /api/auth/reset-password', () => {
     expect(mockBcryptHash).toHaveBeenCalledWith('NewP@ssword123', 10);
 
     // Verify user was fetched
-    expect(mockFindUserById).toHaveBeenCalledWith(1);
+    expect(mockGetUserById).toHaveBeenCalledWith(1);
 
     // Verify reset token was validated
     expect(mockValidateResetToken).toHaveBeenCalledWith(
