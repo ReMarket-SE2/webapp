@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
-import { findUserById, validateResetToken, updateUser, } from '@/lib/users/actions'
+import { getUserById, validateResetToken, updateUser, } from '@/lib/users/actions'
 import { checkPasswordStrength } from '@/lib/validators/password-strength'
 
 // POST /api/auth/reset-password
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Find user
-    const user = await findUserById(payload.userId as number)
+    const user = await getUserById(payload.userId as number)
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },

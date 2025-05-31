@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { findUserById, getProfileImage } from '@/lib/users/actions';
+import { findUserByIdWithListings, getProfileImage } from '@/lib/users/actions';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
@@ -25,7 +25,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
   const isOwnProfile = session?.user?.id === id;
   
-  const user = await findUserById(userId, {
+  const user = await findUserByIdWithListings(userId, {
     page: 1,
     pageSize: 10,
     sortOrder: 'desc',
