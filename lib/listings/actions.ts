@@ -12,6 +12,8 @@ import { eq, inArray, asc, desc, sql, and, not } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import { users } from '@/lib/db/schema/users';
 import { count } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -113,6 +115,22 @@ export async function createListing(
   photoData: string[] = []
 ): Promise<{ success: boolean; listingId?: number; error?: string }> {
   try {
+    // Check if user is suspended
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return {
+        success: false,
+        error: 'Authentication required',
+      };
+    }
+
+    if (session.user.status === 'suspended') {
+      return {
+        success: false,
+        error: 'Account suspended. You cannot create listings while suspended.',
+      };
+    }
+
     // Validate form data
     const validatedData = listingSchema.parse(formData);
 
@@ -231,10 +249,16 @@ export async function getListingById(id: number): Promise<ListingWithPhotos | nu
           username: users.username,
           profileImageId: users.profileImageId,
           bio: users.bio,
+          status: users.status,
         })
         .from(users)
         .where(eq(users.id, listing.sellerId))
         .limit(1);
+
+      // If seller is suspended, return null to hide the listing
+      if (user?.status === 'suspended') {
+        return null;
+      }
 
       if (user) {
         // Get profile image if exists
@@ -329,6 +353,13 @@ export async function getAllListings(options?: {
     }
 
     conditions.push(not(eq(listings.status, 'Sold')));
+    
+    // Exclude listings from suspended users
+    conditions.push(sql`EXISTS (
+      SELECT 1 FROM ${users} 
+      WHERE ${users.id} = ${listings.sellerId} 
+      AND ${users.status} != 'suspended'
+    )`);
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -424,6 +455,22 @@ export async function getAllListings(options?: {
 
 export async function deleteListing(id: number): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if user is suspended
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return {
+        success: false,
+        error: 'Authentication required',
+      };
+    }
+
+    if (session.user.status === 'suspended') {
+      return {
+        success: false,
+        error: 'Account suspended. You cannot delete listings while suspended.',
+      };
+    }
+
     await db.delete(listings).where(eq(listings.id, id));
     revalidatePath('/');
     return { success: true };
@@ -439,6 +486,22 @@ export async function updateListing(
   photoData: string[] = []
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if user is suspended
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return {
+        success: false,
+        error: 'Authentication required',
+      };
+    }
+
+    if (session.user.status === 'suspended') {
+      return {
+        success: false,
+        error: 'Account suspended. You cannot modify listings while suspended.',
+      };
+    }
+
     // Validate form data
     const validatedData = listingSchema.parse(formData);
 
@@ -489,6 +552,22 @@ export async function setListingStatus(
   status: ListingStatus
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if user is suspended
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return {
+        success: false,
+        error: 'Authentication required',
+      };
+    }
+
+    if (session.user.status === 'suspended') {
+      return {
+        success: false,
+        error: 'Account suspended. You cannot modify listing status while suspended.',
+      };
+    }
+
     await db.update(listings).set({ status }).where(eq(listings.id, id));
     revalidatePath(`/listing/${id}`);
     return { success: true };

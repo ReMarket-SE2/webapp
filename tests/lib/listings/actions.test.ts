@@ -11,6 +11,13 @@ import { photos } from '@/lib/db/schema/photos';
 import { listingPhotos } from '@/lib/db/schema/listing_photos';
 import { revalidatePath } from 'next/cache';
 import { eq, inArray, relations, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+
+// Mock dependencies
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn(),
+  authOptions: {}, // Mock authOptions if it's directly used, otherwise not needed here
+}));
 
 // Mock the database and revalidatePath
 jest.mock('@/lib/db', () => {
@@ -108,14 +115,22 @@ jest.mock('@/lib/db/schema/listing_photos', () => ({
   listingPhotos: {},
 }));
 
+const mockAuthenticatedSession = { user: { id: '1', role: 'user', status: 'active' } };
+const mockAdminSession = { user: { id: '1', role: 'admin', status: 'active' } };
+const mockSuspendedSession = { user: { id: '1', role: 'user', status: 'suspended' } };
+
 describe('Listing Actions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
+    // Don't clear the getServerSession mock here - it should be set in each test
   });
 
   describe('createListing', () => {
     test('should create a listing successfully', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       // Setup mocks for a successful listing creation
       const mockListingId = 123;
       const mockDbInsert = db.insert as jest.Mock;
@@ -161,6 +176,9 @@ describe('Listing Actions', () => {
     });
 
     test('should handle photo uploads', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       // Setup mocks for a successful listing and photo creation
       const mockListingId = 123;
       const mockPhotoId = 456;
@@ -207,6 +225,9 @@ describe('Listing Actions', () => {
     });
 
     test('should handle validation errors', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       const listingData = {
         title: '', // Empty title should fail validation
         price: 0, // Zero price should fail validation
@@ -219,6 +240,40 @@ describe('Listing Actions', () => {
       // Verify the results
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy(); // Should have some error message
+    });
+
+    test('should fail when user is not authenticated', async () => {
+      // Mock no session
+      (getServerSession as jest.Mock).mockResolvedValue(null);
+      
+      const listingData = {
+        title: 'Test Listing',
+        price: 100,
+        status: 'Draft' as const,
+        sellerId: 1,
+      };
+
+      const result = await createListing(listingData, []);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Authentication required');
+    });
+
+    test('should fail when user is suspended', async () => {
+      // Mock suspended session
+      (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
+      
+      const listingData = {
+        title: 'Test Listing',
+        price: 100,
+        status: 'Draft' as const,
+        sellerId: 1,
+      };
+
+      const result = await createListing(listingData, []);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Account suspended. You cannot create listings while suspended.');
     });
   });
 
@@ -762,6 +817,9 @@ describe('Listing Actions', () => {
 
   describe('updateListing', () => {
     test('should update listing successfully without photos', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       const mockDbUpdate = db.update as jest.Mock;
       mockDbUpdate.mockReturnValueOnce({
         set: jest.fn().mockReturnThis(),
@@ -784,6 +842,9 @@ describe('Listing Actions', () => {
     });
 
     test('should replace photos when new photo data is provided', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       const mockDbUpdate = db.update as jest.Mock;
       const mockDbDelete = db.delete as jest.Mock;
       const mockInsert = db.insert as jest.Mock;
@@ -819,6 +880,9 @@ describe('Listing Actions', () => {
     });
 
     test('should return error on validation failure', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       const mockFormData = {
         title: '',
         price: 0,
@@ -829,10 +893,43 @@ describe('Listing Actions', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();
     });
+
+    test('should fail when user is not authenticated', async () => {
+      // Mock no session
+      (getServerSession as jest.Mock).mockResolvedValue(null);
+      
+      const mockFormData = {
+        title: 'Updated Listing',
+        price: 150,
+        status: 'Active' as const,
+        sellerId: 1,
+      };
+      const result = await updateListing(1, mockFormData, []);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Authentication required');
+    });
+
+    test('should fail when user is suspended', async () => {
+      // Mock suspended session
+      (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
+      
+      const mockFormData = {
+        title: 'Updated Listing',
+        price: 150,
+        status: 'Active' as const,
+        sellerId: 1,
+      };
+      const result = await updateListing(1, mockFormData, []);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Account suspended. You cannot modify listings while suspended.');
+    });
   });
 
   describe('deleteListing', () => {
     test('should delete listing successfully', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       const mockDbDelete = db.delete as jest.Mock;
       mockDbDelete.mockReturnValueOnce({
         where: jest.fn().mockReturnThis(),
@@ -843,7 +940,28 @@ describe('Listing Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/');
     });
 
-    test('should not return sold listings', async () => {
+    test('should fail when user is not authenticated', async () => {
+      // Mock no session
+      (getServerSession as jest.Mock).mockResolvedValue(null);
+      
+      const result = await deleteListing(1);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Authentication required');
+    });
+
+    test('should fail when user is suspended', async () => {
+      // Mock suspended session
+      (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
+      
+      const result = await deleteListing(1);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Account suspended. You cannot delete listings while suspended.');
+    });
+
+    test('should handle database error', async () => {
+      // Mock authenticated session
+      (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
+      
       const mockDbDelete = db.delete as jest.Mock;
       mockDbDelete.mockImplementationOnce(() => {
         throw new Error('Delete failed');
