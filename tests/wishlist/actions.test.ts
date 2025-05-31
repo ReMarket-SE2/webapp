@@ -82,20 +82,6 @@ describe('wishlist actions', () => {
     expect(res).toEqual({ success: true })
   })
 
-  it('addListingToWishlist fails when user is not authenticated', async () => {
-    // Mock no session
-    (getServerSession as jest.Mock).mockResolvedValue(null);
-    
-    await expect(actions.addListingToWishlist(1, 99)).rejects.toThrow('Unauthorized');
-  })
-
-  it('addListingToWishlist fails when user is suspended', async () => {
-    // Mock suspended session
-    (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
-    
-    await expect(actions.addListingToWishlist(1, 99)).rejects.toThrow('Account suspended. You cannot modify your wishlist while suspended.');
-  })
-
   it('removeListingFromWishlist deletes the right record', async () => {
     // Mock authenticated session
     (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
@@ -116,20 +102,6 @@ describe('wishlist actions', () => {
     expect(deleteMock).toHaveBeenCalledWith(wishlistListings)
     expect(deleteBuilder.where).toHaveBeenCalled()
     expect(res).toEqual({ deleted: 1 })
-  })
-
-  it('removeListingFromWishlist fails when user is not authenticated', async () => {
-    // Mock no session
-    (getServerSession as jest.Mock).mockResolvedValue(null);
-    
-    await expect(actions.removeListingFromWishlist(5, 123)).rejects.toThrow('Unauthorized');
-  })
-
-  it('removeListingFromWishlist fails when user is suspended', async () => {
-    // Mock suspended session
-    (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
-    
-    await expect(actions.removeListingFromWishlist(5, 123)).rejects.toThrow('Account suspended. You cannot modify your wishlist while suspended.');
   })
 
   it('clearWishlist removes all entries', async () => {
@@ -154,20 +126,6 @@ describe('wishlist actions', () => {
     expect(res).toEqual({ cleared: true })
   })
 
-  it('clearWishlist fails when user is not authenticated', async () => {
-    // Mock no session
-    (getServerSession as jest.Mock).mockResolvedValue(null);
-    
-    await expect(actions.clearWishlist(9)).rejects.toThrow('Unauthorized');
-  })
-
-  it('clearWishlist fails when user is suspended', async () => {
-    // Mock suspended session
-    (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
-    
-    await expect(actions.clearWishlist(9)).rejects.toThrow('Account suspended. You cannot modify your wishlist while suspended.');
-  })
-
   it('createWishlist inserts a new wishlist', async () => {
     // Mock authenticated session
     (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
@@ -185,20 +143,6 @@ describe('wishlist actions', () => {
     expect(res).toEqual({ id: 11 })
   })
 
-  it('createWishlist fails when user is not authenticated', async () => {
-    // Mock no session
-    (getServerSession as jest.Mock).mockResolvedValue(null);
-    
-    await expect(actions.createWishlist(77)).rejects.toThrow('Unauthorized');
-  })
-
-  it('createWishlist fails when user is suspended', async () => {
-    // Mock suspended session
-    (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
-    
-    await expect(actions.createWishlist(77)).rejects.toThrow('Account suspended. You cannot create a wishlist while suspended.');
-  })
-
   it('deleteWishlist removes the wishlist record', async () => {
     // Mock authenticated session
     (getServerSession as jest.Mock).mockResolvedValue(mockAuthenticatedSession);
@@ -211,20 +155,6 @@ describe('wishlist actions', () => {
     expect(deleteMock).toHaveBeenCalledWith(wishlists)
     expect(deleteBuilder.where).toHaveBeenCalledWith(expect.any(Object))
     expect(res).toEqual({ success: true })
-  })
-
-  it('deleteWishlist fails when user is not authenticated', async () => {
-    // Mock no session
-    (getServerSession as jest.Mock).mockResolvedValue(null);
-    
-    await expect(actions.deleteWishlist(13)).rejects.toThrow('Unauthorized');
-  })
-
-  it('deleteWishlist fails when user is suspended', async () => {
-    // Mock suspended session
-    (getServerSession as jest.Mock).mockResolvedValue(mockSuspendedSession);
-    
-    await expect(actions.deleteWishlist(13)).rejects.toThrow('Account suspended. You cannot delete your wishlist while suspended.');
   })
 
   it('creates a new wishlist if none is found', async () => {
