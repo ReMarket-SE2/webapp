@@ -4,7 +4,6 @@ import { db } from '@/lib/db';
 import { wishlistListings } from '@/lib/db/schema/wishlist_listings';
 import { wishlists } from '@/lib/db/schema/wishlists';
 import { listings } from '@/lib/db/schema/listings';
-import { users } from '@/lib/db/schema/users';
 import { eq, and } from 'drizzle-orm';
 
 interface Wishlist {
@@ -44,16 +43,10 @@ export async function getWishlistListingsByUserId(userId: number) {
     .select({ id: wishlistListings.listingId, title: listings.title })
     .from(wishlistListings)
     .innerJoin(listings, eq(wishlistListings.listingId, listings.id))
-    .innerJoin(users, eq(listings.sellerId, users.id))
-    .where(
-      and(
-        eq(wishlistListings.wishlistId, wishlist.id),
-        eq(users.status, 'active')
-      )
-    );
+    .where(eq(wishlistListings.wishlistId, wishlist.id));
 }
 
-export async function addListingToWishlist(userId: number, listingId: number) {  
+export async function addListingToWishlist(userId: number, listingId: number) {
   const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db.insert(wishlistListings).values({
