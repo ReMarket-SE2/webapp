@@ -48,10 +48,58 @@ export interface UserListingsOptions {
   categoryId?: number | null;
 }
 
-export async function findUserById(
-  id: number,
+export interface UserListingsCounts {
+  activeListingsCount: number;
+  archivedListingsCount: number;
+  soldListingsCount: number;
+}
+
+/**
+ * Fetches a user by ID without any additional data.
+ * Use this for basic user operations like authentication, password reset, etc.
+ */
+export async function findUserById(id: number): Promise<User | null> {
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return user || null;
+}
+
+/**
+ * Fetches user's listing counts by status for a specific seller.
+ */
+export async function getUserListingsCounts(sellerId: number): Promise<UserListingsCounts> {
+  // Get count of active listings
+  const [activeCountResult] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(and(eq(listings.status, 'Active'), eq(listings.sellerId, sellerId)));
+
+  // Get count of archived listings
+  const [archivedCountResult] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(and(eq(listings.status, 'Archived'), eq(listings.sellerId, sellerId)));
+
+  // Get count of sold listings
+  const [soldCountResult] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(and(eq(listings.status, 'Sold'), eq(listings.sellerId, sellerId)));
+
+  return {
+    activeListingsCount: activeCountResult?.count || 0,
+    archivedListingsCount: archivedCountResult?.count || 0,
+    soldListingsCount: soldCountResult?.count || 0,
+  };
+}
+
+/**
+ * Fetches user's active listings with proper photo attachment.
+ * Each listing gets exactly one photo (the first one found).
+ */
+export async function getUserActiveListings(
+  sellerId: number,
   options: UserListingsOptions = {}
-): Promise<UserWithListingCounts | null> {
+): Promise<{ listings: ShortListing[]; totalCount: number }> {
   const {
     page = 1,
     pageSize = 10,
@@ -59,44 +107,17 @@ export async function findUserById(
     categoryId = null,
   } = options;
 
-  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  
-  if (!user) {
-    return null;
-  }
-
-  // Get count of active listings
-  const [activeCountResult] = await db // Renamed to avoid conflict with imported 'count'
-    .select({ count: count() })
-    .from(listings)
-    .where(eq(listings.status, 'Active'));
-
-  // Get count of archived listings
-  const [archivedCountResult] = await db // Renamed
-    .select({ count: count() })
-    .from(listings)
-    .where(eq(listings.status, 'Archived'));
-
-  // Get count of sold listings
-  const [soldCountResult] = await db // Renamed
-    .select({ count: count() })
-    .from(listings)
-    .where(eq(listings.status, 'Sold'));
-
-  // Get all categories
-  const allCategories = await db
-    .select({
-      id: categories.id,
-      name: categories.name,
-    })
-    .from(categories)
-    .orderBy(categories.name);
-
   // Build conditions for active listings
-  const conditions = [eq(listings.status, 'Active'), eq(listings.sellerId, id)]; // Added sellerId condition
+  const conditions = [eq(listings.status, 'Active'), eq(listings.sellerId, sellerId)];
   if (categoryId !== null) {
     conditions.push(eq(listings.categoryId, categoryId));
   }
+
+  // Get total count of filtered listings
+  const [totalCountResult] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(and(...conditions));
 
   // Get active listings with pagination and sorting
   const activeListings = await db
@@ -116,75 +137,128 @@ export async function findUserById(
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
-  // Get total count of filtered listings
-  const [totalCountResultFiltered] = await db // Renamed
-    .select({ count: count() })
-    .from(listings)
-    .where(and(...conditions));
+  // Attach photos to listings - get exactly one photo per listing
+  const listingsWithPhotos = await attachPhotosToListings(activeListings);
 
-  // Batch fetch photos for all listings
-  const listingIds = activeListings.map(listing => listing.id);
-  let listingsWithPhotos: ShortListing[] = [];
+  return {
+    listings: listingsWithPhotos,
+    totalCount: totalCountResult?.count || 0,
+  };
+}
 
-  if (listingIds.length > 0) {
-    const listingPhotoLinks = await db
-      .select({
-        listingId: listingPhotos.listingId,
-        photoId: listingPhotos.photoId,
-      })
-      .from(listingPhotos)
-      .where(and(inArray(listingPhotos.listingId, listingIds)))
-      .limit(listingIds.length); // Limit by the number of listings to avoid fetching too many links if a listing has multiple photos (though schema implies one primary)
+interface ActiveListingsQuery {
+  id: number;
+  title: string;
+  price: string;
+  categoryId: number | null;
+  category: string | null;
+  createdAt: Date;
+  sellerId: number;
+}
 
-    if (listingPhotoLinks.length > 0) {
-      const photoIds = listingPhotoLinks.map(link => link.photoId);
-      const photosData = await db
-        .select({
-          id: photos.id,
-          image: photos.image,
-        })
-        .from(photos)
-        .where(and(inArray(photos.id, photoIds)));
-
-      const photoMap = new Map(
-        photosData.map(photo => [photo.id, photo.image])
-      );
-
-      listingsWithPhotos = activeListings.map(listing => {
-        const photoLink = listingPhotoLinks.find(link => link.listingId === listing.id);
-        const photo = photoLink ? photoMap.get(photoLink.photoId) ?? null : null;
-        return {
-          ...listing,
-          categoryId: listing.categoryId, // Ensure categoryId is present
-          sellerId: listing.sellerId, // Ensure sellerId is present
-          photo,
-        };
-      });
-    } else {
-       listingsWithPhotos = activeListings.map(listing => ({
-        ...listing,
-        categoryId: listing.categoryId,
-        sellerId: listing.sellerId,
-        photo: null,
-      }));
-    }
-  } else {
-     listingsWithPhotos = activeListings.map(listing => ({
-      ...listing,
-      categoryId: listing.categoryId,
-      sellerId: listing.sellerId,
-      photo: null,
-    }));
+/**
+ * Helper function to attach the first photo to each listing.
+ * This fixes the photo fetching logic to ensure each listing gets its own photo.
+ */
+async function attachPhotosToListings(listings: ActiveListingsQuery[]): Promise<ShortListing[]> {
+  if (listings.length === 0) {
+    return [];
   }
 
+  const listingIds = listings.map(listing => listing.id);
+  
+  // Use window function to get only the first photo for each listing
+  // This ensures exactly one photo per listing
+  const listingPhotoLinks = await db
+    .select({
+      listingId: listingPhotos.listingId,
+      photoId: listingPhotos.photoId,
+    })
+    .from(listingPhotos)
+    .where(inArray(listingPhotos.listingId, listingIds));
+
+  // Group by listingId and take only the first photo for each listing
+  const firstPhotoPerListing = new Map<number, number>();
+  listingPhotoLinks.forEach(link => {
+    if (!firstPhotoPerListing.has(link.listingId)) {
+      firstPhotoPerListing.set(link.listingId, link.photoId);
+    }
+  });
+
+  // Fetch photo data for the selected photos
+  let photoMap = new Map<number, string>();
+  if (firstPhotoPerListing.size > 0) {
+    const photoIds = Array.from(firstPhotoPerListing.values());
+    const photosData = await db
+      .select({
+        id: photos.id,
+        image: photos.image,
+      })
+      .from(photos)
+      .where(inArray(photos.id, photoIds));
+
+    photoMap = new Map(photosData.map(photo => [photo.id, photo.image]));
+  }
+
+  // Attach photos to listings
+  return listings.map(listing => {
+    const photoId = firstPhotoPerListing.get(listing.id);
+    const photo = photoId ? photoMap.get(photoId) ?? null : null;
+    
+    return {
+      id: listing.id,
+      title: listing.title,
+      price: listing.price,
+      category: listing.category,
+      categoryId: listing.categoryId ?? null,
+      photo,
+      createdAt: listing.createdAt,
+      sellerId: listing.sellerId,
+    };
+  });
+}
+
+/**
+ * Fetches all categories for display.
+ */
+export async function getAllCategories(): Promise<{ id: number; name: string }[]> {
+  return await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+    })
+    .from(categories)
+    .orderBy(categories.name);
+}
+
+/**
+ * Fetches a user with their listing counts and active listings.
+ * Use this for user profile pages that need to display listing information.
+ */
+export async function findUserByIdWithListings(
+  id: number,
+  options: UserListingsOptions = {}
+): Promise<UserWithListingCounts | null> {
+  // Get base user data
+  const user = await findUserById(id);
+  if (!user) {
+    return null;
+  }
+
+  // Get listing counts
+  const listingsCounts = await getUserListingsCounts(id);
+
+  // Get active listings
+  const { listings: activeListings, totalCount } = await getUserActiveListings(id, options);
+
+  // Get all categories
+  const allCategories = await getAllCategories();
 
   return {
     ...user,
-    activeListingsCount: activeCountResult?.count || 0,
-    archivedListingsCount: archivedCountResult?.count || 0,
-    soldListingsCount: soldCountResult?.count || 0,
-    activeListings: listingsWithPhotos,
-    totalListings: totalCountResultFiltered?.count || 0,
+    ...listingsCounts,
+    activeListings,
+    totalListings: totalCount,
     categories: allCategories,
   };
 }
