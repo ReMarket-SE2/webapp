@@ -2,8 +2,8 @@
 
 import { db } from '@/lib/db'
 import { users, photos, listings, listingPhotos, categories } from '@/lib/db/schema'
-import { eq, and, gt, isNotNull, asc, desc, inArray, or, ilike, count, ne } from 'drizzle-orm' // Consolidated count import and added ne
-import { User, UserRole, UserStatus } from '@/lib/db/schema' // Ensured UserRole and UserStatus are imported
+import { eq, and, gt, isNotNull, asc, desc, or, ilike, count, ne } from 'drizzle-orm' // Consolidated count import and added ne
+import { User, UserRole, UserStatus, listingStatusEnum } from '@/lib/db/schema' // Ensured UserRole and UserStatus are imported
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { insertPhoto } from '@/lib/photos/actions'
@@ -48,10 +48,56 @@ export interface UserListingsOptions {
   categoryId?: number | null;
 }
 
-export async function findUserById(
-  id: number,
+export interface UserListingsCounts {
+  activeListingsCount: number;
+  archivedListingsCount: number;
+  soldListingsCount: number;
+}
+
+/**
+ * Fetches a user by ID without any additional data.
+ * Use this for basic user operations like authentication, password reset, etc.
+ */
+export async function getUserById(id: number): Promise<User | null> {
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return user || null;
+}
+
+/**
+ * Fetches user's listing counts by status for a specific seller.
+ */
+export async function getUserListingsCounts(sellerId: number): Promise<UserListingsCounts> {
+  // Execute all count queries in parallel for better performance
+  const [activeCountResult, archivedCountResult, soldCountResult] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(listings)
+      .where(and(eq(listings.status, listingStatusEnum.enumValues[0]), eq(listings.sellerId, sellerId))),
+    db
+      .select({ count: count() })
+      .from(listings)
+      .where(and(eq(listings.status, listingStatusEnum.enumValues[1]), eq(listings.sellerId, sellerId))),
+    db
+      .select({ count: count() })
+      .from(listings)
+      .where(and(eq(listings.status, listingStatusEnum.enumValues[3]), eq(listings.sellerId, sellerId)))
+  ]);
+
+  return {
+    activeListingsCount: activeCountResult[0]?.count || 0,
+    archivedListingsCount: archivedCountResult[0]?.count || 0,
+    soldListingsCount: soldCountResult[0]?.count || 0,
+  };
+}
+
+/**
+ * Fetches user's active listings with proper photo attachment.
+ * Each listing gets exactly one photo (the first one found).
+ */
+export async function getUserActiveListings(
+  sellerId: number,
   options: UserListingsOptions = {}
-): Promise<UserWithListingCounts | null> {
+): Promise<{ listings: ShortListing[]; totalCount: number }> {
   const {
     page = 1,
     pageSize = 10,
@@ -59,48 +105,21 @@ export async function findUserById(
     categoryId = null,
   } = options;
 
-  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  
-  if (!user) {
-    return null;
-  }
-
-  // Get count of active listings
-  const [activeCountResult] = await db // Renamed to avoid conflict with imported 'count'
-    .select({ count: count() })
-    .from(listings)
-    .where(eq(listings.status, 'Active'));
-
-  // Get count of archived listings
-  const [archivedCountResult] = await db // Renamed
-    .select({ count: count() })
-    .from(listings)
-    .where(eq(listings.status, 'Archived'));
-
-  // Get count of sold listings
-  const [soldCountResult] = await db // Renamed
-    .select({ count: count() })
-    .from(listings)
-    .where(eq(listings.status, 'Sold'));
-
-  // Get all categories
-  const allCategories = await db
-    .select({
-      id: categories.id,
-      name: categories.name,
-    })
-    .from(categories)
-    .orderBy(categories.name);
-
   // Build conditions for active listings
-  const conditions = [eq(listings.status, 'Active'), eq(listings.sellerId, id)]; // Added sellerId condition
+  const conditions = [eq(listings.status, 'Active'), eq(listings.sellerId, sellerId)];
   if (categoryId !== null) {
     conditions.push(eq(listings.categoryId, categoryId));
   }
 
+  // Get total count of filtered listings
+  const [totalCountResult] = await db
+    .select({ count: count() })
+    .from(listings)
+    .where(and(...conditions));
+
   // Get active listings with pagination and sorting
   const activeListings = await db
-    .select({
+    .selectDistinctOn([listings.createdAt, listings.id], {
       id: listings.id,
       title: listings.title,
       price: listings.price,
@@ -108,83 +127,64 @@ export async function findUserById(
       category: categories.name,
       createdAt: listings.createdAt,
       sellerId: listings.sellerId,
+      photo: photos.image
     })
     .from(listings)
     .leftJoin(categories, eq(listings.categoryId, categories.id))
+    .leftJoin(listingPhotos, eq(listings.id, listingPhotos.listingId))
+    .leftJoin(photos, eq(listingPhotos.photoId, photos.id))
     .where(and(...conditions))
-    .orderBy(sortOrder === 'desc' ? desc(listings.createdAt) : asc(listings.createdAt))
+    .orderBy(sortOrder === 'desc' ? desc(listings.createdAt) : asc(listings.createdAt), listings.id)
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
-  // Get total count of filtered listings
-  const [totalCountResultFiltered] = await db // Renamed
-    .select({ count: count() })
-    .from(listings)
-    .where(and(...conditions));
+  return {
+    listings: activeListings,
+    totalCount: totalCountResult?.count || 0,
+  };
+}
 
-  // Batch fetch photos for all listings
-  const listingIds = activeListings.map(listing => listing.id);
-  let listingsWithPhotos: ShortListing[] = [];
+/**
+ * Fetches all categories for display.
+ */
+export async function getAllCategories(): Promise<{ id: number; name: string }[]> {
+  return await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+    })
+    .from(categories)
+    .orderBy(categories.name);
+}
 
-  if (listingIds.length > 0) {
-    const listingPhotoLinks = await db
-      .select({
-        listingId: listingPhotos.listingId,
-        photoId: listingPhotos.photoId,
-      })
-      .from(listingPhotos)
-      .where(and(inArray(listingPhotos.listingId, listingIds)))
-      .limit(listingIds.length); // Limit by the number of listings to avoid fetching too many links if a listing has multiple photos (though schema implies one primary)
-
-    if (listingPhotoLinks.length > 0) {
-      const photoIds = listingPhotoLinks.map(link => link.photoId);
-      const photosData = await db
-        .select({
-          id: photos.id,
-          image: photos.image,
-        })
-        .from(photos)
-        .where(and(inArray(photos.id, photoIds)));
-
-      const photoMap = new Map(
-        photosData.map(photo => [photo.id, photo.image])
-      );
-
-      listingsWithPhotos = activeListings.map(listing => {
-        const photoLink = listingPhotoLinks.find(link => link.listingId === listing.id);
-        const photo = photoLink ? photoMap.get(photoLink.photoId) ?? null : null;
-        return {
-          ...listing,
-          categoryId: listing.categoryId, // Ensure categoryId is present
-          sellerId: listing.sellerId, // Ensure sellerId is present
-          photo,
-        };
-      });
-    } else {
-       listingsWithPhotos = activeListings.map(listing => ({
-        ...listing,
-        categoryId: listing.categoryId,
-        sellerId: listing.sellerId,
-        photo: null,
-      }));
-    }
-  } else {
-     listingsWithPhotos = activeListings.map(listing => ({
-      ...listing,
-      categoryId: listing.categoryId,
-      sellerId: listing.sellerId,
-      photo: null,
-    }));
+/**
+ * Fetches a user with their listing counts and active listings.
+ * Use this for user profile pages that need to display listing information.
+ */
+export async function findUserByIdWithListings(
+  id: number,
+  options: UserListingsOptions = {}
+): Promise<UserWithListingCounts | null> {
+  // Get base user data
+  const user = await getUserById(id);
+  if (!user) {
+    return null;
   }
 
+  // Get listing counts
+  const listingsCounts = await getUserListingsCounts(id);
+
+  // Get active listings
+  const { listings: activeListings, totalCount } = await getUserActiveListings(id, options);
+
+  // Get all categories
+  const allCategories = await getAllCategories();
 
   return {
     ...user,
-    activeListingsCount: activeCountResult?.count || 0,
-    archivedListingsCount: archivedCountResult?.count || 0,
-    soldListingsCount: soldCountResult?.count || 0,
-    activeListings: listingsWithPhotos,
-    totalListings: totalCountResultFiltered?.count || 0,
+    ...listingsCounts,
+    activeListings,
+    totalListings: totalCount,
     categories: allCategories,
   };
 }
@@ -410,7 +410,7 @@ export async function updateUserProfile(bio?: string, profileImage?: string | nu
   }
 
   const userId = parseInt(session.user.id)
-  const userData = await findUserById(userId)
+  const userData = await getUserById(userId)
 
   if (!userData) {
     throw new Error('User not found')

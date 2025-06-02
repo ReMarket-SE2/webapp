@@ -11,7 +11,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { findUserById } from "@/lib/users/actions";
+import { findUserByIdWithListings } from "@/lib/users/actions";
 import { ShortListing } from "@/lib/listings/actions";
 
 interface UserListingsProps {
@@ -33,7 +33,7 @@ export function UserListings({ userId, initialListings, categories, totalListing
   const fetchListings = async (page: number, categoryId: number | null, sortOrder: 'asc' | 'desc') => {
     setIsLoading(true);
     try {
-      const user = await findUserById(userId, {
+      const user = await findUserByIdWithListings(userId, {
         page,
         pageSize: 10,
         sortOrder,
