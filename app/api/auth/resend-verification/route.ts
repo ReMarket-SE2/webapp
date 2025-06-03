@@ -18,7 +18,6 @@ export async function POST(request: Request) {
     // Find user by email
     const user = await findUserByEmail(email)
     
-    // Always return success to prevent email enumeration attacks
     // Only send email if user exists and email is not already verified
     if (user && !user.emailVerified) {
       // Generate new verification token

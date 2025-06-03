@@ -48,12 +48,12 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create new user with unverified email
+    // Create new user
     const newUser = await createUser({
       email,
       passwordHash: hashedPassword,
       username: username,
-      status: 'inactive', // Set to inactive until email is verified
+      status: 'inactive',
       emailVerified: false,
       profileImageId: null,
       bio: null,

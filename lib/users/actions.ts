@@ -473,7 +473,8 @@ export async function verifyUserEmail(id: number): Promise<User> {
       emailVerified: true,
       email_verification_token: null,
       email_verification_expires: null,
-      updatedAt: new Date(),
+      status: 'active',
+      updatedAt: new Date(),      
     })
     .where(eq(users.id, id))
     .returning()

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 import { getUserById, validateEmailVerificationToken, verifyUserEmail } from '@/lib/users/actions'
-import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema/users'
-import { eq } from 'drizzle-orm'
 
 // POST /api/auth/verify-email
 export async function POST(request: Request) {
@@ -60,15 +57,6 @@ export async function POST(request: Request) {
 
     // Verify the user's email and activate account
     await verifyUserEmail(userId)
-    
-    // Also update user status to active
-    await db
-      .update(users)
-      .set({ 
-        status: 'active',
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
 
     return NextResponse.json({ 
       success: true,
