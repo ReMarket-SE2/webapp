@@ -47,6 +47,16 @@ const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProv
       const passwordsMatch = await bcrypt.compare(password, user.passwordHash)
       if (!passwordsMatch) return null
 
+      // Check if email is verified
+      if (!user.emailVerified) {
+        throw new Error('Please verify your email address before signing in. Check your email for a verification link.')
+      }
+
+      // Check if user account is active
+      if (user.status !== 'active') {
+        throw new Error('Your account is not active. Please contact support.')
+      }
+
       return {
         id: String(user.id),
         email: user.email,
@@ -167,10 +177,13 @@ export const authOptions: NextAuthOptions = {
           passwordHash: null,
           role: 'user',
           status: 'active',
+          emailVerified: true,
           profileImageId: photoId,
           bio: null,
           password_reset_token: null,
           password_reset_expires: null,
+          email_verification_token: null,
+          email_verification_expires: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         });

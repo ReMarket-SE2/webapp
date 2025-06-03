@@ -64,19 +64,16 @@ export function SignUpForm({
         return
       }
 
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-        callbackUrl: returnTo,
-      })
+      toast.success(data.message || "Account created! Please check your email to verify your account.")
+      
+      setEmail("")
+      setPassword("")
+      setConfirmPassword("")
+      setUsername("")
 
-      if (result?.error) {
-        toast.error("Account created but login failed.")
-      } else {
-        toast.success("Account created and logged in!")
-        router.push(result?.url || "/")
-      }
+      setTimeout(() => {
+        router.push("/auth/sign-in")
+      }, 2000)
 
     } catch (error) {
       console.error("Registration error:", error)
