@@ -12,7 +12,6 @@ import { relations } from 'drizzle-orm';
 import { categories } from './categories';
 import { listingPhotos } from './listing_photos';
 import { wishlistListings } from './wishlist_listings';
-import { reviews } from './reviews';
 import { orders } from './orders';
 import { users } from './users';
 
@@ -46,7 +45,6 @@ export const listingsRelations = relations(listings, ({ one, many }) => ({
   }),
   listingPhotos: many(listingPhotos),
   wishlistListings: many(wishlistListings),
-  reviews: many(reviews),
   orders: many(orders),
 }));
 

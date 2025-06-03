@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Package, Archive, Star } from 'lucide-react';
 import { ScrollToReviews } from '@/components/reviews/scroll-to-reviews';
-import { mockReviewStats } from '@/lib/reviews/mock-data';
 
 // Animation variants
 const containerVariants = {
@@ -37,9 +36,13 @@ interface UserProfileCardsProps {
     archivedListingsCount: number;
     soldListingsCount: number;
   };
+  reviewStats: {
+    averageScore: number;
+    totalReviews: number;
+  };
 }
 
-export function UserProfileCards({ user }: UserProfileCardsProps) {
+export function UserProfileCards({ user, reviewStats }: UserProfileCardsProps) {
   return (
     <motion.div 
       className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8"
@@ -115,7 +118,7 @@ export function UserProfileCards({ user }: UserProfileCardsProps) {
                       >
                         <Star
                           className={`h-5 w-5 ${
-                            i < Math.round(mockReviewStats.averageScore)
+                            i < Math.round(reviewStats.averageScore)
                               ? "fill-yellow-400 text-yellow-400"
                               : "text-muted-foreground"
                           }`}
@@ -124,10 +127,10 @@ export function UserProfileCards({ user }: UserProfileCardsProps) {
                     ))}
                   </div>
                   <span className="text-lg font-semibold">
-                    {mockReviewStats.averageScore.toFixed(1)}
+                    {reviewStats.averageScore.toFixed(1)}
                   </span>
                   <span className="text-muted-foreground">
-                    ({mockReviewStats.totalReviews} reviews)
+                    ({reviewStats.totalReviews} reviews)
                   </span>
                 </div>
                 <ScrollToReviews />

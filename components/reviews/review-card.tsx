@@ -2,8 +2,6 @@
 
 import { Review } from "@/lib/db/schema/reviews";
 import { Star } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card } from "../ui/card";
 
 interface ReviewCardProps {
@@ -27,9 +25,6 @@ export function ReviewCard({ review }: ReviewCardProps) {
             ))}
           </div>
         </div>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/listing/${review.listingId}`}>View Listing</Link>
-        </Button>
       </div>
       <p className="text-muted-foreground mb-4">{review.description}</p>
       <div className="text-sm text-muted-foreground">
