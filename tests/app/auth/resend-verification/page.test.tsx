@@ -59,7 +59,7 @@ describe("ResendVerificationPage", () => {
   it("shows success message when email is sent successfully", async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true, message: "Verification email sent successfully" }),
+      json: () => Promise.resolve({ success: true, message: "If an account with that email exists and is not verified, a verification email has been sent. Please check your email." }),
     })
 
     render(<ResendVerificationPage />)
@@ -71,17 +71,17 @@ describe("ResendVerificationPage", () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Verification email sent successfully")
+      expect(toast.success).toHaveBeenCalledWith("If an account with that email exists and is not verified, a verification email has been sent. Please check your email.")
     })
 
     // Check that email input is cleared
     expect(emailInput).toHaveValue("")
   })
 
-  it("shows error message when API returns error", async () => {
+  it("shows success message even for non-existent users (security)", async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
-      ok: false,
-      json: () => Promise.resolve({ error: "User not found" }),
+      ok: true,
+      json: () => Promise.resolve({ success: true, message: "If an account with that email exists and is not verified, a verification email has been sent. Please check your email." }),
     })
 
     render(<ResendVerificationPage />)
@@ -89,11 +89,37 @@ describe("ResendVerificationPage", () => {
     const emailInput = screen.getByLabelText("Email")
     const submitButton = screen.getByRole("button", { name: "Send Verification Email" })
 
-    fireEvent.change(emailInput, { target: { value: "notfound@example.com" } })
+    fireEvent.change(emailInput, { target: { value: "nonexistent@example.com" } })
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("User not found")
+      expect(toast.success).toHaveBeenCalledWith("If an account with that email exists and is not verified, a verification email has been sent. Please check your email.")
+    })
+
+    // This prevents email enumeration attacks by always showing success
+    expect(global.fetch).toHaveBeenCalledWith("/api/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "nonexistent@example.com" }),
+    })
+  })
+
+  it("shows error message when API returns error", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: "Internal server error" }),
+    })
+
+    render(<ResendVerificationPage />)
+
+    const emailInput = screen.getByLabelText("Email")
+    const submitButton = screen.getByRole("button", { name: "Send Verification Email" })
+
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    fireEvent.click(submitButton)
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Internal server error")
     })
   })
 

@@ -93,7 +93,7 @@ describe('POST /api/auth/resend-verification', () => {
 
     // Check success response
     expect(mockJsonResponse).toHaveBeenCalledWith(
-      { success: true, message: 'Verification email sent successfully. Please check your email.' },
+      { success: true, message: 'If an account with that email exists and is not verified, a verification email has been sent. Please check your email.' },
       undefined
     );
   });
@@ -109,18 +109,23 @@ describe('POST /api/auth/resend-verification', () => {
     );
   });
 
-  it('should return error when user is not found', async () => {
+  it('should return success when user is not found (security: prevent email enumeration)', async () => {
     mockFindUserByEmail.mockResolvedValue(null);
 
     await POST(mockRequest);
 
+    // Should not send any email
+    expect(mockUpdateEmailVerificationToken).not.toHaveBeenCalled();
+    expect(mockSendEmailVerificationEmail).not.toHaveBeenCalled();
+
+    // But should still return success to prevent email enumeration
     expect(mockJsonResponse).toHaveBeenCalledWith(
-      { error: 'User not found' },
-      { status: 404 }
+      { success: true, message: 'If an account with that email exists and is not verified, a verification email has been sent. Please check your email.' },
+      undefined
     );
   });
 
-  it('should return error when email is already verified', async () => {
+  it('should return success when email is already verified (security: prevent email enumeration)', async () => {
     mockFindUserByEmail.mockResolvedValue({
       id: 1,
       email: 'test@example.com',
@@ -129,9 +134,14 @@ describe('POST /api/auth/resend-verification', () => {
 
     await POST(mockRequest);
 
+    // Should not send any email
+    expect(mockUpdateEmailVerificationToken).not.toHaveBeenCalled();
+    expect(mockSendEmailVerificationEmail).not.toHaveBeenCalled();
+
+    // But should still return success to prevent email enumeration
     expect(mockJsonResponse).toHaveBeenCalledWith(
-      { error: 'Email is already verified' },
-      { status: 400 }
+      { success: true, message: 'If an account with that email exists and is not verified, a verification email has been sent. Please check your email.' },
+      undefined
     );
   });
 

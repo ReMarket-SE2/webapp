@@ -17,40 +17,31 @@ export async function POST(request: Request) {
 
     // Find user by email
     const user = await findUserByEmail(email)
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    
+    // Always return success to prevent email enumeration attacks
+    // Only send email if user exists and email is not already verified
+    if (user && !user.emailVerified) {
+      // Generate new verification token
+      const verificationToken = await new SignJWT({ userId: user.id })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('24h')
+        .sign(new TextEncoder().encode(process.env.JWT_SECRET))
+
+      // Set verification token expiration (24 hours from now)
+      const verificationExpires = new Date()
+      verificationExpires.setHours(verificationExpires.getHours() + 24)
+
+      // Update user with new verification token
+      await updateEmailVerificationToken(user.id, verificationToken, verificationExpires)
+
+      // Send verification email
+      await sendEmailVerificationEmail(email, verificationToken)
     }
 
-    // Check if email is already verified
-    if (user.emailVerified) {
-      return NextResponse.json(
-        { error: 'Email is already verified' },
-        { status: 400 }
-      )
-    }
-
-    // Generate new verification token
-    const verificationToken = await new SignJWT({ userId: user.id })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('24h')
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET))
-
-    // Set verification token expiration (24 hours from now)
-    const verificationExpires = new Date()
-    verificationExpires.setHours(verificationExpires.getHours() + 24)
-
-    // Update user with new verification token
-    await updateEmailVerificationToken(user.id, verificationToken, verificationExpires)
-
-    // Send verification email
-    await sendEmailVerificationEmail(email, verificationToken)
-
+    // Always return success regardless of whether user exists or email is verified
     return NextResponse.json({ 
       success: true,
-      message: 'Verification email sent successfully. Please check your email.' 
+      message: 'If an account with that email exists and is not verified, a verification email has been sent. Please check your email.' 
     })
 
   } catch (error) {
