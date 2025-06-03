@@ -4,12 +4,13 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function VerifyEmailPage() {
   const params = useParams()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -61,35 +62,29 @@ export default function VerifyEmailPage() {
         )}
 
         {status === 'success' && (
-          <>
-            <CheckCircle className="h-12 w-12 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-600">Email Verified!</h1>
-            <p className="text-muted-foreground">{message}</p>
-            <div className="flex flex-col gap-3 w-full">
-              <Button asChild className="w-full">
-                <Link href="/auth/sign-in">Sign In to Your Account</Link>
-              </Button>
-              <Button variant="outline" asChild className="w-full">
-                <Link href="/">Go to Homepage</Link>
-              </Button>
-            </div>
-          </>
+          <div className="text-center space-y-4">
+            <CheckCircle className="mx-auto h-16 w-16 text-green-500" data-testid="check-circle-icon" />
+            <h1 className="text-2xl font-bold text-green-700">Email Verified!</h1>
+            <p className="text-gray-600">Your email has been successfully verified.</p>
+            <Button onClick={() => router.push('/auth/sign-in')} className="w-full">
+              Continue to Sign In
+            </Button>
+          </div>
         )}
 
         {status === 'error' && (
-          <>
-            <XCircle className="h-12 w-12 text-red-600" />
-            <h1 className="text-2xl font-bold text-red-600">Verification Failed</h1>
-            <p className="text-muted-foreground">{message}</p>
-            <div className="flex flex-col gap-3 w-full">
-              <Button asChild className="w-full">
-                <Link href="/auth/sign-up">Create New Account</Link>
-              </Button>
-              <Button variant="outline" asChild className="w-full">
-                <Link href="/">Go to Homepage</Link>
-              </Button>
-            </div>
-          </>
+          <div className="text-center space-y-4">
+            <XCircle className="mx-auto h-16 w-16 text-red-500" data-testid="x-circle-icon" />
+            <h1 className="text-2xl font-bold text-red-700">Verification Failed</h1>
+            <p className="text-gray-600">{message}</p>
+            <Button 
+              onClick={() => router.push('/auth/resend-verification')} 
+              variant="outline" 
+              className="w-full"
+            >
+              Request New Verification Email
+            </Button>
+          </div>
         )}
       </div>
     </div>

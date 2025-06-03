@@ -50,10 +50,10 @@ export default function ResendVerificationPage() {
     <div className="w-full max-w-md mx-auto">
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
         <div className="flex flex-col items-center gap-2 text-center">
-          <Mail className="h-12 w-12 text-blue-600" />
+          <Mail className="h-12 w-12 text-blue-600" data-testid="mail-icon" />
           <h1 className="text-2xl font-bold">Resend Verification Email</h1>
           <p className="text-muted-foreground text-sm text-balance">
-            Enter your email address and we&apos;ll send you a new verification link
+            Enter your email address to receive a new verification email.
           </p>
         </div>
         
