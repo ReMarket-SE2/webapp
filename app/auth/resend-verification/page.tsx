@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import Link from "next/link"
-import { Mail } from "lucide-react"
 
 export default function ResendVerificationPage() {
   const [email, setEmail] = useState("")
@@ -50,7 +49,7 @@ export default function ResendVerificationPage() {
     <div className="w-full max-w-md mx-auto">
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
         <div className="flex flex-col items-center gap-2 text-center">
-          <Mail className="h-12 w-12 text-blue-600" data-testid="mail-icon" />
+          <img src="/auth/email.png" alt="Email icon" className="h-16 w-16" data-testid="mail-icon" />
           <h1 className="text-2xl font-bold">Resend Verification Email</h1>
           <p className="text-muted-foreground text-sm text-balance">
             Enter your email address to receive a new verification email.
