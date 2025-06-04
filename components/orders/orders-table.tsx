@@ -10,17 +10,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ShippingLabel } from "@/components/shipping-label/shipping-label";
 import { fetchShippingLabelData } from "@/lib/shipping-label/actions";
 import { getSellerByOrderId, getBuyerByOrderId, markOrderAsShipped } from "@/lib/order/actions";
+import { addReview, getReviewExistenceByOrderIds } from "@/lib/reviews/actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ShippingLabelData } from "@/components/shipping-label/shipping-label";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Order } from "@/lib/db/schema";
+import { useRouter } from "next/navigation";
+import { CreateReviewForm } from "@/components/reviews/create-review";
 
 interface OrdersTableOrderItem {
   id: number;
@@ -48,14 +51,27 @@ export default function OrdersTable({
   redirectURL,
   isSoldTable = false,
 }: OrdersTableProps) {
+  const router = useRouter();
   const [isLabelOpen, setIsLabelOpen] = useState(false);
   const [isLabelLoading, setIsLabelLoading] = useState<{ [orderId: number]: boolean }>({});
   const [shippingLabelData, setShippingLabelData] = useState<ShippingLabelData | null>(null);
-
-  // Use local state for orders to allow UI updates without reload
-  const [localOrders, setLocalOrders] = useState<OrdersTableOrder[]>(orders);
-
   const [isShippedLoading, setIsShippedLoading] = useState<{ [orderId: number]: boolean }>({});
+  const [isReviewLoading, setIsReviewLoading] = useState<{ [orderId: number]: boolean }>({});
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewsExist, setReviewsExist] = useState<Record<number, boolean>>({});
+  const [activeReviewOrderId, setActiveReviewOrderId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isSoldTable) {
+      const checkReviews = async () => {
+        const orderIds = orders.map(order => order.id);
+        const reviewsMap = await getReviewExistenceByOrderIds(orderIds);
+        setReviewsExist(reviewsMap);
+      };
+      checkReviews();
+    }
+  }, [orders, isSoldTable]);
+   
 
   async function handlePrintShippingLabel(order: OrdersTableOrder) {
     setIsLabelLoading(prev => ({ ...prev, [order.id]: true }));
@@ -87,13 +103,8 @@ export default function OrdersTable({
     setIsShippedLoading(prev => ({ ...prev, [order.id]: true }));
     try {
       await markOrderAsShipped(order.id);
-      // Update local state for the shipped order
-      setLocalOrders(prevOrders =>
-        prevOrders.map(o =>
-          o.id === order.id ? { ...o, status: "Shipped" } : o
-        )
-      );
       toast.success("Order marked as shipped.");
+      router.refresh();
     } catch (e) {
       console.error("Error marking order as shipped:", e);
       toast.error("Failed to mark order as shipped.");
@@ -101,7 +112,45 @@ export default function OrdersTable({
     setIsShippedLoading(prev => ({ ...prev, [order.id]: false }));
   }
 
-  if (localOrders.length === 0)
+  async function handleAddReview(order: OrdersTableOrder) {
+    setActiveReviewOrderId(order.id)
+    setIsReviewOpen(true)
+  }
+
+  async function handleAddReviewSubmit(order: OrdersTableOrder, data: { title: string; description: string; score: number }) {
+    setIsReviewLoading(prev => ({ ...prev, [order.id]: true }))
+    try {
+      const seller = await getSellerByOrderId(order.id)
+      if (!seller) {
+        toast.error("Unable to find seller for this order.")
+        setIsReviewLoading(prev => ({ ...prev, [order.id]: false }))
+        return
+      }
+      const result = await addReview({
+        userId: seller.id,
+        orderId: order.id,
+        title: data.title,
+        description: data.description,
+        score: data.score,
+        createdAt: new Date(),
+      })
+      if (!result.success) {
+        toast.error(result.error || "Failed to submit review.")
+        setIsReviewLoading(prev => ({ ...prev, [order.id]: false }))
+        return
+      }
+      setReviewsExist(prev => ({ ...prev, [order.id]: true }));
+      setIsReviewOpen(false)
+      setActiveReviewOrderId(null)
+      toast.success("Review submitted!")
+    } catch (e) {
+      console.error("Error submitting review:", e)
+      toast.error("Failed to submit review.")
+    }
+    setIsReviewLoading(prev => ({ ...prev, [order.id]: false }))
+  }
+
+  if (orders.length === 0)
     return (
       <div className="text-center py-12">
         <p className="text-xl text-muted-foreground mb-4">{emptyMessage}</p>
@@ -125,7 +174,7 @@ export default function OrdersTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {localOrders.map(order => (
+        {orders.map((order) => (
           <TableRow key={order.id}>
             <TableCell className="font-medium">
               #{order.id.toString().padStart(6, "0")}
@@ -212,6 +261,31 @@ export default function OrdersTable({
                       <>Mark As Shipped</>
                     )}
                   </Button>
+                )}
+                {!isSoldTable && order.status == "Shipped" && !reviewsExist[order.id] && (
+                  <>
+                    <Button variant="outline" onClick={() => handleAddReview(order)} disabled={isReviewLoading[order.id]}>
+                      {isReviewLoading[order.id] ? (
+                        <><Loader2 className="animate-spin mr-2 h-4 w-4" />Submitting...</>
+                      ) : (
+                        <>Add Review</>
+                      )}
+                    </Button>
+                    <Dialog open={isReviewOpen && activeReviewOrderId === order.id} onOpenChange={open => { setIsReviewOpen(open); if (!open) setActiveReviewOrderId(null); }}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Review</DialogTitle>
+                          <DialogDescription>Share your experience with this order.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-2">
+                          <CreateReviewForm
+                            onSubmit={async (data) => await handleAddReviewSubmit(order, data)}
+                            isSubmitting={isReviewLoading[order.id]}
+                          />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 )}
               </div>
             </TableCell>
