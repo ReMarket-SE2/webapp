@@ -72,6 +72,25 @@ describe("SignInForm", () => {
     })
   })
 
+  it("shows specific error message for suspended users", async () => {
+    (signIn as jest.Mock).mockResolvedValue({ 
+      error: "Your account has been suspended. Please contact support for assistance." 
+    })
+
+    render(<SignInForm />)
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "suspended@example.com" } })
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password123" } })
+    fireEvent.click(screen.getByRole("button", { name: "Login" }))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "Your account has been suspended. Please contact support for assistance.",
+        { duration: 6000 }
+      )
+    })
+  })
+
   it("shows error on signIn throw", async () => {
     (signIn as jest.Mock).mockRejectedValue(new Error("Network error"))
 

@@ -179,6 +179,11 @@ export async function createListing(
         success: false,
         error: error.errors[0].message,
       };
+    } else if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
 
     return {
@@ -496,7 +501,9 @@ export async function updateListing(
     console.error('Error updating listing:', error);
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors[0].message };
-    }
+    } else if (error instanceof Error) {
+      return { success: false, error: error.message}
+    } 
     return { success: false, error: 'Failed to update listing' };
   }
 }

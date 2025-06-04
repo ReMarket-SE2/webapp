@@ -26,6 +26,9 @@ export async function addReview(data: NewReview): Promise<{ success: boolean; er
   } catch (error) {
     if (error instanceof z.ZodError)
       return { success: false, error: error.errors[0].message }
+    else if (error instanceof Error) {
+      return { success: false, error: error.message}
+    }
     return { success: false, error: 'Failed to add review' }
   }
 }

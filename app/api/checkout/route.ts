@@ -18,8 +18,11 @@ export async function POST(req: Request) {
   // Check if user is suspended
   try {
     await checkUserSuspension(userId);
-  } catch {
-    return NextResponse.json({ error: 'Your account has been suspended and cannot perform this action' }, { status: 403 });
+  } catch (e) {
+    if (e instanceof Error) {
+      return NextResponse.json({ error: e.message }, { status: 403 })
+    }
+    return NextResponse.json({ error: "Unkown error during checkout"}, { status: 500 });
   }
 
   // Get or create wishlist

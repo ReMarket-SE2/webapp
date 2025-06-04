@@ -52,8 +52,12 @@ const providers: Array<ReturnType<typeof CredentialsProvider | typeof GoogleProv
         throw new Error('Please verify your email address before signing in. Check your email for a verification link.')
       }
 
-      // Check if user account is active
-      if (user.status !== 'active') {
+      // Check if user account is active or suspended
+      if (user.status === 'suspended') {
+        throw new Error('Your account has been suspended. Please contact support for assistance.')
+      }
+      
+      if (user.status === 'inactive') {
         throw new Error('Your account is not active. Please contact support.')
       }
 
