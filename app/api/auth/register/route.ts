@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { findUserByUsername, findUserByEmail, createUser } from '@/lib/users/actions'
+import { findUserByUsername, findUserByEmail, createUser, updateEmailVerificationToken } from '@/lib/users/actions'
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
+import { sendEmailVerificationEmail } from '@/lib/actions'
+import { SignJWT } from 'jose'
 
 // POST /api/auth/register
 export async function POST(request: Request) {
@@ -47,21 +49,43 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Create new user
-    await createUser({
+    const newUser = await createUser({
       email,
       passwordHash: hashedPassword,
       username: username,
-      status: 'active',
+      status: 'inactive',
+      emailVerified: false,
       profileImageId: null,
       bio: null,
       role: 'user',
       password_reset_token: null,
       password_reset_expires: null,
+      email_verification_token: null,
+      email_verification_expires: null,
       createdAt: new Date(),
       updatedAt: new Date()
     })
 
-    return NextResponse.json({ success: true })
+    // Generate email verification token
+    const verificationToken = await new SignJWT({ userId: newUser.id })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(new TextEncoder().encode(process.env.JWT_SECRET))
+
+    // Set verification token expiration (24 hours from now)
+    const verificationExpires = new Date()
+    verificationExpires.setHours(verificationExpires.getHours() + 24)
+
+    // Update user with verification token
+    await updateEmailVerificationToken(newUser.id, verificationToken, verificationExpires)
+
+    // Send verification email
+    await sendEmailVerificationEmail(email, verificationToken)
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Account created successfully. Please check your email to verify your account.' 
+    })
 
   } catch (error) {
     console.error('Registration error:', error)

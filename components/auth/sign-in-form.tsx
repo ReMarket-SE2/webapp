@@ -55,7 +55,22 @@ export function SignInForm({
       })
 
       if (result?.error) {
-        toast.error("Invalid email or password")
+        // Check if it's an email verification error
+        if (result.error.includes('verify your email')) {
+          toast.error(
+            <div className="flex flex-col gap-2">
+              <span>{result.error}</span>
+              <Link 
+                href="/auth/resend-verification" 
+                className="text-blue-600 underline text-sm"
+              >
+                Resend verification email
+              </Link>
+            </div>
+          )
+        } else {
+          toast.error("Invalid email or password")
+        }
       } else {
         toast.success("Successfully logged in!")
         router.push(result?.url || "/")

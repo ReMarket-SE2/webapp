@@ -433,3 +433,51 @@ export async function updateUserProfile(bio?: string, profileImage?: string | nu
     updatedAt: new Date(),
   })
 }
+
+export async function updateEmailVerificationToken(id: number, token: string, expires: Date): Promise<User> {
+  const result = await db
+    .update(users)
+    .set({
+      email_verification_token: token,
+      email_verification_expires: expires,
+    })
+    .where(eq(users.id, id))
+    .returning()
+
+  return result[0]
+}
+
+export async function validateEmailVerificationToken(id: number, token: string): Promise<boolean> {
+  if (!id || !token) return false
+
+  const result = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.id, id),
+        isNotNull(users.email_verification_token),
+        eq(users.email_verification_token, token),
+        gt(users.email_verification_expires, new Date())
+      )
+    )
+    .limit(1)
+
+  return result.length > 0
+}
+
+export async function verifyUserEmail(id: number): Promise<User> {
+  const result = await db
+    .update(users)
+    .set({
+      emailVerified: true,
+      email_verification_token: null,
+      email_verification_expires: null,
+      status: 'active',
+      updatedAt: new Date(),      
+    })
+    .where(eq(users.id, id))
+    .returning()
+
+  return result[0]
+}

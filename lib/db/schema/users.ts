@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, timestamp, text, integer, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, timestamp, text, integer, pgEnum, boolean } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { photos } from './photos';
 import { wishlists } from './wishlists';
@@ -16,11 +16,14 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'),  // Make password optional for OAuth users
   status: userStatusEnum('status').notNull().default('active'),
   email: varchar('email', { length: 255 }).notNull().unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
   profileImageId: integer('profile_image_id').references(() => photos.id),
   bio: text('bio'),
   role: userRoleEnum('role').notNull().default('user'),
   password_reset_token: text('password_reset_token'),
   password_reset_expires: timestamp('password_reset_expires'),
+  email_verification_token: text('email_verification_token'),
+  email_verification_expires: timestamp('email_verification_expires'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

@@ -99,6 +99,13 @@
       "when": 1748359501543,
       "tag": "0013_add_order_id_to_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1748951621467,
+      "tag": "0014_email_verification_token",
+      "breakpoints": true
     }
   ]
 }

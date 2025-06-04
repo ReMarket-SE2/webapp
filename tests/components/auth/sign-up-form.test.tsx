@@ -9,6 +9,8 @@ import { toast } from "sonner"
 import { signIn, useSession } from "next-auth/react"
 import { checkPasswordStrength } from "@/lib/validators/password-strength"
 
+const mockPush = jest.fn()
+
 jest.mock("next-auth/react")
 jest.mock("sonner", () => ({
   toast: {
@@ -20,7 +22,7 @@ jest.mock("@/lib/validators/password-strength", () => ({
   checkPasswordStrength: jest.fn(),
 }))
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
   useSearchParams: () => new URLSearchParams(),
 }))
 
@@ -81,15 +83,16 @@ describe("SignUpForm", () => {
   })
   
 
-  it("shows success and logs in after successful registration", async () => {
+  it("shows success message and redirects to sign-in after successful registration", async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({}),
+        json: () => Promise.resolve({ 
+          success: true, 
+          message: "Account created successfully. Please check your email to verify your account." 
+        }),
       })
     ) as jest.Mock
-
-    ;(signIn as jest.Mock).mockResolvedValue({ error: null, url: "/dashboard" })
 
     render(<SignUpForm />)
 
@@ -101,9 +104,13 @@ describe("SignUpForm", () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith("/api/auth/register", expect.anything())
-      expect(signIn).toHaveBeenCalledWith("credentials", expect.objectContaining({ email: "new@example.com" }))
-      expect(toast.success).toHaveBeenCalledWith("Account created and logged in!")
+      expect(toast.success).toHaveBeenCalledWith("Account created successfully. Please check your email to verify your account.")
     })
+
+    // Wait for the redirect timeout
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/auth/sign-in")
+    }, { timeout: 3000 })
   })
 
   it("shows error if registration API fails", async () => {
@@ -124,29 +131,6 @@ describe("SignUpForm", () => {
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Email already in use")
-    })
-  })
-
-  it("shows error if login after registration fails", async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-      })
-    ) as jest.Mock
-
-    ;(signIn as jest.Mock).mockResolvedValue({ error: "Auth failed" })
-
-    render(<SignUpForm />)
-
-    fireEvent.change(screen.getByLabelText("Username"), { target: { value: "testuser" } })
-    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } })
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Password123!" } })
-    fireEvent.change(screen.getByLabelText("Confirm Password"), { target: { value: "Password123!" } })
-    fireEvent.click(screen.getByRole("button", { name: "Create account" }))
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Account created but login failed.")
     })
   })
 
@@ -171,6 +155,38 @@ describe("SignUpForm", () => {
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to login with Google")
+    })
+  })
+
+  it("clears form fields after successful registration", async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ 
+          success: true, 
+          message: "Account created successfully. Please check your email to verify your account." 
+        }),
+      })
+    ) as jest.Mock
+
+    render(<SignUpForm />)
+
+    const usernameInput = screen.getByLabelText("Username")
+    const emailInput = screen.getByLabelText("Email")
+    const passwordInput = screen.getByLabelText("Password")
+    const confirmPasswordInput = screen.getByLabelText("Confirm Password")
+
+    fireEvent.change(usernameInput, { target: { value: "newuser" } })
+    fireEvent.change(emailInput, { target: { value: "new@example.com" } })
+    fireEvent.change(passwordInput, { target: { value: "StrongPass123!" } })
+    fireEvent.change(confirmPasswordInput, { target: { value: "StrongPass123!" } })
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }))
+
+    await waitFor(() => {
+      expect(usernameInput).toHaveValue("")
+      expect(emailInput).toHaveValue("")
+      expect(passwordInput).toHaveValue("")
+      expect(confirmPasswordInput).toHaveValue("")
     })
   })
 })
