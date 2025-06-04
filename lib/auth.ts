@@ -236,3 +236,19 @@ export const authOptions: NextAuthOptions = {
     },
   }
 };
+
+/**
+ * Helper function to check if a user is suspended
+ * Throws an error if the user is suspended, otherwise returns silently
+ */
+export async function checkUserSuspension(userId: number): Promise<void> {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  
+  if (!user) {
+    throw new Error('User not found');
+  }
+  
+  if (user.status === 'suspended') {
+    throw new Error('Your account has been suspended. Please contact support for assistance.');
+  }
+}

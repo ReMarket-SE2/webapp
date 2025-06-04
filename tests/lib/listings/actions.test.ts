@@ -45,6 +45,10 @@ jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
 }));
 
+jest.mock('@/lib/auth', () => ({
+  checkUserSuspension: jest.fn(),
+}));
+
 jest.mock('drizzle-orm', () => {
   const actualDrizzleOrm = jest.requireActual('drizzle-orm');
   return {
@@ -833,10 +837,20 @@ describe('Listing Actions', () => {
 
   describe('deleteListing', () => {
     test('should delete listing successfully', async () => {
+      const mockDbSelect = db.select as jest.Mock;
       const mockDbDelete = db.delete as jest.Mock;
+      
+      // Mock the query to fetch the listing first
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ id: 1, sellerId: 1 }]),
+      }));
+      
       mockDbDelete.mockReturnValueOnce({
         where: jest.fn().mockReturnThis(),
       });
+      
       const result = await deleteListing(1);
       expect(result).toEqual({ success: true });
       expect(db.delete).toHaveBeenCalledWith(listings);
@@ -844,13 +858,22 @@ describe('Listing Actions', () => {
     });
 
     test('should not return sold listings', async () => {
+      const mockDbSelect = db.select as jest.Mock;
       const mockDbDelete = db.delete as jest.Mock;
+      
+      // Mock the query to fetch the listing first
+      mockDbSelect.mockImplementationOnce(() => ({
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValueOnce([{ id: 2, sellerId: 1 }]),
+      }));
+      
       mockDbDelete.mockImplementationOnce(() => {
         throw new Error('Delete failed');
       });
       const result = await deleteListing(2);
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Failed to delete listing');
+      expect(result.error).toBe('Delete failed');
     });
   });
 });

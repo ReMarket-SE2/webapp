@@ -12,6 +12,7 @@ import { eq, inArray, asc, desc, sql, and, not } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import { users } from '@/lib/db/schema/users';
 import { count } from 'drizzle-orm';
+import { checkUserSuspension } from '@/lib/auth';
 
 // Validation schema for listing creation
 const listingSchema = z.object({
@@ -113,6 +114,9 @@ export async function createListing(
   photoData: string[] = []
 ): Promise<{ success: boolean; listingId?: number; error?: string }> {
   try {
+    // Check if user is suspended
+    await checkUserSuspension(formData.sellerId);
+    
     // Validate form data
     const validatedData = listingSchema.parse(formData);
 
@@ -424,12 +428,22 @@ export async function getAllListings(options?: {
 
 export async function deleteListing(id: number): Promise<{ success: boolean; error?: string }> {
   try {
+    // Get the listing to check the seller ID
+    const [listing] = await db.select().from(listings).where(eq(listings.id, id)).limit(1);
+    
+    if (!listing) {
+      return { success: false, error: 'Listing not found' };
+    }
+    
+    // Check if user is suspended
+    await checkUserSuspension(listing.sellerId);
+    
     await db.delete(listings).where(eq(listings.id, id));
     revalidatePath('/');
     return { success: true };
   } catch (error) {
     console.error('Error deleting listing:', error);
-    return { success: false, error: 'Failed to delete listing' };
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to delete listing' };
   }
 }
 
@@ -439,6 +453,9 @@ export async function updateListing(
   photoData: string[] = []
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if user is suspended
+    await checkUserSuspension(formData.sellerId);
+    
     // Validate form data
     const validatedData = listingSchema.parse(formData);
 

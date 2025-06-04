@@ -8,6 +8,10 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
+jest.mock('@/lib/auth', () => ({
+  checkUserSuspension: jest.fn(),
+}))
+
 const validReview = {
   title: 'Great',
   score: 5,

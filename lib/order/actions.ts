@@ -5,6 +5,7 @@ import { NewOrder, Order, orders } from '@/lib/db/schema/orders';
 import { NewOrderItem, OrderItem, orderItems } from '@/lib/db/schema/order_items';
 import type Stripe from 'stripe';
 import { eq } from 'drizzle-orm';
+import { checkUserSuspension } from '@/lib/auth';
 
 interface ItemToOrder {
   listingId: number;
@@ -40,6 +41,9 @@ export async function createOrder(
   paymentId: string,
   paymentStatus: string
 ): Promise<Order> {
+  // Check if user is suspended
+  await checkUserSuspension(userId);
+  
   if (!shippingAddressDetails) {
     console.warn('No shipping address provided, storing as "No address provided"');
   }

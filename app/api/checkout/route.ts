@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { authOptions, checkUserSuspension } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { wishlists, wishlistListings, listings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -14,6 +14,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = parseInt(session.user.id as string, 10);
+
+  // Check if user is suspended
+  try {
+    await checkUserSuspension(userId);
+  } catch {
+    return NextResponse.json({ error: 'Your account has been suspended and cannot perform this action' }, { status: 403 });
+  }
 
   // Get or create wishlist
   const existing = await db

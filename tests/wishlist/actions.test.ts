@@ -5,6 +5,10 @@ jest.mock('@/lib/db', () => {
   return { db: { select, insert, delete: del } }
 })
 
+jest.mock('@/lib/auth', () => ({
+  checkUserSuspension: jest.fn(),
+}))
+
 import { db } from '@/lib/db'
 import * as actions from '@/lib/wishlist/actions'
 import { wishlists } from '@/lib/db/schema/wishlists'
