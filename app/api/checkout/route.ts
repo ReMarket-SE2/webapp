@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     if (e instanceof Error) {
       return NextResponse.json({ error: e.message }, { status: 403 })
     }
-    return NextResponse.json({ error: "Unkown error during checkout"}, { status: 500 });
+    return NextResponse.json({ error: "Unknown error during checkout"}, { status: 500 });
   }
 
   // Get or create wishlist
