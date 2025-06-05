@@ -19,7 +19,11 @@ export function CheckoutButton({ className }: { className?: string }) {
       window.location.assign(data.url);
     } catch (error) {
       console.error('Checkout error:', error);
-      toast.error('Checkout failed');
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Checkout failed');
+      }
     } finally {
       setIsLoading(false);
     }

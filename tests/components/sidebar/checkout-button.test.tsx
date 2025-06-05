@@ -100,7 +100,7 @@ describe("CheckoutButton", () => {
     fireEvent.click(screen.getByRole("button", { name: /checkout/i }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Checkout failed");
+      expect(toast.error).toHaveBeenCalledWith("API Error Message");
     });
 
     // Check button state after error
@@ -118,7 +118,7 @@ describe("CheckoutButton", () => {
     fireEvent.click(screen.getByRole("button", { name: /checkout/i }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Checkout failed");
+      expect(toast.error).toHaveBeenCalledWith("Failed to create checkout session");
     });
   });
 
@@ -130,7 +130,7 @@ describe("CheckoutButton", () => {
     fireEvent.click(screen.getByRole("button", { name: /checkout/i }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Checkout failed");
+      expect(toast.error).toHaveBeenCalledWith("Network Error");
     });
     // Check button state after error
     expect(screen.queryByTestId("loader-icon")).not.toBeInTheDocument();

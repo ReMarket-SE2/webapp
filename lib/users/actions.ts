@@ -5,7 +5,7 @@ import { users, photos, listings, listingPhotos, categories } from '@/lib/db/sch
 import { eq, and, gt, isNotNull, asc, desc, or, ilike, count, ne } from 'drizzle-orm' // Consolidated count import and added ne
 import { User, UserRole, UserStatus, listingStatusEnum } from '@/lib/db/schema' // Ensured UserRole and UserStatus are imported
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { authOptions, checkUserSuspension } from '@/lib/auth'
 import { insertPhoto } from '@/lib/photos/actions'
 import { createWishlist } from '@/lib/wishlist/actions'
 import { ShortListing } from '@/lib/listings/actions'
@@ -410,6 +410,10 @@ export async function updateUserProfile(bio?: string, profileImage?: string | nu
   }
 
   const userId = parseInt(session.user.id)
+  
+  // Check if user is suspended
+  await checkUserSuspension(userId);
+  
   const userData = await getUserById(userId)
 
   if (!userData) {

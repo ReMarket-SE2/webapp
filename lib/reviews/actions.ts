@@ -5,6 +5,7 @@ import { reviews } from '@/lib/db/schema/reviews'
 import { NewReview } from '@/lib/db/schema/reviews'
 import { eq, desc, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { checkUserSuspension } from '@/lib/auth'
 
 const reviewSchema = z.object({
   title: z.string().min(1, 'Title is required').max(120, 'Title must be at most 120 characters'),
@@ -16,12 +17,18 @@ const reviewSchema = z.object({
 
 export async function addReview(data: NewReview): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if user is suspended
+    await checkUserSuspension(data.userId);
+    
     const validated = reviewSchema.parse(data)
     await db.insert(reviews).values(validated)
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError)
       return { success: false, error: error.errors[0].message }
+    else if (error instanceof Error) {
+      return { success: false, error: error.message}
+    }
     return { success: false, error: 'Failed to add review' }
   }
 }

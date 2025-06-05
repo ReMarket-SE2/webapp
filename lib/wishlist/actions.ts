@@ -5,6 +5,7 @@ import { wishlistListings } from '@/lib/db/schema/wishlist_listings';
 import { wishlists } from '@/lib/db/schema/wishlists';
 import { listings } from '@/lib/db/schema/listings';
 import { eq, and } from 'drizzle-orm';
+import { checkUserSuspension } from '@/lib/auth';
 
 interface Wishlist {
   id: number;
@@ -47,6 +48,9 @@ export async function getWishlistListingsByUserId(userId: number) {
 }
 
 export async function addListingToWishlist(userId: number, listingId: number) {
+  // Check if user is suspended
+  await checkUserSuspension(userId);
+  
   const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db.insert(wishlistListings).values({
@@ -56,6 +60,9 @@ export async function addListingToWishlist(userId: number, listingId: number) {
 }
 
 export async function removeListingFromWishlist(userId: number, listingId: number) {
+  // Check if user is suspended
+  await checkUserSuspension(userId);
+  
   const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db
@@ -69,6 +76,9 @@ export async function removeListingFromWishlist(userId: number, listingId: numbe
 }
 
 export async function clearWishlist(userId: number) {
+  // Check if user is suspended
+  await checkUserSuspension(userId);
+  
   const wishlist = await getOrCreateWishlistByUserId(userId);
 
   return db

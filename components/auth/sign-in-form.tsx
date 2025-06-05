@@ -68,6 +68,11 @@ export function SignInForm({
               </Link>
             </div>
           )
+        } else if (result.error.includes('suspended')) {
+          // Specific toast for suspended users
+          toast.error(result.error, {
+            duration: 6000, // Show longer for suspended users
+          })
         } else {
           toast.error("Invalid email or password")
         }
